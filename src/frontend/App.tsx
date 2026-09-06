@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { Platform, View, StyleSheet, ActivityIndicator } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Platform, View, StyleSheet, ActivityIndicator, Pressable, Text } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -7,8 +7,15 @@ import { ToastProvider } from "./src/components/Toast";
 import ErrorBoundary from "./src/components/ErrorBoundary";
 import VersionFooter from "./src/components/VersionFooter";
 import { useAuth } from "./src/hooks/useAuth";
+import { AuthProvider } from "./src/context/AuthContext";
 import LoginScreen from "./src/screens/LoginScreen";
-import { colors } from "./src/theme/tokens";
+import RegisterScreen from "./src/screens/RegisterScreen";
+import ForgotPasswordScreen from "./src/screens/ForgotPasswordScreen";
+import ResetPasswordScreen from "./src/screens/ResetPasswordScreen";
+import ProfileScreen from "./src/screens/ProfileScreen";
+import AdminUsersScreen from "./src/screens/AdminUsersScreen";
+import AdminRolesScreen from "./src/screens/AdminRolesScreen";
+import { colors, typography } from "./src/theme/tokens";
 
 import HomeScreen from "./src/screens/HomeScreen";
 import ClientsListScreen from "./src/screens/ClientsListScreen";
@@ -29,9 +36,20 @@ export type RootStackParamList = {
     result: any;
     roundingOverrides: Record<string, number>;
   };
+  Profile: undefined;
+  AdminUsers: undefined;
+  AdminRoles: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+/** Which pre-auth screen to show when there is no session yet. Defaults
+ * to "reset" the moment a reset token shows up (the email link lands
+ * here with ?reset_token=... already extracted by useAuth), so a user
+ * following that link never has to navigate there manually — matches
+ * how "reset" can also become the active view later if useAuth captures
+ * a token after the initial mount (see the effect below). */
+type PreAuthView = "login" | "register" | "forgot" | "reset";
 
 /**
  * AuthGate — sits between the outer ErrorBoundary/ToastProvider shell and
@@ -39,10 +57,15 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
  * before rendering anything:
  *
  *  - Loading  → blank screen with a spinner (< 1 s in practice)
- *  - Not auth → LoginScreen with a Microsoft button (Google removed
- *    2026-09-03, see docs/ROADMAP.md FEAT-002 — deprioritized, not
- *    deleted server-side)
- *  - Auth OK  → full app navigation stack
+ *  - Not auth → one of Login/Register/ForgotPassword/ResetPassword,
+ *    switched locally by `preAuthView` (no react-navigation stack for
+ *    these four — they're mutually exclusive full-screen states prior
+ *    to having a session at all, not a navigable history a back button
+ *    should move through)
+ *  - Auth OK  → full app navigation stack, wrapped in <AuthProvider> so
+ *    Profile/AdminUsers/AdminRoles can reach user/csrfToken/logout/
+ *    hasPermission/changePassword/updateProfile without prop-drilling
+ *    through every route's params (see src/context/AuthContext.tsx)
  *
  * The actual OAuth dance happens entirely in the PHP backend; the frontend
  * only redirects the browser to /api/auth/microsoft and lets PHP handle
@@ -51,7 +74,31 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
  * is now valid → app shows normally.
  */
 function AuthGate() {
-  const { isLoading, isAuthenticated, error, loginWithMicrosoft } = useAuth();
+  const auth = useAuth();
+  const {
+    isLoading,
+    isAuthenticated,
+    error,
+    notice,
+    resetToken,
+    clearResetToken,
+    loginWithMicrosoft,
+    login,
+    register,
+    forgotPassword,
+    resetPassword,
+    resendVerification,
+  } = auth;
+
+  const [preAuthView, setPreAuthView] = useState<PreAuthView>(resetToken ? "reset" : "login");
+
+  // A reset token can arrive slightly after the initial render (URL
+  // parsing happens inside useAuth's mount effect) — switch views the
+  // moment it does, same as the initial-state check above but for the
+  // async case.
+  useEffect(() => {
+    if (resetToken) setPreAuthView("reset");
+  }, [resetToken]);
 
   if (isLoading) {
     return (
@@ -62,36 +109,81 @@ function AuthGate() {
   }
 
   if (!isAuthenticated) {
-    return (
-      <LoginScreen
-        onMicrosoft={loginWithMicrosoft}
-        error={error}
-      />
-    );
+    switch (preAuthView) {
+      case "register":
+        return <RegisterScreen onRegister={register} onNavigateLogin={() => setPreAuthView("login")} />;
+      case "forgot":
+        return <ForgotPasswordScreen onForgotPassword={forgotPassword} onNavigateLogin={() => setPreAuthView("login")} />;
+      case "reset":
+        return (
+          <ResetPasswordScreen
+            token={resetToken}
+            onResetPassword={resetPassword}
+            onNavigateLogin={() => {
+              clearResetToken();
+              setPreAuthView("login");
+            }}
+          />
+        );
+      default:
+        return (
+          <LoginScreen
+            onMicrosoft={loginWithMicrosoft}
+            onLogin={login}
+            onNavigateRegister={() => setPreAuthView("register")}
+            onNavigateForgotPassword={() => setPreAuthView("forgot")}
+            onResendVerification={resendVerification}
+            isLoading={isLoading}
+            error={error}
+            notice={notice}
+          />
+        );
+    }
   }
 
   // Authenticated: render the full navigation stack.
   return (
-    <View style={styles.navArea}>
-      <NavigationContainer>
-        <StatusBar style="auto" />
-        <Stack.Navigator initialRouteName="Home">
-          <Stack.Screen name="Home" component={HomeScreen} options={{ title: "Audit Duration Calculator" }} />
-          <Stack.Screen name="ClientsList" component={ClientsListScreen} options={{ title: "Mes clients" }} />
-          <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client" }} />
-          <Stack.Screen
-            name="CalculationWizard"
-            component={CalculationWizardScreen}
-            options={{ title: "Calcul", headerShown: false }}
-          />
-          <Stack.Screen
-            name="CalculationReport"
-            component={CalculationReportScreen}
-            options={{ title: "Rapport de calcul", headerShown: false }}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </View>
+    <AuthProvider value={auth}>
+      <View style={styles.navArea}>
+        <NavigationContainer>
+          <StatusBar style="auto" />
+          <Stack.Navigator initialRouteName="Home">
+            <Stack.Screen
+              name="Home"
+              component={HomeScreen}
+              options={({ navigation }) => ({
+                title: "Audit Duration Calculator",
+                headerRight: () => (
+                  <Pressable
+                    onPress={() => navigation.navigate("Profile")}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Mon profil"
+                  >
+                    <Text style={styles.headerProfileLink}>Profil</Text>
+                  </Pressable>
+                ),
+              })}
+            />
+            <Stack.Screen name="ClientsList" component={ClientsListScreen} options={{ title: "Mes clients" }} />
+            <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client" }} />
+            <Stack.Screen
+              name="CalculationWizard"
+              component={CalculationWizardScreen}
+              options={{ title: "Calcul", headerShown: false }}
+            />
+            <Stack.Screen
+              name="CalculationReport"
+              component={CalculationReportScreen}
+              options={{ title: "Rapport de calcul", headerShown: false }}
+            />
+            <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: "Mon profil" }} />
+            <Stack.Screen name="AdminUsers" component={AdminUsersScreen} options={{ title: "Utilisateurs" }} />
+            <Stack.Screen name="AdminRoles" component={AdminRolesScreen} options={{ title: "Rôles et permissions" }} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </View>
+    </AuthProvider>
   );
 }
 
@@ -134,5 +226,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: colors.surfaceSunken,
+  },
+  headerProfileLink: {
+    color: colors.link,
+    fontSize: typography.body,
+    fontWeight: "600",
+    marginRight: 4,
   },
 });

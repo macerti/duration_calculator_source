@@ -2,6 +2,16 @@
 
 Same versioning convention as the other projects: **x** = overhaul, **y** = feature, **z** = bugfix.
 
+## 2026-09-06 (thirtieth session) — no version bump — local-accounts/RBAC frontend is now source-complete and building clean; not yet live-verified
+
+- **No version bump**: the flow isn't confirmed reachable/working by an actual person yet — only compiled, bundled, and checked against a proven-correct backend. See `docs/DEV_STATUS.md`'s thirtieth-session entry for exactly what "source-complete, pending live verification" covers here.
+- Fixed the twenty-ninth session's known-broken tree: built the six missing screens (`RegisterScreen`, `ForgotPasswordScreen`, `ResetPasswordScreen`, `ProfileScreen`, `AdminUsersScreen`, `AdminRolesScreen`), added `AuthContext.tsx`, and wired all of it into `App.tsx` (pre-auth view switching, new authenticated-only stack routes, a "Profil" link in Home's header).
+- `npx tsc --noEmit` clean, `npx expo export --platform web --clear` succeeds, `make build-deploy` + deploy-artifact hygiene check all pass, repo hygiene check passes.
+- Backend re-verified unchanged and correct: fresh-DB migrate → seed → `smoke_test.php` 24/24 → `http_api_test.php` **50/50**, confirming the exact endpoints every new screen calls.
+- No new code bugs found. A local test-config gotcha (two `config.php` values that must match `tests/http_api_test.php`'s hardcoded expectations) cost real time to diagnose this session — documented in `docs/DEV_STATUS.md` so the next session doesn't repeat it.
+
+---
+
 ## 2026-09-05 (twenty-ninth session) — no version bump — local-accounts/RBAC frontend STARTED, NOT FINISHED; do not deploy this commit
 
 - **No version bump**: nothing here is reachable/working end-to-end yet, and this project's versioning rule ties a feature bump to something a user can actually use — see `docs/ROADMAP.md` FEAT-003.
