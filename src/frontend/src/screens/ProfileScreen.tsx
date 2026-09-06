@@ -15,6 +15,20 @@ type Props = NativeStackScreenProps<RootStackParamList, "Profile">;
 const MIN_PASSWORD_LENGTH = 10;
 const MAX_PASSWORD_LENGTH = 72;
 
+// BUG-047 #4: shared between onBlur and submit, same pattern as
+// RegisterScreen/ResetPasswordScreen.
+function validateCurrentPassword(v: string): string | undefined {
+  return v === "" ? "Renseignez votre mot de passe actuel." : undefined;
+}
+function validateNewPassword(v: string): string | undefined {
+  if (v.length < MIN_PASSWORD_LENGTH) return `Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères.`;
+  if (v.length > MAX_PASSWORD_LENGTH) return `Le mot de passe ne doit pas dépasser ${MAX_PASSWORD_LENGTH} caractères.`;
+  return undefined;
+}
+function validateConfirmNewPassword(confirm: string, next: string): string | undefined {
+  return confirm !== next ? "Les mots de passe ne correspondent pas." : undefined;
+}
+
 /**
  * ProfileScreen — own account details + password change + entry points
  * into the admin screens, gated by permission (docs/ROADMAP.md item 9:
@@ -37,6 +51,22 @@ export default function ProfileScreen({ navigation }: Props) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordErrors, setPasswordErrors] = useState<{ current?: string; next?: string; confirm?: string }>({});
   const [changingPassword, setChangingPassword] = useState(false);
+  const [confirmNewTouched, setConfirmNewTouched] = useState(false);
+
+  const handleCurrentPasswordBlur = () =>
+    setPasswordErrors((prev) => ({ ...prev, current: validateCurrentPassword(currentPassword) }));
+  const handleNewPasswordBlur = () =>
+    setPasswordErrors((prev) => ({
+      ...prev,
+      next: validateNewPassword(newPassword),
+      // Keep confirm's error in sync once it's been reached, same reasoning
+      // as RegisterScreen's password/confirm pair.
+      confirm: confirmNewTouched ? validateConfirmNewPassword(confirmPassword, newPassword) : prev.confirm,
+    }));
+  const handleConfirmNewPasswordBlur = () => {
+    setConfirmNewTouched(true);
+    setPasswordErrors((prev) => ({ ...prev, confirm: validateConfirmNewPassword(confirmPassword, newPassword) }));
+  };
 
   if (!user) {
     // Defensive only — ProfileScreen only renders inside AuthGate's
@@ -59,16 +89,14 @@ export default function ProfileScreen({ navigation }: Props) {
   };
 
   const submitPasswordChange = async () => {
-    const errors: typeof passwordErrors = {};
-    if (currentPassword === "") errors.current = "Renseignez votre mot de passe actuel.";
-    if (newPassword.length < MIN_PASSWORD_LENGTH) {
-      errors.next = `Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères.`;
-    } else if (newPassword.length > MAX_PASSWORD_LENGTH) {
-      errors.next = `Le mot de passe ne doit pas dépasser ${MAX_PASSWORD_LENGTH} caractères.`;
-    }
-    if (confirmPassword !== newPassword) errors.confirm = "Les mots de passe ne correspondent pas.";
+    const errors: typeof passwordErrors = {
+      current: validateCurrentPassword(currentPassword),
+      next: validateNewPassword(newPassword),
+      confirm: validateConfirmNewPassword(confirmPassword, newPassword),
+    };
     setPasswordErrors(errors);
-    if (Object.keys(errors).length > 0) return;
+    setConfirmNewTouched(true);
+    if (Object.values(errors).some(Boolean)) return;
 
     setChangingPassword(true);
     const result = await changePassword(currentPassword, newPassword);
@@ -160,6 +188,7 @@ export default function ProfileScreen({ navigation }: Props) {
             label="Mot de passe actuel"
             value={currentPassword}
             onChangeText={setCurrentPassword}
+            onBlur={handleCurrentPasswordBlur}
             secureTextEntry
             autoCapitalize="none"
             autoComplete="current-password"
@@ -169,6 +198,7 @@ export default function ProfileScreen({ navigation }: Props) {
             label="Nouveau mot de passe"
             value={newPassword}
             onChangeText={setNewPassword}
+            onBlur={handleNewPasswordBlur}
             secureTextEntry
             autoCapitalize="none"
             autoComplete="new-password"
@@ -178,6 +208,7 @@ export default function ProfileScreen({ navigation }: Props) {
             label="Confirmer le nouveau mot de passe"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
+            onBlur={handleConfirmNewPasswordBlur}
             secureTextEntry
             autoCapitalize="none"
             autoComplete="new-password"

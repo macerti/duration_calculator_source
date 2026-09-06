@@ -38,6 +38,19 @@ interface Props {
  * revisited later — do not delete it as "dead code" without checking
  * ROADMAP.md first.
  */
+type FieldErrors = { email?: string; password?: string };
+
+// BUG-047 #4: shared between onBlur (validate as each field is finished)
+// and submit, same pattern as RegisterScreen/ResetPasswordScreen — login
+// only needs a presence check (no strength rule here, that would leak
+// password-policy info on the wrong screen).
+function validateEmailRequired(v: string): string | undefined {
+  return v.trim() === "" ? "L'adresse e-mail est obligatoire." : undefined;
+}
+function validatePasswordRequired(v: string): string | undefined {
+  return v === "" ? "Le mot de passe est obligatoire." : undefined;
+}
+
 export default function LoginScreen({
   onMicrosoft,
   onLogin,
@@ -54,15 +67,21 @@ export default function LoginScreen({
   const [localError, setLocalError] = useState<string | null>(null);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [resendSent, setResendSent] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
+  const handleEmailBlur = () => setFieldErrors((prev) => ({ ...prev, email: validateEmailRequired(email) }));
+  const handlePasswordBlur = () => setFieldErrors((prev) => ({ ...prev, password: validatePasswordRequired(password) }));
 
   const submit = async () => {
     setLocalError(null);
     setNeedsVerification(false);
     setResendSent(false);
-    if (email.trim() === "" || password === "") {
-      setLocalError("Renseignez votre e-mail et votre mot de passe.");
-      return;
-    }
+    const errors: FieldErrors = {
+      email: validateEmailRequired(email),
+      password: validatePasswordRequired(password),
+    };
+    setFieldErrors(errors);
+    if (Object.values(errors).some(Boolean)) return;
     setSubmitting(true);
     const result = await onLogin(email.trim(), password);
     setSubmitting(false);
@@ -124,19 +143,23 @@ export default function LoginScreen({
           label="Adresse e-mail"
           value={email}
           onChangeText={setEmail}
+          onBlur={handleEmailBlur}
           placeholder="prenom.nom@macerti.com"
           keyboardType="email-address"
           autoCapitalize="none"
           autoComplete="email"
+          error={fieldErrors.email}
         />
         <TextField
           label="Mot de passe"
           value={password}
           onChangeText={setPassword}
+          onBlur={handlePasswordBlur}
           placeholder="••••••••••"
           secureTextEntry
           autoCapitalize="none"
           autoComplete="password"
+          error={fieldErrors.password}
         />
 
         <Pressable

@@ -2,6 +2,16 @@
 
 Same versioning convention as the other projects: **x** = overhaul, **y** = feature, **z** = bugfix.
 
+## 2026-09-06 (thirty-third session) — 5.1.10 — BUG-047 CLOSED as far as any sandbox can verify: password toggle, branded email, verification link, and blur validation all fixed across every screen; real build (expo export + build-deploy) verified for the first time in several sessions
+
+- **BUG-047 #3 (verification link 404) independently re-confirmed** from a second, separate session: fresh-DB `migrate` → `seed` → `smoke_test.php` 24/24 → live server → `http_api_test.php` **51/51**, including the two checks that specifically catch this bug.
+- **BUG-047 #4 (validate-on-blur) now fully closed across all five auth screens** — `LoginScreen.tsx`, `ForgotPasswordScreen.tsx`, and `ProfileScreen.tsx`'s password-change fields got the same shared-validator-plus-`onBlur` pattern `RegisterScreen.tsx`/`ResetPasswordScreen.tsx` already had. `npx tsc --noEmit` clean.
+- **Build verification gap closed**: `npx expo export --platform web --clear` and `make build-deploy` (including the deploy-artifact hygiene check) both run clean — this had been flagged as unverified (typecheck only) for two sessions in a row.
+- No new bugs found this session. Full detail: `docs/BUGLOG.md` BUG-047's thirty-third-session update, `docs/DEV_STATUS.md`'s thirty-third-session entry.
+- **Not done**: FEAT-006 (in-app admin annotation tool) spec — started design research (permission/RBAC pattern reuse) but not written; a real CI-green run on this push not yet checked; the live click-through for #1/#2/#4 still needs Mahdi (no browser/mail-client tool in any sandbox so far).
+
+---
+
 ## 2026-09-06 (thirty-first session) — no version bump — BUG-047 partially fixed: branded HTML email done, verification-link 404 root-caused and fixed-then-refixed (not yet re-verified), password toggle and blur validation not started
 
 - Mahdi's live click-through of the registration flow (exactly what the thirtieth session's hand-off asked for) surfaced 4 issues in one pass; full detail in `docs/BUGLOG.md` BUG-047 and `docs/DEV_STATUS.md`'s thirty-first-session entry.

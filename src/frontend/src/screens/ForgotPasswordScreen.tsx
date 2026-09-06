@@ -17,18 +17,24 @@ interface Props {
  * anything else here would defeat the backend's own anti-enumeration
  * design.
  */
+// BUG-047 #4: shared between onBlur and submit, same pattern as
+// RegisterScreen/ResetPasswordScreen/LoginScreen.
+function validateEmailRequired(v: string): string | undefined {
+  return v.trim() === "" ? "Renseignez votre adresse e-mail." : undefined;
+}
+
 export default function ForgotPasswordScreen({ onForgotPassword, onNavigateLogin }: Props) {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
+  const handleEmailBlur = () => setFieldError(validateEmailRequired(email) ?? null);
+
   const submit = async () => {
-    setFieldError(null);
-    if (email.trim() === "") {
-      setFieldError("Renseignez votre adresse e-mail.");
-      return;
-    }
+    const error = validateEmailRequired(email) ?? null;
+    setFieldError(error);
+    if (error) return;
     setSubmitting(true);
     const result = await onForgotPassword(email.trim());
     setSubmitting(false);
@@ -56,6 +62,7 @@ export default function ForgotPasswordScreen({ onForgotPassword, onNavigateLogin
               label="Adresse e-mail"
               value={email}
               onChangeText={setEmail}
+              onBlur={handleEmailBlur}
               placeholder="prenom.nom@macerti.com"
               keyboardType="email-address"
               autoCapitalize="none"
