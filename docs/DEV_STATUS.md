@@ -1482,3 +1482,6 @@ Once both matched the test's expectations, the second from-scratch run was **50/
 5. This session's local sandbox setup does not persist — redo per `docs/DEPLOY.md`, plus: use a dedicated `appuser`@`127.0.0.1` (password auth) rather than `root` (socket-auth-only by default), and run MariaDB-start-through-test-suite as one single shell invocation, not split across multiple tool calls.
 
 **Dependency / hand-off**: item 1 has no blocker but time. Item 2 has no blocker — the spec is complete. Item 3 is a standing rule, not a task. Item 4 is isolated, no blockers.
+
+---
+**UPDATE (same day) — CI CONFIRMED GREEN.** Commit `6b1cc60`'s run (GitHub Actions `34053947320`) completed `success`, **all 20 steps**, including hygiene checks, migrations, `smoke_test.php`, `http_api_test.php`, frontend typecheck, `expo export`, deploy-artifact assembly + hygiene check, and publish to `macerti/duration_calculator`. This satisfies hand-off item 1 above. FEAT-006's backend is now confirmed deployed; only its frontend remains, per hand-off item 2.
