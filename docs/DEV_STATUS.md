@@ -1425,3 +1425,6 @@ Once both matched the test's expectations, the second from-scratch run was **50/
 5. This session's local sandbox setup does not persist — redo from `docs/DEPLOY.md` steps 3/5/6 plus the three `config.php` values named in "Done" item 1 above.
 
 **Dependency / hand-off**: item 1 has no blocker but time. Item 2 is isolated backend work with no blockers once item 1 exists. Item 3 has no blocker — just needs to be done. Item 4 is isolated, no blockers.
+
+---
+**UPDATE (same day) — CI CONFIRMED GREEN.** Commit `ad2bab3`'s run (GitHub Actions `34034235296`) completed `success`, **all 20 steps**, including hygiene checks, migrations, `smoke_test.php`, `http_api_test.php`, frontend typecheck, `expo export`, deploy-artifact assembly + hygiene check, and publish to `macerti/duration_calculator`. This satisfies hand-off item 3 above. **Remaining before BUG-047 can be called fully closed**: only the live click-through for #1/#2/#4, which needs Mahdi (or a sandbox with browser/mail-client access) — no code-side work left.
