@@ -72,6 +72,26 @@ function latestMailToken(string $mailLogPath): ?string
     return $m[1] ? end($m[1]) : null;
 }
 
+/**
+ * Finds the most recent absolute verify-email LINK Mailer.php actually
+ * built and wrote to the log — as opposed to a URL this test constructs
+ * itself from a bare token. Added 2026-09-06 (BUG-047 #3): the previous
+ * version of this suite always built its own "$base/auth/verify-
+ * email?token=..." string, so a real production bug in Mailer.php's link
+ * construction (a duplicated '/api' segment, from combining
+ * config['basePath'] with a literal '/api/...' suffix) went undetected
+ * through a 50/50-passing run. Requires config.php's 'app_url' to match
+ * the origin this test targets — see config.example.php's local-dev note.
+ */
+function latestMailLink(string $mailLogPath): ?string
+{
+    if (!is_file($mailLogPath)) return null;
+    $content = file_get_contents($mailLogPath);
+    if ($content === false) return null;
+    preg_match_all('#https?://\S*?/auth/verify-email\?token=[0-9a-f]{64}#', $content, $m);
+    return $m[0] ? end($m[0]) : null;
+}
+
 echo "Deployment-topology HTTP regression tests against $base\n";
 
 [$status, $health] = request('GET', "$base/health", null, null, false);
@@ -147,7 +167,14 @@ check($status === 403 && ($tooEarly['code'] ?? '') === 'email_not_verified', 'lo
 $verifyToken = latestMailToken($mailLogPath);
 check($verifyToken !== null, 'verification token found in dev mail log');
 
-[$status, , , , $verifyHeaders] = request('GET', "$base/auth/verify-email?token=" . urlencode((string)$verifyToken), null, null, false);
+// BUG-047 #3 regression guard: request the EXACT link Mailer.php built and
+// wrote to the log, not a URL this test assembles itself — see
+// latestMailLink()'s own comment for why the previous version of this
+// check could never have caught that bug.
+$verifyLink = latestMailLink($mailLogPath);
+check($verifyLink !== null && str_starts_with($verifyLink, $base), 'mail log contains the real verify-email link, matching this test\'s own base URL', 'link=' . ($verifyLink ?? 'null') . ' base=' . $base);
+
+[$status, , , , $verifyHeaders] = request('GET', $verifyLink ?? ("$base/auth/verify-email?token=" . urlencode((string)$verifyToken)), null, null, false);
 $loc = locationHeader($verifyHeaders);
 check($status === 302 && $loc !== null && str_contains($loc, 'verified=1'), 'GET /auth/verify-email redirects with verified=1', "status=$status location=$loc");
 

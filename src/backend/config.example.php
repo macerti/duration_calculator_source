@@ -61,6 +61,13 @@ return [
     //   https://tools.macerti.com/duration_calculator
     // The callback URLs registered in Azure Portal and Google Cloud Console
     // MUST match: <app_url>/api/auth/callback/microsoft  (and /google).
+    //
+    // ALSO used by Mailer.php to build the registration verification link
+    // and the password-reset link (BUG-047 #3). Leaving this unset falls
+    // back to an empty string, which produces a relative, unclickable link
+    // in the dev mail log — for local testing against `php -S
+    // 127.0.0.1:8080`, set this to that same origin, e.g.:
+    //   'app_url' => 'http://127.0.0.1:8080',
     'app_url' => 'https://tools.macerti.com/duration_calculator',
 
     // Microsoft Entra ID — from portal.azure.com → App registrations

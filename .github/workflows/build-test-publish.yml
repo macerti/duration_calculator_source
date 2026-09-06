@@ -72,6 +72,13 @@ jobs:
               'allowedOrigins' => ['*'],
               'debug' => true,
               'migration_secret' => 'ci-test-migrate-secret-do-not-use-in-prod',
+              // BUG-047 #3: without this, Mailer.php's verification link is
+              // built from an empty app_url and is a relative, unusable
+              // path. Matches the '127.0.0.1:8080' the PHP server below
+              // actually binds to, so tests/http_api_test.php can request
+              // the exact link Mailer.php produced instead of a hand-built
+              // guess (see http_api_test.php's latestMailLink()).
+              'app_url' => 'http://127.0.0.1:8080',
           ];
           PHP
           php -r '$c=require "config.php"; var_export(["host"=>$c["db"]["host"],"port"=>$c["db"]["port"],"name"=>$c["db"]["name"],"user"=>$c["db"]["user"]]); echo PHP_EOL; require "db/pdo.php"; echo AuditEngine\pingDb() ? "PDO MariaDB connection: OK\n" : "PDO MariaDB connection: FAILED\n"; if (!AuditEngine\pingDb()) exit(1);'

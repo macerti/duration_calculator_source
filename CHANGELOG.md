@@ -2,6 +2,17 @@
 
 Same versioning convention as the other projects: **x** = overhaul, **y** = feature, **z** = bugfix.
 
+## 2026-09-06 (thirty-first session) — no version bump — BUG-047 partially fixed: branded HTML email done, verification-link 404 root-caused and fixed-then-refixed (not yet re-verified), password toggle and blur validation not started
+
+- Mahdi's live click-through of the registration flow (exactly what the thirtieth session's hand-off asked for) surfaced 4 issues in one pass; full detail in `docs/BUGLOG.md` BUG-047 and `docs/DEV_STATUS.md`'s thirty-first-session entry.
+- `Mailer.php`: verification and password-reset emails now use a proper branded HTML layout (table-based, brand palette, no external logo) instead of a generic inline-styled fragment. Not visually verified against a real mail client.
+- `Mailer.php`: fixed the verification link's duplicated `/api` segment that caused every verification email's link to 404. First fix attempt (mirroring the OAuth redirect pattern) turned out to be wrong when actually tested locally; corrected version derives the request origin from `app_url` and combines it properly with `basePath`. **The corrected version has not yet been re-run through the local regression suite — do not treat this as confirmed working.**
+- `config.example.php` / CI config generator: added a local-dev `app_url` value, needed for the link fix above and previously silently defaulted to an unusable empty string even before this bug existed.
+- `tests/http_api_test.php`: closed a real test-coverage gap — the verify-email check used to build its own URL from a bare token instead of parsing the real link `Mailer.php` produced, which is why this exact bug survived a 50/50-passing suite. New `latestMailLink()` helper + rewired check.
+- Not started: password show/hide toggle, per-field blur validation (both frontend, `TextField.tsx`/`RegisterScreen.tsx`) — see BUG-047 for scope.
+
+---
+
 ## 2026-09-06 (thirtieth session) — no version bump — local-accounts/RBAC frontend is now source-complete and building clean; not yet live-verified
 
 - **No version bump**: the flow isn't confirmed reachable/working by an actual person yet — only compiled, bundled, and checked against a proven-correct backend. See `docs/DEV_STATUS.md`'s thirtieth-session entry for exactly what "source-complete, pending live verification" covers here.
