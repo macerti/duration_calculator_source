@@ -2,6 +2,18 @@
 
 Same versioning convention as the other projects: **x** = overhaul, **y** = feature, **z** = bugfix.
 
+## 2026-09-06 (thirty-fourth session) — no version bump — FEAT-006 (in-app admin annotation tool) SPECCED and its BACKEND built + fully tested; frontend not started
+
+- **No version bump**: backend-only, nothing user-reachable yet — same rule this project applied to every prior backend-only auth/RBAC session.
+- **FEAT-006 fully specced** in `docs/ROADMAP.md` item 10 — data model, API routes, export format, acceptance criteria, and every open question from the thirty-second session's original request resolved with concrete decisions (element-tagging strategy, native long-press capture's named limitation, single-action menu scope, Markdown/JSON export).
+- **Backend built**: migration `003_add_annotations.sql` (`annotations` table + `manage_annotations` permission, granted to `administrateur` only), `db/annotationRepo.php`, full CRUD + export routes under `/admin/annotations` in `api/index.php`, all permission/CSRF-gated identically to every existing admin route.
+- **20 new HTTP regression tests** added; fresh-DB run: `migrate` → `seed` → `smoke_test.php` **24/24** → `http_api_test.php` **65/65**. One pre-existing assertion (`permissions count == 6`) updated to `7` — expected once the new permission was seeded, not a regression.
+- Bugs re-confirmed: nothing new to fix; BUG-047 remains closed as far as any sandbox can verify, BUG-029/BUG-035 remain blocked on live device/browser access, unchanged.
+- **Repo-naming correction from Mahdi**: source repo is `macerti/duration_calculator_source`; deploy repo is `macerti/duration_calculator` (CI-populated, never touched directly) — `macerti/duration_calculator_backend` is a confirmed stale, unused mirror.
+- **Not done**: FEAT-006's frontend (capture layer, context menu, comment form, admin annotations screen) — deliberately deferred to the next session, same backend-first sequencing this project used for the entire auth feature. ROADMAP items 1/2/6/7 (tech debt included) not touched this session — see `docs/DEV_STATUS.md`'s thirty-fourth-session entry for the full hand-off.
+
+---
+
 ## 2026-09-06 (thirty-third session) — 5.1.10 — BUG-047 CLOSED as far as any sandbox can verify: password toggle, branded email, verification link, and blur validation all fixed across every screen; real build (expo export + build-deploy) verified for the first time in several sessions
 
 - **BUG-047 #3 (verification link 404) independently re-confirmed** from a second, separate session: fresh-DB `migrate` → `seed` → `smoke_test.php` 24/24 → live server → `http_api_test.php` **51/51**, including the two checks that specifically catch this bug.

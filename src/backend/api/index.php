@@ -18,6 +18,7 @@ require_once __DIR__ . '/../db/clientRepo.php';
 require_once __DIR__ . '/../db/userRepo.php';
 require_once __DIR__ . '/../db/roleRepo.php';
 require_once __DIR__ . '/../db/permissionRepo.php';
+require_once __DIR__ . '/../db/annotationRepo.php';
 require_once __DIR__ . '/../db/rateLimiter.php';
 require_once __DIR__ . '/../db/Migrations.php';
 require_once __DIR__ . '/../auth/OAuthSession.php';
@@ -90,6 +91,10 @@ use function AuditEngine\listPermissions;
 use function AuditEngine\createPermission;
 use function AuditEngine\updatePermission;
 use function AuditEngine\deletePermission;
+use function AuditEngine\listAnnotations;
+use function AuditEngine\createAnnotation;
+use function AuditEngine\updateAnnotationStatus;
+use function AuditEngine\deleteAnnotation;
 use function AuditEngine\rateLimitCheck;
 use AuditEngine\Migrations;
 
@@ -785,6 +790,107 @@ try {
         }
         $updated = array_values(array_filter(listUsers(), fn($u) => $u['id'] === $id))[0] ?? null;
         respond($updated ?? ['error' => 'Utilisateur introuvable.'], $updated ? 200 : 404);
+    }
+
+    // =========================================================
+    // FEAT-006 — admin annotation/comment tool (docs/ROADMAP.md item 10)
+    // =========================================================
+
+    // GET /admin/annotations/export?format=markdown|json&status=... — must
+    // be checked BEFORE the generic 3-segment /admin/annotations/:id routes
+    // below, since 'export' would otherwise be parsed as an :id segment.
+    if ($method === 'GET' && count($segments) === 3 && $segments[0] === 'admin' && $segments[1] === 'annotations' && $segments[2] === 'export') {
+        requireDb($dbAvailable);
+        requirePermission('manage_annotations');
+        $statusFilter = isset($_GET['status']) ? (string)$_GET['status'] : null;
+        if ($statusFilter !== null && !in_array($statusFilter, ['open', 'actioned', 'dismissed'], true)) {
+            respond(['error' => 'Invalid status filter.'], 400);
+        }
+        $rows = listAnnotations($statusFilter);
+        $format = (string)($_GET['format'] ?? 'markdown');
+        if ($format === 'json') {
+            respond(['exportedAt' => gmdate('c'), 'count' => count($rows), 'annotations' => $rows]);
+        }
+        $lines = [
+            '# Annotations export',
+            '',
+            'Exported ' . gmdate('Y-m-d H:i') . ' UTC — ' . count($rows) . ' annotation(s).',
+            '',
+        ];
+        foreach ($rows as $a) {
+            $title = '#' . $a['id'] . ' — ' . $a['screen'];
+            if ($a['elementRef']) $title .= ' (' . $a['elementRef'] . ')';
+            $lines[] = '## ' . $title;
+            $lines[] = '- **Status**: ' . $a['status'];
+            $lines[] = '- **Position**: x=' . $a['x'] . ', y=' . $a['y'];
+            $lines[] = '- **App version**: ' . $a['appVersion'];
+            $lines[] = '- **By**: ' . $a['createdByName'] . ' on ' . $a['createdAt'];
+            $lines[] = '';
+            $lines[] = $a['comment'];
+            $lines[] = '';
+            $lines[] = '---';
+            $lines[] = '';
+        }
+        header('Content-Type: text/markdown; charset=utf-8');
+        echo implode("\n", $lines);
+        exit;
+    }
+
+    // GET /admin/annotations — list, optional ?status=open|actioned|dismissed
+    if ($method === 'GET' && $segments === ['admin', 'annotations']) {
+        requireDb($dbAvailable);
+        requirePermission('manage_annotations');
+        $statusFilter = isset($_GET['status']) ? (string)$_GET['status'] : null;
+        if ($statusFilter !== null && !in_array($statusFilter, ['open', 'actioned', 'dismissed'], true)) {
+            respond(['error' => 'Invalid status filter.'], 400);
+        }
+        respond(listAnnotations($statusFilter));
+    }
+
+    // POST /admin/annotations — pin a new comment
+    if ($method === 'POST' && $segments === ['admin', 'annotations']) {
+        requireDb($dbAvailable);
+        $authUser = requirePermission('manage_annotations');
+        requireCsrf();
+        $body = jsonBody();
+        $screen = requireNonEmptyString((string)($body['screen'] ?? ''), 'screen', 150);
+        $elementRef = isset($body['elementRef']) && $body['elementRef'] !== '' ? (string)$body['elementRef'] : null;
+        if (!isset($body['x']) || !isset($body['y']) || !is_numeric($body['x']) || !is_numeric($body['y'])) {
+            respond(['error' => "'x' and 'y' are required numeric fields"], 400);
+        }
+        $comment = requireNonEmptyString((string)($body['comment'] ?? ''), 'comment', 5000);
+        $appVersion = requireNonEmptyString((string)($body['appVersion'] ?? ''), 'appVersion', 30);
+        try {
+            $annotation = createAnnotation($screen, $elementRef, (float)$body['x'], (float)$body['y'], $comment, $appVersion, (int)$authUser['id']);
+        } catch (\RuntimeException $e) {
+            respond(['error' => $e->getMessage()], 400);
+        }
+        respond($annotation, 201);
+    }
+
+    // PUT /admin/annotations/:id — update status only (open/actioned/dismissed)
+    if ($method === 'PUT' && count($segments) === 3 && $segments[0] === 'admin' && $segments[1] === 'annotations') {
+        requireDb($dbAvailable);
+        requirePermission('manage_annotations');
+        requireCsrf();
+        $id = (int)$segments[2];
+        $body = jsonBody();
+        try {
+            $updated = updateAnnotationStatus($id, (string)($body['status'] ?? ''));
+        } catch (\RuntimeException $e) {
+            respond(['error' => $e->getMessage()], 400);
+        }
+        respond($updated);
+    }
+
+    // DELETE /admin/annotations/:id
+    if ($method === 'DELETE' && count($segments) === 3 && $segments[0] === 'admin' && $segments[1] === 'annotations') {
+        requireDb($dbAvailable);
+        requirePermission('manage_annotations');
+        requireCsrf();
+        $id = (int)$segments[2];
+        deleteAnnotation($id);
+        respond(['deleted' => $id]);
     }
 
     // POST /auth/logout — destroy session

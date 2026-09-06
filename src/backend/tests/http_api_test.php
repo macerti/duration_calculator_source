@@ -209,13 +209,62 @@ check($status === 403, 'DELETE /admin/roles/:id without CSRF token is rejected',
 check($status === 200, 'DELETE /admin/roles/:id succeeds with CSRF token', "status=$status");
 
 [$status, $perms] = request('GET', "$base/admin/permissions");
-check($status === 200 && count($perms ?? []) === 6, 'GET /admin/permissions lists the 6 seeded permissions', "status=$status count=" . count($perms ?? []));
+check($status === 200 && count($perms ?? []) === 7, 'GET /admin/permissions lists the 7 seeded permissions', "status=$status count=" . count($perms ?? []));
 
 [$status, $users] = request('GET', "$base/admin/users");
 check($status === 200 && count($users ?? []) === 1, 'GET /admin/users lists the single CI user', "status=$status count=" . count($users ?? []));
 
 [$status] = request('DELETE', "$base/admin/roles/1", null, $csrf); // administrateur is is_system-protected
 check($status === 400, 'DELETE /admin/roles/:id refuses to delete the protected system role', "status=$status");
+
+// --- FEAT-006: admin annotation/comment tool (docs/ROADMAP.md item 10) ---
+[$status] = request('GET', "$base/admin/annotations", null, null, false);
+check($status === 401, 'GET /admin/annotations with no session is rejected', "status=$status");
+
+[$status, $emptyList] = request('GET', "$base/admin/annotations");
+check($status === 200 && $emptyList === [], 'GET /admin/annotations starts empty', "status=$status " . json_encode($emptyList));
+
+[$status, $badAnnotation] = request('POST', "$base/admin/annotations", ['screen' => 'HomeScreen', 'x' => 10, 'y' => 20, 'comment' => '   ', 'appVersion' => '5.1.10'], $csrf);
+check($status === 400, 'POST /admin/annotations rejects a blank comment', "status=$status " . json_encode($badAnnotation));
+
+[$status, $noCsrfAnnotation] = request('POST', "$base/admin/annotations", ['screen' => 'HomeScreen', 'x' => 10, 'y' => 20, 'comment' => 'ci test comment', 'appVersion' => '5.1.10']);
+check($status === 403, 'POST /admin/annotations without CSRF token is rejected', "status=$status");
+
+[$status, $annotation] = request('POST', "$base/admin/annotations", [
+    'screen' => 'HomeScreen',
+    'elementRef' => 'header-title',
+    'x' => 123.5,
+    'y' => 45,
+    'comment' => 'ci test comment on the header',
+    'appVersion' => '5.1.10',
+], $csrf);
+check($status === 201, 'POST /admin/annotations creates an annotation', "status=$status " . json_encode($annotation));
+check(($annotation['status'] ?? '') === 'open' && ($annotation['elementRef'] ?? '') === 'header-title' && (float)($annotation['x'] ?? 0) === 123.5, 'created annotation has expected fields', json_encode($annotation));
+$annotationId = (int)($annotation['id'] ?? 0);
+
+[$status, $listed] = request('GET', "$base/admin/annotations");
+check($status === 200 && count($listed ?? []) === 1, 'GET /admin/annotations now lists the 1 created annotation', "status=$status count=" . count($listed ?? []));
+
+[$status, $filtered] = request('GET', "$base/admin/annotations?status=dismissed");
+check($status === 200 && $filtered === [], 'GET /admin/annotations?status=dismissed filters correctly (none yet)', "status=$status " . json_encode($filtered));
+
+[$status, $badStatus] = request('PUT', "$base/admin/annotations/$annotationId", ['status' => 'not-a-real-status'], $csrf);
+check($status === 400, 'PUT /admin/annotations/:id rejects an invalid status value', "status=$status");
+
+[$status, $actioned] = request('PUT', "$base/admin/annotations/$annotationId", ['status' => 'actioned'], $csrf);
+check($status === 200 && ($actioned['status'] ?? '') === 'actioned', 'PUT /admin/annotations/:id updates status to actioned', "status=$status " . json_encode($actioned));
+
+[$status, , $mdExport] = request('GET', "$base/admin/annotations/export");
+check($status === 200 && str_contains($mdExport, 'ci test comment on the header') && str_contains($mdExport, 'header-title'), 'GET /admin/annotations/export (markdown) includes the comment text and element ref', "status=$status");
+
+[$status, $jsonExport] = request('GET', "$base/admin/annotations/export?format=json");
+check($status === 200 && ($jsonExport['count'] ?? 0) === 1 && is_array($jsonExport['annotations'] ?? null), 'GET /admin/annotations/export?format=json returns structured data', "status=$status " . json_encode($jsonExport));
+
+[$status] = request('DELETE', "$base/admin/annotations/$annotationId", null, $csrf);
+check($status === 200, 'DELETE /admin/annotations/:id succeeds', "status=$status");
+
+[$status, $afterDelete] = request('GET', "$base/admin/annotations");
+check($status === 200 && $afterDelete === [], 'GET /admin/annotations is empty again after delete', "status=$status " . json_encode($afterDelete));
 
 // --- Forgot / reset password ---
 [$status] = request('POST', "$base/auth/forgot-password", ['email' => $testEmail], null, false);
