@@ -25,31 +25,64 @@ const MAX_PASSWORD_LENGTH = 72;
  * screen shows the server's own message and a link back to login rather
  * than attempting to render an authenticated state.
  */
+type FieldErrors = { name?: string; email?: string; password?: string; confirm?: string };
+
+// Single source of truth for each field's rule, shared between onBlur
+// (BUG-047 #4: validate as each field is finished) and submit (the final
+// full-form check) so the two can never drift apart.
+function validateName(v: string): string | undefined {
+  return v.trim() === "" ? "Le nom est obligatoire." : undefined;
+}
+function validateEmail(v: string): string | undefined {
+  return v.trim() === "" ? "L'adresse e-mail est obligatoire." : undefined;
+}
+function validatePassword(v: string): string | undefined {
+  if (v.length < MIN_PASSWORD_LENGTH) return `Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères.`;
+  if (v.length > MAX_PASSWORD_LENGTH) return `Le mot de passe ne doit pas dépasser ${MAX_PASSWORD_LENGTH} caractères.`;
+  return undefined;
+}
+function validateConfirm(confirm: string, password: string): string | undefined {
+  return confirm !== password ? "Les mots de passe ne correspondent pas." : undefined;
+}
+
 export default function RegisterScreen({ onRegister, onNavigateLogin }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; password?: string; confirm?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [confirmTouched, setConfirmTouched] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const handleNameBlur = () => setFieldErrors((prev) => ({ ...prev, name: validateName(name) }));
+  const handleEmailBlur = () => setFieldErrors((prev) => ({ ...prev, email: validateEmail(email) }));
+  const handlePasswordBlur = () =>
+    setFieldErrors((prev) => ({
+      ...prev,
+      password: validatePassword(password),
+      // Keep the confirm field's error in sync if the user already reached
+      // it once — otherwise fixing the password wouldn't clear a stale
+      // "don't match" message until confirm is blurred again too.
+      confirm: confirmTouched ? validateConfirm(confirmPassword, password) : prev.confirm,
+    }));
+  const handleConfirmBlur = () => {
+    setConfirmTouched(true);
+    setFieldErrors((prev) => ({ ...prev, confirm: validateConfirm(confirmPassword, password) }));
+  };
+
   const submit = async () => {
     setServerError(null);
-    const errors: typeof fieldErrors = {};
-    if (name.trim() === "") errors.name = "Le nom est obligatoire.";
-    if (email.trim() === "") {
-      errors.email = "L'adresse e-mail est obligatoire.";
-    }
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      errors.password = `Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères.`;
-    } else if (password.length > MAX_PASSWORD_LENGTH) {
-      errors.password = `Le mot de passe ne doit pas dépasser ${MAX_PASSWORD_LENGTH} caractères.`;
-    }
-    if (confirmPassword !== password) errors.confirm = "Les mots de passe ne correspondent pas.";
+    const errors: FieldErrors = {
+      name: validateName(name),
+      email: validateEmail(email),
+      password: validatePassword(password),
+      confirm: validateConfirm(confirmPassword, password),
+    };
     setFieldErrors(errors);
-    if (Object.keys(errors).length > 0) return;
+    setConfirmTouched(true);
+    if (Object.values(errors).some(Boolean)) return;
 
     setSubmitting(true);
     const result = await onRegister(name.trim(), email.trim(), password);
@@ -91,6 +124,7 @@ export default function RegisterScreen({ onRegister, onNavigateLogin }: Props) {
               label="Nom complet"
               value={name}
               onChangeText={setName}
+              onBlur={handleNameBlur}
               placeholder="Prénom Nom"
               autoComplete="name"
               error={fieldErrors.name}
@@ -99,6 +133,7 @@ export default function RegisterScreen({ onRegister, onNavigateLogin }: Props) {
               label="Adresse e-mail"
               value={email}
               onChangeText={setEmail}
+              onBlur={handleEmailBlur}
               placeholder="prenom.nom@macerti.com"
               keyboardType="email-address"
               autoCapitalize="none"
@@ -109,6 +144,7 @@ export default function RegisterScreen({ onRegister, onNavigateLogin }: Props) {
               label="Mot de passe"
               value={password}
               onChangeText={setPassword}
+              onBlur={handlePasswordBlur}
               placeholder="10 caractères minimum"
               secureTextEntry
               autoCapitalize="none"
@@ -119,6 +155,7 @@ export default function RegisterScreen({ onRegister, onNavigateLogin }: Props) {
               label="Confirmer le mot de passe"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
+              onBlur={handleConfirmBlur}
               placeholder="••••••••••"
               secureTextEntry
               autoCapitalize="none"

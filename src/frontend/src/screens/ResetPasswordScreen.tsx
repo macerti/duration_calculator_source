@@ -29,11 +29,23 @@ const MAX_PASSWORD_LENGTH = 72;
  * isAuthenticated flips to true, and the app re-renders into the
  * authenticated stack on its own. No explicit navigation call needed.
  */
+type FieldErrors = { password?: string; confirm?: string };
+
+function validatePassword(v: string): string | undefined {
+  if (v.length < MIN_PASSWORD_LENGTH) return `Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères.`;
+  if (v.length > MAX_PASSWORD_LENGTH) return `Le mot de passe ne doit pas dépasser ${MAX_PASSWORD_LENGTH} caractères.`;
+  return undefined;
+}
+function validateConfirm(confirm: string, password: string): string | undefined {
+  return confirm !== password ? "Les mots de passe ne correspondent pas." : undefined;
+}
+
 export default function ResetPasswordScreen({ token, onResetPassword, onNavigateLogin }: Props) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<{ password?: string; confirm?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [confirmTouched, setConfirmTouched] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   if (!token) {
@@ -53,17 +65,26 @@ export default function ResetPasswordScreen({ token, onResetPassword, onNavigate
     );
   }
 
+  const handlePasswordBlur = () =>
+    setFieldErrors((prev) => ({
+      ...prev,
+      password: validatePassword(newPassword),
+      confirm: confirmTouched ? validateConfirm(confirmPassword, newPassword) : prev.confirm,
+    }));
+  const handleConfirmBlur = () => {
+    setConfirmTouched(true);
+    setFieldErrors((prev) => ({ ...prev, confirm: validateConfirm(confirmPassword, newPassword) }));
+  };
+
   const submit = async () => {
     setServerError(null);
-    const errors: typeof fieldErrors = {};
-    if (newPassword.length < MIN_PASSWORD_LENGTH) {
-      errors.password = `Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères.`;
-    } else if (newPassword.length > MAX_PASSWORD_LENGTH) {
-      errors.password = `Le mot de passe ne doit pas dépasser ${MAX_PASSWORD_LENGTH} caractères.`;
-    }
-    if (confirmPassword !== newPassword) errors.confirm = "Les mots de passe ne correspondent pas.";
+    const errors: FieldErrors = {
+      password: validatePassword(newPassword),
+      confirm: validateConfirm(confirmPassword, newPassword),
+    };
     setFieldErrors(errors);
-    if (Object.keys(errors).length > 0) return;
+    setConfirmTouched(true);
+    if (Object.values(errors).some(Boolean)) return;
 
     setSubmitting(true);
     const result = await onResetPassword(token, newPassword);
@@ -89,6 +110,7 @@ export default function ResetPasswordScreen({ token, onResetPassword, onNavigate
           label="Nouveau mot de passe"
           value={newPassword}
           onChangeText={setNewPassword}
+          onBlur={handlePasswordBlur}
           placeholder="10 caractères minimum"
           secureTextEntry
           autoCapitalize="none"
@@ -99,6 +121,7 @@ export default function ResetPasswordScreen({ token, onResetPassword, onNavigate
           label="Confirmer le nouveau mot de passe"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
+          onBlur={handleConfirmBlur}
           placeholder="••••••••••"
           secureTextEntry
           autoCapitalize="none"

@@ -1,5 +1,6 @@
-import React from "react";
-import { View, Text, TextInput, StyleSheet, TextInputProps } from "react-native";
+import React, { useState } from "react";
+import { View, Text, TextInput, Pressable, StyleSheet, TextInputProps } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { colors, radius, spacing, typography } from "../theme/tokens";
 
 interface Props {
@@ -7,7 +8,10 @@ interface Props {
   value: string;
   onChangeText: (v: string) => void;
   placeholder?: string;
-  /** Masks input — for passwords. Defaults to false (unchanged prior behavior). */
+  /** Masks input — for passwords. Defaults to false (unchanged prior behavior).
+   * BUG-047 #1: whenever this is true, a show/hide eye toggle is rendered —
+   * every password field in the app gets it from this one change, no
+   * per-screen wiring needed. */
   secureTextEntry?: boolean;
   /** Defaults to "sentences", matching every pre-existing caller. Auth
    * screens pass "none" for email fields so "Info@Macerti.com" isn't
@@ -23,6 +27,10 @@ interface Props {
    * red, same visual language as LoginScreen's banner. Optional — omitting
    * it renders exactly as before. */
   error?: string | null;
+  /** BUG-047 #4: fired when the field loses focus, so a caller can run
+   * per-field validation as each field is finished instead of only at
+   * submit time. Optional — omitting it renders exactly as before. */
+  onBlur?: () => void;
 }
 
 /**
@@ -51,7 +59,11 @@ export default function TextField({
   keyboardType,
   autoComplete,
   error,
+  onBlur,
 }: Props) {
+  const [revealed, setRevealed] = useState(false);
+  const isPasswordField = !!secureTextEntry;
+
   return (
     <View style={styles.row}>
       <Text style={styles.label}>{label}</Text>
@@ -60,13 +72,29 @@ export default function TextField({
           style={styles.input}
           value={value}
           onChangeText={onChangeText}
+          onBlur={onBlur}
           keyboardType={keyboardType ?? "default"}
           autoCapitalize={autoCapitalize ?? "sentences"}
-          secureTextEntry={secureTextEntry ?? false}
+          secureTextEntry={isPasswordField && !revealed}
           autoComplete={autoComplete}
           placeholder={placeholder}
           placeholderTextColor={colors.contentQuaternary}
         />
+        {isPasswordField ? (
+          <Pressable
+            onPress={() => setRevealed((r) => !r)}
+            accessibilityRole="button"
+            accessibilityLabel={revealed ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+            hitSlop={8}
+            style={styles.revealBtn}
+          >
+            <Ionicons
+              name={revealed ? "eye-off-outline" : "eye-outline"}
+              size={20}
+              color={colors.contentQuaternary}
+            />
+          </Pressable>
+        ) : null}
       </View>
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
@@ -79,5 +107,6 @@ const styles = StyleSheet.create({
   inputWrap: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: colors.borderDefault, borderRadius: radius.md, paddingHorizontal: spacing.sm + 2 },
   inputWrapError: { borderColor: colors.error },
   input: { flex: 1, paddingVertical: spacing.sm + 2, fontSize: typography.subtitle },
+  revealBtn: { paddingLeft: spacing.xs, paddingVertical: spacing.xs },
   errorText: { color: colors.error, fontSize: typography.small, marginTop: spacing.xs },
 });
