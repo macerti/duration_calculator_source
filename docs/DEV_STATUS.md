@@ -1654,3 +1654,7 @@ Once both matched the test's expectations, the second from-scratch run was **50/
 7. This session's local sandbox setup does not persist — redo per `docs/DEPLOY.md`.
 
 **Dependency / hand-off**: item 1 blocks trusting anything else in this push — do it first. Items 2 and 3 are independent of item 1's outcome and of each other (both additive, low-interaction-risk). Item 4 wraps up once 1–3 are done. Items 5–6 need Mahdi specifically and can happen in parallel with 1–4.
+
+### Update, same day — hand-off item 1 (full verification) done, no code changed this pass
+
+Ran the full suite against the actual pushed commit `4408bfa`, as instructed, and nothing else — no further fixes, no further scope. Full detail and the stale-DB gotcha discovered along the way: `docs/BUGLOG.md` BUG-050's own update. Summary: backend regression **24/24 / 65/65** on a properly fresh DB (first attempt against a reused DB gave a false 21-failure result — logged as a test-fixture gotcha, not a real bug), `npx expo export` succeeds (558 modules, matching the last known-good count), `make build-deploy` all 4 hygiene checks pass, `scripts/check-repo-hygiene.sh` all 4 checks pass (secret-scan included), and CI independently confirms `4408bfa` green. Hand-off items 2 (`CalculationReportScreen.tsx`), 3 (AdminRoles), 5 (annotation #5 clarification), and 6 (live click-through) are still open.
