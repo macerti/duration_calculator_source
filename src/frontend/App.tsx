@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Platform, View, StyleSheet, ActivityIndicator, Pressable, Text } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, useNavigationContainerRef } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { ToastProvider } from "./src/components/Toast";
 import ErrorBoundary from "./src/components/ErrorBoundary";
@@ -95,6 +95,30 @@ function AuthGate() {
 
   const [preAuthView, setPreAuthView] = useState<PreAuthView>(resetToken ? "reset" : "login");
 
+  // FEAT-006 (BUG-048 fix): the annotation layer needs to know which screen
+  // is currently active, but it wraps <Stack.Navigator> from the OUTSIDE
+  // (see the render below) so it can capture gestures app-wide, including
+  // on the chrome around the navigator itself. That means it is a PARENT
+  // of the navigator in the tree, not a descendant of it — and
+  // `useNavigationState`/`useRoute` only ever resolve the *nearest*
+  // navigator context from a component's own position downward. A parent
+  // can never read a context its own child provides, no matter how deeply
+  // nested inside <NavigationContainer> it is. Calling that hook directly
+  // inside AnnotationCapture (the original FEAT-006 frontend pass) threw
+  // "Couldn't get the navigation state. Is your component inside a
+  // navigator?" on every single render, for every authenticated user,
+  // regardless of admin status — a total, unrecoverable outage once the
+  // ErrorBoundary caught it, since remounting hit the exact same crash
+  // immediately again. Fixed by tracking the current route name up here
+  // instead, via the container's own ref (a documented, supported pattern
+  // for exactly this "something outside the navigator needs to know the
+  // active route" case), and passing it down as a plain prop.
+  const navigationRef = useNavigationContainerRef<RootStackParamList>();
+  const [currentScreenName, setCurrentScreenName] = useState<string>("unknown");
+  const updateCurrentScreenName = () => {
+    setCurrentScreenName(navigationRef.getCurrentRoute()?.name ?? "unknown");
+  };
+
   // A reset token can arrive slightly after the initial render (URL
   // parsing happens inside useAuth's mount effect) — switch views the
   // moment it does, same as the initial-state check above but for the
@@ -148,13 +172,19 @@ function AuthGate() {
   return (
     <AuthProvider value={auth}>
       <View style={styles.navArea}>
-        <NavigationContainer>
+        <NavigationContainer
+          ref={navigationRef}
+          onReady={updateCurrentScreenName}
+          onStateChange={updateCurrentScreenName}
+        >
           <StatusBar style="auto" />
           {/* FEAT-006: admin-only right-click/long-press annotation capture,
               wrapping the navigator so it's active app-wide for any screen.
               Renders `children` completely unmodified for non-admins — see
-              AnnotationCapture's own header comment. */}
-          <AnnotationCapture>
+              AnnotationCapture's own header comment. `screenName` is read
+              from `navigationRef` above (see the comment on it) rather than
+              from a hook inside AnnotationCapture itself — see BUG-048. */}
+          <AnnotationCapture screenName={currentScreenName}>
             <Stack.Navigator initialRouteName="Home">
               <Stack.Screen
                 name="Home"

@@ -11,7 +11,6 @@ import {
   ActivityIndicator,
   GestureResponderEvent,
 } from "react-native";
-import { useNavigationState } from "@react-navigation/native";
 import { useAuthContext } from "../context/AuthContext";
 import { useAdminApi, AdminApiError } from "../hooks/useAdminApi";
 import { useToast } from "./Toast";
@@ -38,20 +37,28 @@ interface CapturedPoint {
  * exactly per the spec's acceptance criteria (browser's default context
  * menu untouched on web, no special handling at all on native).
  *
- * Must be rendered inside both <NavigationContainer> (for
- * useNavigationState, to know which screen a comment was made on) and
- * <AuthProvider> (for useAuthContext) — see App.tsx.
+ * Must be rendered inside <AuthProvider> (for useAuthContext). Deliberately
+ * NOT rendered inside <Stack.Navigator> itself — it wraps the navigator
+ * from the outside so it can capture gestures app-wide — which means it
+ * cannot use `useNavigationState`/`useRoute` to know the active screen: a
+ * component can only read navigation context from navigators it is
+ * NESTED INSIDE, never from one it wraps as a parent (see BUG-048, fixed
+ * 2026-09-07 after this caused a total render crash on every authenticated
+ * screen — "Couldn't get the navigation state. Is your component inside a
+ * navigator?"). `screenName` is passed in as a prop instead, tracked by
+ * App.tsx via the NavigationContainer's own ref — see that file's comment.
  */
-export default function AnnotationCapture({ children }: { children: React.ReactNode }) {
+export default function AnnotationCapture({
+  children,
+  screenName,
+}: {
+  children: React.ReactNode;
+  screenName: string;
+}) {
   const { csrfToken, hasPermission } = useAuthContext();
   const enabled = hasPermission("manage_annotations");
   const api = useAdminApi(csrfToken);
   const toast = useToast();
-  const screenName = useNavigationState((state) => {
-    if (!state) return "unknown";
-    const route = state.routes[state.index];
-    return route?.name ?? "unknown";
-  });
 
   const [captured, setCaptured] = useState<CapturedPoint | null>(null);
   const [mode, setMode] = useState<"menu" | "form">("menu");

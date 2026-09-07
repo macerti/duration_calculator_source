@@ -2,6 +2,16 @@
 
 Same versioning convention as the other projects: **x** = overhaul, **y** = feature, **z** = bugfix.
 
+## 2026-09-07 (thirty-sixth session) — 5.1.11 — BUG-048 CLOSED (as far as any sandbox can verify): P0 hotfix for a confirmed live production outage caused by FEAT-006's frontend
+
+- **Confirmed live production outage, not a sandbox-only finding**: the thirty-fifth session's FEAT-006 frontend commit (`1eec309`, logged as "code written, UNVERIFIED") passed CI and deployed all the way to `tools.macerti.com` (source run `34082222104`, deploy run `34082291799`, both green, ~04:13 UTC today). It crashed the **entire authenticated app for every user**, not just admins — `AnnotationCapture` called `useNavigationState()` while wrapping `<Stack.Navigator>` from the *outside* (a parent can never read a context its own child provides), throwing "Couldn't get the navigation state. Is your component inside a navigator?" on every render. Reported by Mahdi as the app's `ErrorBoundary` screen with a "Retour à l'accueil" button that did nothing (it didn't — it remounted straight back into the same instant crash).
+- **Fix**: moved current-screen-name tracking to `App.tsx`'s `AuthGate` via `useNavigationContainerRef`, passed into `AnnotationCapture` as a plain `screenName` prop instead of a hook call from the wrong position in the tree. `AnnotationCapture`'s own gesture-capture design (wrapping the navigator to catch right-click/long-press app-wide) was correct and unchanged — only the screen-name lookup mechanism was wrong.
+- **Verified fresh this session**: backend baseline unaffected (`migrate` ×2 idempotent → `seed` → `smoke_test.php` **24/24** → `http_api_test.php` **65/65**); frontend `npx tsc --noEmit` clean, `npx expo export --platform web --clear` succeeds (549 modules), `make build-deploy` passes all 4 deployment-artifact hygiene checks.
+- **Not done**: live click-through confirming the crash is actually gone in a real browser/device — needs Mahdi, same standing sandbox limitation as every other frontend fix in this project. Full detail: `docs/BUGLOG.md` BUG-048.
+- Full detail, including the process gap this exposed (typecheck + bundle build don't render the tree, so this class of runtime-only crash isn't caught by CI today) and two flagged-not-fixed follow-ups: see `docs/BUGLOG.md` BUG-048 and `docs/DEV_STATUS.md`'s thirty-sixth-session entry.
+
+---
+
 ## 2026-09-06 (thirty-fourth session) — no version bump — FEAT-006 (in-app admin annotation tool) SPECCED and its BACKEND built + fully tested; frontend not started
 
 - **No version bump**: backend-only, nothing user-reachable yet — same rule this project applied to every prior backend-only auth/RBAC session.
