@@ -15,6 +15,8 @@ import ResetPasswordScreen from "./src/screens/ResetPasswordScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import AdminUsersScreen from "./src/screens/AdminUsersScreen";
 import AdminRolesScreen from "./src/screens/AdminRolesScreen";
+import AdminAnnotationsScreen from "./src/screens/AdminAnnotationsScreen";
+import AnnotationCapture from "./src/components/AnnotationCapture";
 import { colors, typography } from "./src/theme/tokens";
 
 import HomeScreen from "./src/screens/HomeScreen";
@@ -39,6 +41,7 @@ export type RootStackParamList = {
   Profile: undefined;
   AdminUsers: undefined;
   AdminRoles: undefined;
+  AdminAnnotations: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -147,40 +150,47 @@ function AuthGate() {
       <View style={styles.navArea}>
         <NavigationContainer>
           <StatusBar style="auto" />
-          <Stack.Navigator initialRouteName="Home">
-            <Stack.Screen
-              name="Home"
-              component={HomeScreen}
-              options={({ navigation }) => ({
-                title: "Audit Duration Calculator",
-                headerRight: () => (
-                  <Pressable
-                    onPress={() => navigation.navigate("Profile")}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel="Mon profil"
-                  >
-                    <Text style={styles.headerProfileLink}>Profil</Text>
-                  </Pressable>
-                ),
-              })}
-            />
-            <Stack.Screen name="ClientsList" component={ClientsListScreen} options={{ title: "Mes clients" }} />
-            <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client" }} />
-            <Stack.Screen
-              name="CalculationWizard"
-              component={CalculationWizardScreen}
-              options={{ title: "Calcul", headerShown: false }}
-            />
-            <Stack.Screen
-              name="CalculationReport"
-              component={CalculationReportScreen}
-              options={{ title: "Rapport de calcul", headerShown: false }}
-            />
-            <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: "Mon profil" }} />
-            <Stack.Screen name="AdminUsers" component={AdminUsersScreen} options={{ title: "Utilisateurs" }} />
-            <Stack.Screen name="AdminRoles" component={AdminRolesScreen} options={{ title: "Rôles et permissions" }} />
-          </Stack.Navigator>
+          {/* FEAT-006: admin-only right-click/long-press annotation capture,
+              wrapping the navigator so it's active app-wide for any screen.
+              Renders `children` completely unmodified for non-admins — see
+              AnnotationCapture's own header comment. */}
+          <AnnotationCapture>
+            <Stack.Navigator initialRouteName="Home">
+              <Stack.Screen
+                name="Home"
+                component={HomeScreen}
+                options={({ navigation }) => ({
+                  title: "Audit Duration Calculator",
+                  headerRight: () => (
+                    <Pressable
+                      onPress={() => navigation.navigate("Profile")}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel="Mon profil"
+                    >
+                      <Text style={styles.headerProfileLink}>Profil</Text>
+                    </Pressable>
+                  ),
+                })}
+              />
+              <Stack.Screen name="ClientsList" component={ClientsListScreen} options={{ title: "Mes clients" }} />
+              <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client" }} />
+              <Stack.Screen
+                name="CalculationWizard"
+                component={CalculationWizardScreen}
+                options={{ title: "Calcul", headerShown: false }}
+              />
+              <Stack.Screen
+                name="CalculationReport"
+                component={CalculationReportScreen}
+                options={{ title: "Rapport de calcul", headerShown: false }}
+              />
+              <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: "Mon profil" }} />
+              <Stack.Screen name="AdminUsers" component={AdminUsersScreen} options={{ title: "Utilisateurs" }} />
+              <Stack.Screen name="AdminRoles" component={AdminRolesScreen} options={{ title: "Rôles et permissions" }} />
+              <Stack.Screen name="AdminAnnotations" component={AdminAnnotationsScreen} options={{ title: "Annotations" }} />
+            </Stack.Navigator>
+          </AnnotationCapture>
         </NavigationContainer>
       </View>
     </AuthProvider>

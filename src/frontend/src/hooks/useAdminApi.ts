@@ -31,6 +31,22 @@ export interface AdminUser {
   createdAt: string;
 }
 
+/** Matches db/annotationRepo.php's mapAnnotationRow() — FEAT-006. */
+export interface Annotation {
+  id: number;
+  screen: string;
+  elementRef: string | null;
+  x: number;
+  y: number;
+  comment: string;
+  appVersion: string;
+  status: "open" | "actioned" | "dismissed";
+  createdAt: string;
+  updatedAt: string;
+  createdBy: number;
+  createdByName: string;
+}
+
 export class AdminApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -94,5 +110,43 @@ export function useAdminApi(csrfToken: string | null) {
     listUsers: () => request<AdminUser[]>("/admin/users"),
     updateUser: (id: number, fields: { roleId?: number; status?: string }) =>
       request<AdminUser>(`/admin/users/${id}`, { method: "PUT", body: JSON.stringify(fields) }),
+
+    // FEAT-006 — admin annotation/comment tool (docs/ROADMAP.md item 10).
+    listAnnotations: (status?: "open" | "actioned" | "dismissed") =>
+      request<Annotation[]>(`/admin/annotations${status ? `?status=${status}` : ""}`),
+    createAnnotation: (screen: string, elementRef: string | null, x: number, y: number, comment: string, appVersion: string) =>
+      request<Annotation>("/admin/annotations", {
+        method: "POST",
+        body: JSON.stringify({ screen, elementRef, x, y, comment, appVersion }),
+      }),
+    updateAnnotationStatus: (id: number, status: "open" | "actioned" | "dismissed") =>
+      request<Annotation>(`/admin/annotations/${id}`, { method: "PUT", body: JSON.stringify({ status }) }),
+    deleteAnnotation: (id: number) => request<{ deleted: number }>(`/admin/annotations/${id}`, { method: "DELETE" }),
+    /** Export is plain text (markdown or json), not the JSON-envelope shape
+     * every other call here expects — bypasses the shared `request()`
+     * helper (which unconditionally JSON.parses the body) and returns the
+     * raw response text for the caller to display/share as-is. */
+    exportAnnotations: async (format: "markdown" | "json" = "markdown", status?: "open" | "actioned" | "dismissed"): Promise<string> => {
+      const params = new URLSearchParams({ format });
+      if (status) params.set("status", status);
+      let res: Response;
+      try {
+        res = await fetch(`${API_BASE_URL}/admin/annotations/export?${params.toString()}`, { credentials: "include" });
+      } catch (e: any) {
+        throw new AdminApiError(0, `Impossible de joindre le serveur. (${e?.message ?? "network error"})`);
+      }
+      const text = await res.text();
+      if (!res.ok) {
+        let message = `L'export a échoué (${res.status}).`;
+        try {
+          const parsed = JSON.parse(text);
+          message = parsed?.error ?? message;
+        } catch {
+          // Non-JSON error body — keep the generic message.
+        }
+        throw new AdminApiError(res.status, message);
+      }
+      return text;
+    },
   };
 }

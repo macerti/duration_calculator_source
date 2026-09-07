@@ -229,7 +229,7 @@ export default function ProfileScreen({ navigation }: Props) {
         </View>
 
         {/* Admin entry points */}
-        {(hasPermission("manage_users") || hasPermission("manage_roles")) && (
+        {(hasPermission("manage_users") || hasPermission("manage_roles") || hasPermission("manage_annotations")) && (
           <View style={styles.card}>
             <Text style={styles.cardHeading}>Administration</Text>
             {hasPermission("manage_users") && (
@@ -248,6 +248,15 @@ export default function ProfileScreen({ navigation }: Props) {
                 accessibilityRole="button"
               >
                 <Text style={styles.secondaryButtonText}>Gérer les rôles et permissions</Text>
+              </Pressable>
+            )}
+            {hasPermission("manage_annotations") && (
+              <Pressable
+                style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
+                onPress={() => navigation.navigate("AdminAnnotations")}
+                accessibilityRole="button"
+              >
+                <Text style={styles.secondaryButtonText}>Gérer les annotations</Text>
               </Pressable>
             )}
           </View>

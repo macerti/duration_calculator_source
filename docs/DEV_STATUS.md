@@ -1485,3 +1485,49 @@ Once both matched the test's expectations, the second from-scratch run was **50/
 
 ---
 **UPDATE (same day) — CI CONFIRMED GREEN.** Commit `6b1cc60`'s run (GitHub Actions `34053947320`) completed `success`, **all 20 steps**, including hygiene checks, migrations, `smoke_test.php`, `http_api_test.php`, frontend typecheck, `expo export`, deploy-artifact assembly + hygiene check, and publish to `macerti/duration_calculator`. This satisfies hand-off item 1 above. FEAT-006's backend is now confirmed deployed; only its frontend remains, per hand-off item 2.
+
+---
+
+## 2026-09-07 (thirty-fifth session) — FEAT-006 frontend CODE WRITTEN but COMPLETELY UNVERIFIED; do not trust or build on it until it's checked
+
+**Trigger**: standing pipeline again (launch PHP+MariaDB locally, pull latest, read the logs first, do FEAT-006 end-to-end, then bugs, then features by priority, treat technical debt as continuous/non-negotiable, push before token budget runs out). Mid-session, Mahdi explicitly cut the session short: **stop testing, stop coding, update the logs, commit, and push immediately** so another dev/session can continue. This entry exists because of that instruction — it is a hard stop, not a natural finishing point.
+
+**Security note (recurring — see prior sessions' same note)**: a live GitHub PAT was again pasted in plaintext directly in chat this session. Used only transiently in the `git clone` URL for this sandbox; never written to any log, commit, or this project's persistent memory. **Mahdi should rotate this token** — pasting it in chat already exposed it in the transcript regardless of how it was handled sandbox-side.
+
+### Done this session
+
+1. **Local sandbox stood up from scratch** (confirmed again: does not persist between sessions). PHP 8.3 + MariaDB 10.11 via `apt`, dedicated `appuser`@`127.0.0.1` (password auth, not root socket-auth), `src/backend/config.php` written to CI's shape, all inside one shell invocation per the established gotcha.
+
+2. **Baseline regression run BEFORE writing any code, to confirm the starting point was actually clean**: fresh migrate (3/3, idempotent on re-run) → seed → `smoke_test.php` **24/24** → live `php -S 127.0.0.1:8080` → `http_api_test.php` **65/65**. Matches the thirty-fourth session's own numbers exactly — nothing regressed between sessions, confirmed rather than assumed.
+
+3. **FEAT-006 frontend written**, per the spec already resolved in `docs/ROADMAP.md` item 10 (no re-deriving needed, per the thirty-fourth session's hand-off):
+   - `src/frontend/src/hooks/useAdminApi.ts` — added `Annotation` interface + `listAnnotations`/`createAnnotation`/`updateAnnotationStatus`/`deleteAnnotation`/`exportAnnotations` (the last bypasses the shared `request()` JSON helper since the export endpoint returns plain text, not the usual JSON envelope).
+   - `src/frontend/src/components/AnnotationCapture.tsx` (new) — web `contextmenu` interception (`preventDefault` + captures `{x,y}` + walks up to 6 DOM ancestors for `data-testid`/`id`) and a native long-press implementation.
+     **Deliberate design correction from the thirty-fourth session's spec, not a literal implementation of it**: the spec described a top-level "responder-capture" wrapper. Checked this against React Native's own gesture-responder docs before writing code — a literal `onStartShouldSetResponderCapture` returning `true` at the app root wins the capture phase ahead of every descendant and would silently break every button/ScrollView/TextInput in the entire app the moment it shipped, not just annotate on top of them. Used the non-capture (bubble-phase) `onStartShouldSetResponder` instead: nested Pressables/ScrollViews still win the negotiation for their own touches first exactly as today, and this wrapper only ever fires on otherwise-non-interactive surface (background, containers, static text). This is also what the spec's own "can be pre-empted by a ScrollView actively scrolling, or a nested Pressable already mid-press" limitation actually describes once you trace through the mechanism — recorded here so the next session doesn't have to re-derive it or, worse, "fix" it back to the literal capture-phase version and reintroduce the app-breaking bug.
+     Native element-tagging: deliberately left as `elementRef: null` always — resolving a touch target's native view tag to a `testID` needs plumbing this pass didn't add (see code comment). Graceful degradation, not a blocker, per spec.
+   - `src/frontend/src/screens/AdminAnnotationsScreen.tsx` (new) — list/filter (all/open/actioned/dismissed via `SegmentedPicker`)/per-row status change/two-tap `DangerButton` delete (duplicated locally, same as `AdminRolesScreen`'s own copy — not shared, see ROADMAP item 7)/export (Markdown or JSON, rendered as selectable text for manual copy — no clipboard/file-download library added since none was already a dependency and none could be verified working in this sandbox).
+   - `App.tsx` — new `AdminAnnotations` route; `<AnnotationCapture>` now wraps `<Stack.Navigator>` inside `<NavigationContainer>` (needs both `useNavigationState` for the current screen name and `useAuthContext` for the permission check + CSRF token).
+   - `ProfileScreen.tsx` — added a `manage_annotations`-gated "Gérer les annotations" button next to the existing admin buttons.
+   - `docs/ROADMAP.md` item 10's status line updated to reflect exactly this (code written, unverified) — see there for the terse version of the same warning.
+
+### NOT DONE — explicitly, not silently skipped, and this is the part that matters most this entry
+
+- **`npx tsc --noEmit` — NEVER RUN against this session's frontend changes.** Unknown if it even typechecks. `npm ci` succeeded (versionInfo generated, 5.1.10) but that only confirms dependencies installed, nothing about this session's new code.
+- **`npx expo export --platform web --clear` — NOT RUN.**
+- **`make build-deploy` / `scripts/check-deploy-artifact.sh` — NOT RUN.**
+- **Nothing committed before this log update; this push is the first commit of this session's code.** Unlike every prior session in this log, code and logs are landing in the same push with zero local verification in between — flagging this explicitly rather than letting the log's usual tone imply the same confidence level as sessions that ran the full check sequence.
+- **No CI run exists yet for this push** — check GitHub Actions before trusting this compiles, let alone works. Given the above, **there is a real chance CI fails on this commit** (typos, missing imports, a prop-name mismatch against `SegmentedPicker`/`Breadcrumbs`/`ResponsiveContainer`'s actual signatures, `tokens.ts` color-key names not matching what was assumed while writing styles, etc. were all written from reading those files earlier in the session, not copy-pasted, so mismatches are plausible) — this is a normal, expected possibility given the process that produced it, not a surprise finding to report back in shock.
+- **No bugs or tech debt (ROADMAP items 6/7) touched this session** — all time went to FEAT-006 frontend per standing priority order, then this session was cut short before reaching them.
+- **Live click-through** — not possible from any sandbox, same standing limitation as every prior entry.
+
+### Hand-off for the next developer
+
+1. **Before anything else**: stand up the sandbox (steps in "Done" item 1 above / `docs/DEPLOY.md`), `cd src/frontend`, `npm ci`, then `npx tsc --noEmit`. **Fix whatever it finds** — treat this session's code as a first draft, not a near-final one, given it was never typechecked.
+2. Once typecheck is clean: `npx expo export --platform web --clear`, then `make build-deploy` (includes `scripts/check-deploy-artifact.sh`'s 4 checks). Fix anything either surfaces.
+3. Re-run the backend regression too (migrate → seed → `smoke_test.php` → `http_api_test.php`) — this session's frontend changes shouldn't have touched the backend at all, but confirm rather than assume, per this project's own standing rule.
+4. Once source-complete (typecheck + export + build-deploy all clean): commit, push, **watch the real GitHub Actions run before telling Mahdi FEAT-006 is done** — standard practice in this log (BUG-044/045/046, thirty-third/thirty-fourth sessions all did this) and especially warranted here since nothing has been checked yet.
+5. Live click-through (does right-click actually open the menu; does long-press actually work on a real device; does the export text actually look right) will still need Mahdi or a sandbox with browser/device access, same as every other frontend feature in this project.
+6. If the native long-press design (bubble-phase `onStartShouldSetResponder`, see "Done" item 3 above) needs revisiting, read that code comment first — it documents a real failure mode of the naive alternative that was checked against React Native's own docs, not assumed.
+7. Resume tech debt (ROADMAP items 6: 2/9 design-token files done; 7: `tests/` relocation) once FEAT-006 is actually confirmed working — still not deprioritized, just not yet reached across two sessions now; flagging plainly again so it doesn't quietly become permanent, per Mahdi's own repeated instruction.
+
+**Dependency / hand-off**: item 1 blocks everything else in this list — nothing past it should be attempted on unverified code. Items 2–4 are sequential. Item 5 needs Mahdi specifically. Items 6/7 are independent and can happen in parallel with anything above once picked up.
