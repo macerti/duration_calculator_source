@@ -1487,3 +1487,10 @@ Also still outstanding, carried over rather than newly introduced: annotation #5
 - **`scripts/check-repo-hygiene.sh`**: all 4 checks pass, including the secret-token scan — confirms the GitHub PAT pasted in chat this session never made it into any tracked file.
 - **CI**: `4408bfa` confirmed `completed` / `success` via the GitHub Actions API — independent confirmation of the same result.
 - **Hand-off item 1 is now closed.** Items 2 (`CalculationReportScreen.tsx` tokens), 3 (AdminRoles, `docs/ROADMAP.md` item 11), annotation #5's clarification, and a live click-through of BUG-050's fixes remain open — unchanged from above.
+
+### Update, same day — hand-off item 2 done: `CalculationReportScreen.tsx` design tokens finished, ROADMAP item 6 fully closed (9/9)
+
+- Converted the file's ~24 remaining raw `StyleSheet.create` values to `src/theme/tokens.ts`, same substitution rules used on the other 8 files this item touched: exact hex matches convert directly (`#1c1c1e`→`colors.contentPrimary`/`colors.borderStrong` depending on role, `#555`→`colors.contentSecondary`, `#e2e2e5`→`colors.borderDefault`, `#fff8e6`→`colors.warningSurface`), near-matches convert to the closest semantic role (`#7a5c00`→`colors.warning`, `#777`→`colors.contentTertiary`), off-scale numbers (17, 18, 60, the two `marginBottom: 3`s) left as plain numbers rather than forced onto the spacing scale.
+- `npx tsc --noEmit`: clean. `npx expo export --platform web --clear`: succeeds, 558 modules — same count as before this change, no bundle regression.
+- **This closes ROADMAP item 6 entirely** — confirmed with the same grep used to find the original 9 files, now returning nothing: no screen or component under `src/components`/`src/screens` uses `StyleSheet.create` without importing `theme/tokens`.
+- Hand-off item 3 (AdminRoles, `docs/ROADMAP.md` item 11) is the only code item still open from this entry's original 4-item hand-off.

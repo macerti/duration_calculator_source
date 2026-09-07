@@ -2,7 +2,13 @@
 
 Same versioning convention as the other projects: **x** = overhaul, **y** = feature, **z** = bugfix.
 
-## 2026-09-07 (thirty-eighth session) — 5.1.13 — BUG-050: 6 of 8 real live-annotation issues fixed (navigation double-chrome, unreachable/unscrollable Profile, save-button jump, export filename collision, testID starter); 2 logged for clarification/design; full verification deliberately deferred
+## 2026-09-07 (thirty-eighth session, continued) — 5.1.14 — ROADMAP item 6 (design-token migration) closed: `CalculationReportScreen.tsx` finished, 9/9
+
+- Last remaining file's `theme/tokens` import (added mid-session, then left unfinished by explicit instruction) is now fully converted — all ~24 raw style values mapped to semantic tokens using the same rules established across this item's other 8 files. `npx tsc --noEmit` clean, `npx expo export` succeeds at the same 558-module count. Confirmed by repo-wide grep: no screen or component anywhere still uses `StyleSheet.create` without importing `theme/tokens`. Full detail: `docs/BUGLOG.md` BUG-050's update, `docs/DEV_STATUS.md`'s thirty-eighth-session update.
+
+---
+
+
 
 - **First real live-annotation batch** — Mahdi and a second admin used FEAT-006 for real, exported 8 annotations across 6 screens. Fixed: Profile couldn't scroll (BUG-050 #1 — also explains an earlier "can't find export" report); every screen except the wizard/report had a redundant native header stacked on its own breadcrumb trail, and Profile was unreachable from most of the app (#2/#3, fixed via `headerShown: false` everywhere + a new persistent profile-icon affordance on `Breadcrumbs`); the wizard's save button visually jumped position once autosave completed, caused by a misplaced `marginLeft: "auto"` (#4); the annotation export's filename had no timestamp, causing silent collisions (#7, directly confirmed from the reported filename itself); annotation element-references came back empty because zero `testID`s exist anywhere in the app — confirmed by grep, a few added opportunistically (#8, partial). Logged rather than guessed at: a vague "this total is useless" report needs Mahdi to point at the specific element (#5); AdminRoles' list-based layout and narrow desktop width need an actual design decision, not a blind redesign (#6, now `docs/ROADMAP.md` item 11).
 - **Also this session**: ROADMAP item 6 (design-token migration) taken from 3/9 to 8/9 files; the backend regression suite was independently re-confirmed (24/24, 65/65) as this session's own starting-state check, since the prior session had deferred that same check.
