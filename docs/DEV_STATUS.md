@@ -1577,3 +1577,36 @@ Once both matched the test's expectations, the second from-scratch run was **50/
 6. This session's local sandbox setup does not persist — redo per `docs/DEPLOY.md`, plus the `&&`-chain config-write gotcha noted in "Done" item 1 above.
 
 **Dependency / hand-off**: item 1 has no blocker but time. Item 2 needs Mahdi specifically and is the one thing that actually closes this out. Items 3–5 are independent of each other and of items 1–2, and can be picked up in any order once higher-priority verification is done.
+
+## 2026-09-07 (thirty-seventh session) — BUG-049 fixed: FEAT-006 export now has a real Copier/Partager/Télécharger path; backend regression deliberately NOT re-run this session, by explicit instruction — next dev must run it before trusting this push
+
+**Trigger**: standing pipeline (launch PHP+MariaDB locally, pull latest, read logs first, fix bugs, features by priority, technical debt continuous, push before budget runs out). Mahdi's live click-through of BUG-048's fix (exactly what that session's hand-off asked for) reported the app running well and annotations creating successfully (toast confirms it), but "no way to export them." Mid-session, Mahdi explicitly instructed: skip backend re-verification, just update the logs so another developer can verify the backend, then commit and push immediately.
+
+**Read first**: this file's own thirty-sixth session entry (BUG-048, the P0 navigation crash — fixed and CI-confirmed green before this session started) and `docs/BUGLOG.md`'s BUG-048 entry, to confirm the starting point was actually clean before diagnosing a new issue on top of it.
+
+### Done this session
+
+1. **Local sandbox stood up from scratch** (does not persist between sessions, as every prior session has noted): PHP 8.3 + MariaDB 10.11 via `apt`, repo cloned. Confirmed CI green on the current `main` tip (`72b789e`, BUG-048's fix) via the Actions API before starting any new work.
+
+2. **BUG-049 diagnosed and fixed** — full detail in `docs/BUGLOG.md`. Summary: `AdminAnnotationsScreen.tsx`'s export card only offered manual text-selection as its "export" mechanism, which is unreliable-to-nonfunctional on mobile. Added three real actions: **Copier** (`expo-clipboard`, new dependency, version-matched to Expo SDK 57), **Partager** (React Native core `Share.share()`, no new dependency, confirmed working through `react-native-web`'s own `navigator.share`-backed implementation), and **Télécharger** (web-only, `Blob` + temporary download link).
+
+3. **Frontend verified fresh, this session**: `npx tsc --noEmit` clean; `npx expo export --platform web --clear` succeeds (558 modules); grepped the built bundle directly and confirmed all three new button labels are actually shipped (`Télécharger` appears minifier-escaped as `T\xe9l\xe9charger` — decoded and confirmed before trusting the raw grep, which initially looked like a miss); `make build-deploy` succeeds end-to-end, all 4 `scripts/check-deploy-artifact.sh` checks pass; `scripts/check-repo-hygiene.sh` all 4 checks pass (including the secret-scan, relevant since a PAT was pasted into this session's chat — see BUG-049's own security note).
+
+4. **Version bumped 5.1.11 → 5.1.12** (`package.json`, lockfile synced via `npm install --package-lock-only`, re-typechecked clean).
+
+### NOT DONE — explicitly, by direct instruction, not an oversight
+
+- **Backend regression suite (`smoke_test.php`, `http_api_test.php`) was deliberately NOT re-run this session.** This fix's diff is frontend-only (`git diff --stat`: `src/frontend/package.json`, `src/frontend/package-lock.json`, `src/frontend/src/screens/AdminAnnotationsScreen.tsx` — nothing under `src/backend/`), so there is no code-level mechanism for it to have broken the backend. But per this project's own repeatedly-learned lesson (BUG-040, BUG-028, and others: "syntax-clean is not the same as working," and more specifically here, "no code change" is not the same as "verified unchanged") — **this needs an actual run, not an inference from the diff.** Mahdi asked explicitly this session to skip that run and push with the logs updated instead, so the next developer (human or AI) picking this up should treat that as their first action: fresh DB → `migrate.php` (idempotent check too) → `seed.php` → `smoke_test.php` (expect 24/24) → live `php -S 127.0.0.1:8080` → `http_api_test.php` (expect 65/65, matching the thirty-fourth/fifth/sixth sessions' own numbers) — before telling Mahdi this push is fully backend-clean.
+- **No live click-through** of the three new export buttons — needs Mahdi or a sandbox with real browser/device access, same standing limitation as every frontend fix in this project's history.
+- **No CI-confirmed green run yet for this push** — check the Actions run for this commit before relying on it.
+- **No other bugs or tech debt (ROADMAP items 6/7) touched** — this session's entire scope was BUG-049, per Mahdi's own explicit instruction to log and push immediately rather than continue further.
+
+### Hand-off for the next developer
+
+1. **Run the backend regression suite first** (see "Not done" above for the exact sequence and expected numbers) — this is the single most important unblocked next step and has no dependency on anything else.
+2. **Watch this push's GitHub Actions run** before telling Mahdi anything is confirmed — standard practice in this log.
+3. **Get a live click-through from Mahdi** on the three new export buttons specifically (Copier/Partager/Télécharger) — this is what actually closes BUG-049, the same bar every other frontend fix in this project has been held to.
+4. Once BUG-049 is fully confirmed: resume tech debt (ROADMAP items 6: 2/9 design-token files done; 7: `tests/` relocation) — genuinely not deprioritized, just not yet reached across several sessions now; Mahdi has repeatedly emphasized this must not become permanent.
+5. This session's local sandbox setup does not persist — redo per `docs/DEPLOY.md`, including the `migration_secret`/`mail.log_path`/`app_url` config values documented in the thirtieth/thirty-first/second/third sessions' own notes above.
+
+**Dependency / hand-off**: item 1 has no blocker but time — do it before anything else touches this codebase. Item 2 is a pure verification step. Item 3 needs Mahdi specifically. Items 4 is independent and can proceed once 1–3 are clear.

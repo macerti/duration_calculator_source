@@ -2,6 +2,16 @@
 
 Same versioning convention as the other projects: **x** = overhaul, **y** = feature, **z** = bugfix.
 
+## 2026-09-07 (thirty-seventh session) — 5.1.12 — BUG-049 fixed: FEAT-006 annotation export now has a real Copier/Partager/Télécharger path
+
+- **Reported by Mahdi**, live-testing FEAT-006 on mobile: annotations create fine (toast confirms it) but there was "no way to export them."
+- **Root cause**: the export card only rendered the exported text as selectable `<Text>` inside a nested `<ScrollView>` for manual copy — unreliable-to-nonfunctional on mobile.
+- **Fix**: added **Copier** (clipboard, via new `expo-clipboard` dependency), **Partager** (native share sheet, via React Native core's `Share` API, no new dependency), and **Télécharger** (web-only file download via `Blob`) to `AdminAnnotationsScreen.tsx`.
+- **Verified this session (frontend only)**: `npx tsc --noEmit` clean; `npx expo export --platform web --clear` succeeds (558 modules); confirmed all three new button labels are present in the built bundle (`Télécharger` appears minifier-escaped, decoded and confirmed); `make build-deploy` and `scripts/check-repo-hygiene.sh` both fully pass.
+- **Not done this session, by explicit instruction**: backend regression suite (`smoke_test.php`/`http_api_test.php`) not re-run — this fix touches no backend files, but per this project's own standing discipline that still needs a real run before being trusted, not just inferred from the diff. No live click-through yet either. Full detail: `docs/BUGLOG.md` BUG-049, `docs/DEV_STATUS.md`'s thirty-seventh-session entry.
+
+---
+
 ## 2026-09-07 (thirty-sixth session) — 5.1.11 — BUG-048 CLOSED (as far as any sandbox can verify): P0 hotfix for a confirmed live production outage caused by FEAT-006's frontend
 
 - **Confirmed live production outage, not a sandbox-only finding**: the thirty-fifth session's FEAT-006 frontend commit (`1eec309`, logged as "code written, UNVERIFIED") passed CI and deployed all the way to `tools.macerti.com` (source run `34082222104`, deploy run `34082291799`, both green, ~04:13 UTC today). It crashed the **entire authenticated app for every user**, not just admins — `AnnotationCapture` called `useNavigationState()` while wrapping `<Stack.Navigator>` from the *outside* (a parent can never read a context its own child provides), throwing "Couldn't get the navigation state. Is your component inside a navigator?" on every render. Reported by Mahdi as the app's `ErrorBoundary` screen with a "Retour à l'accueil" button that did nothing (it didn't — it remounted straight back into the same instant crash).

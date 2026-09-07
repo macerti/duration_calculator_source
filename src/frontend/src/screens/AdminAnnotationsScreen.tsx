@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Pressable, Platform } from "react-native";
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Pressable, Platform, Share } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions } from "@react-navigation/native";
 import { RootStackParamList } from "../../App";
@@ -107,6 +108,60 @@ export default function AdminAnnotationsScreen({ navigation }: Props) {
     }
   };
 
+  // Real export actions. The previous version of this screen only rendered
+  // `exportText` as selectable `<Text>` inside a nested `<ScrollView>` and
+  // asked the admin to select-and-copy it manually — on mobile (especially
+  // Android) text selection inside a nested scroll container is unreliable
+  // or entirely non-functional, which is exactly what Mahdi reported after
+  // testing on mobile ("app showed toasts but no way to export them"). These
+  // three actions give an actual, OS-level export path on every platform
+  // instead of relying on manual text selection.
+  const exportFilename = () => `annotations-${filter}.${exportFormat === "markdown" ? "md" : "json"}`;
+
+  const shareExport = async () => {
+    if (!exportText) return;
+    try {
+      await Share.share(
+        Platform.OS === "web"
+          ? { message: exportText }
+          : { message: exportText, title: exportFilename() }
+      );
+    } catch (e: any) {
+      // A dismissed share sheet also rejects on some platforms — that's not
+      // a real failure, so only surface it if it looks like an actual error.
+      if (e?.message && !/dismiss/i.test(e.message)) {
+        toast.show("Partage impossible sur cet appareil.", "error");
+      }
+    }
+  };
+
+  const copyExport = async () => {
+    if (!exportText) return;
+    try {
+      await Clipboard.setStringAsync(exportText);
+      toast.show("Export copié dans le presse-papiers.", "success");
+    } catch (e: any) {
+      toast.show("Copie impossible sur cet appareil.", "error");
+    }
+  };
+
+  const downloadExport = () => {
+    if (!exportText || Platform.OS !== "web" || typeof document === "undefined") return;
+    try {
+      const blob = new Blob([exportText], { type: exportFormat === "markdown" ? "text/markdown" : "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = exportFilename();
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      toast.show("Téléchargement impossible.", "error");
+    }
+  };
+
   return (
     <ResponsiveContainer maxWidth={800}>
       <View style={styles.container}>
@@ -195,7 +250,20 @@ export default function AdminAnnotationsScreen({ navigation }: Props) {
           </Pressable>
           {exportText !== null && (
             <View style={styles.exportOutputWrap}>
-              <Text style={styles.exportHint}>Sélectionnez le texte ci-dessous pour le copier.</Text>
+              <View style={styles.exportActionsRow}>
+                <Pressable style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]} onPress={copyExport} accessibilityRole="button">
+                  <Text style={styles.secondaryButtonText}>Copier</Text>
+                </Pressable>
+                <Pressable style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]} onPress={shareExport} accessibilityRole="button">
+                  <Text style={styles.secondaryButtonText}>Partager</Text>
+                </Pressable>
+                {Platform.OS === "web" && (
+                  <Pressable style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]} onPress={downloadExport} accessibilityRole="button">
+                    <Text style={styles.secondaryButtonText}>Télécharger</Text>
+                  </Pressable>
+                )}
+              </View>
+              <Text style={styles.exportHint}>Aperçu (le texte reste aussi sélectionnable ci-dessous) :</Text>
               <ScrollView style={styles.exportScroll} nestedScrollEnabled>
                 <Text selectable style={styles.exportOutput}>
                   {exportText}
@@ -279,6 +347,17 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: colors.actionPrimaryText, fontSize: typography.body, fontWeight: "700" },
   buttonPressed: { opacity: 0.85 },
   exportOutputWrap: { marginTop: spacing.md },
+  exportActionsRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginBottom: spacing.sm },
+  secondaryButton: {
+    borderRadius: radius.lg,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.actionPrimary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  secondaryButtonText: { color: colors.actionPrimary, fontSize: typography.body, fontWeight: "700" },
   exportHint: { fontSize: typography.caption, color: colors.contentQuaternary, marginBottom: spacing.xs },
   exportScroll: { maxHeight: 320, borderWidth: 1, borderColor: colors.borderDefault, borderRadius: radius.md, backgroundColor: colors.surfaceSunken },
   exportOutput: {
