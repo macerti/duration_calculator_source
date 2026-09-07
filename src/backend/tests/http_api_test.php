@@ -209,7 +209,7 @@ check($status === 403, 'DELETE /admin/roles/:id without CSRF token is rejected',
 check($status === 200, 'DELETE /admin/roles/:id succeeds with CSRF token', "status=$status");
 
 [$status, $perms] = request('GET', "$base/admin/permissions");
-check($status === 200 && count($perms ?? []) === 7, 'GET /admin/permissions lists the 7 seeded permissions', "status=$status count=" . count($perms ?? []));
+check($status === 200 && count($perms ?? []) === 8, 'GET /admin/permissions lists the 8 seeded permissions', "status=$status count=" . count($perms ?? []));
 
 [$status, $users] = request('GET', "$base/admin/users");
 check($status === 200 && count($users ?? []) === 1, 'GET /admin/users lists the single CI user', "status=$status count=" . count($users ?? []));

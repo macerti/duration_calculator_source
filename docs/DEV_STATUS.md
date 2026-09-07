@@ -1662,3 +1662,35 @@ Ran the full suite against the actual pushed commit `4408bfa`, as instructed, an
 ### Update, same day — hand-off item 2 done: `CalculationReportScreen.tsx` design tokens finished, ROADMAP item 6 closed (9/9)
 
 Converted the file's remaining ~24 raw style values to `src/theme/tokens.ts` using the same substitution rules as the other 8 files (exact hex → its token, near-matches → closest semantic role, off-scale numbers left raw). `npx tsc --noEmit` clean, `npx expo export --platform web --clear` succeeds at the same 558-module count. Confirmed with a repo-wide grep that no screen or component uses `StyleSheet.create` without importing `theme/tokens` anymore — item 6 is fully closed, not just "this session's files done." Full substitution detail: `docs/BUGLOG.md` BUG-050's own update. Only hand-off item 3 (AdminRoles, `docs/ROADMAP.md` item 11) remains from this entry's original 4-item list; annotation #5's clarification and a live click-through are still open separately.
+## 2026-09-07 (thirty-ninth session) — Bug/feature tracker schema designed and committed (migration 004); BUG-049's backend regression independently re-confirmed clean
+
+**Trigger**: Mahdi asked to launch PHP+MariaDB, pull latest, and read the logs first — then, separately in chat, proposed replacing markdown-based bug/feature tracking (`BUGLOG.md`/`ROADMAP.md`/`DEV_STATUS.md`, 236KB/56KB/308KB as of this session) with a database table an admin can see and update from a UI, keeping markdown only for dev-to-dev narrative hand-off.
+
+**Concurrency note**: this session ran in parallel with the thirty-eighth session above (BUG-050 + ROADMAP item 6 completion) — both started from `b8599fa` independently and pushed separately; this push landed second and was rebased on top via `git pull --rebase` (one real conflict, in this file's own tail, resolved by keeping both entries in push order and renumbering this one from a collided "thirty-eighth" to "thirty-ninth"; `docs/ROADMAP.md`'s new item also renumbered 10→12 for the same reason — the thirty-eighth session's own BUG-050 write-up already used both 10 and 11). This session's own diff (a new migration file + one test-assertion fix) never touched anything the thirty-eighth session changed, so no code-level conflict existed, only the two sessions independently picking the same "next" session number and item number.
+
+**Read first**: this file's own thirty-seventh session entry (BUG-049, the fix whose backend regression this session closed) and the thirty-eighth session entry directly above (BUG-050 + ROADMAP item 6 close-out, pushed first) — both are new since this session's own starting point.
+
+### Done this session
+
+1. **Local sandbox stood up again** (PHP 8.3 + MariaDB 10.11, does not persist between sessions — same note every prior session has made; the MariaDB *daemon* also doesn't survive between separate tool calls within one sandbox session here, only the on-disk data does — worth remembering next time this trips up a test run). Re-ran the thirty-seventh session's deliberately-skipped backend regression against BUG-049's push (`b8599fa`) first: **24/24 smoke, 65/65 HTTP, clean** — that hand-off item is now closed.
+
+2. **Bug/feature tracker schema designed** across several rounds of back-and-forth with Mahdi in chat, landing on a two-table design: `tracker_items` (one row per bug/feature/tech-debt item, `code` as primary key rather than a surrogate id) and `tracker_updates` (append-only `done`/`next` history, so progress history is never lost the way overwriting a single field would lose it). Full reasoning for every column — including why `status` is an ENUM but `type` isn't, and why `dependencies` is plain text rather than a real foreign key — is written inline in the migration file itself rather than duplicated here.
+
+3. **Wrote and applied `004_add_bug_feature_tracker.sql`**: both tables, plus a new `manage_tracker` permission seeded and granted to `administrateur` only (same pattern as `003_add_annotations.sql`'s `manage_annotations`). Verified locally: applies cleanly on a fresh DB, idempotent on a second run (0 applied), FK cascade-delete sanity-checked directly (`DELETE FROM tracker_items` correctly removed its `tracker_updates` rows), 24/24 smoke tests. HTTP regression came back 64/65 on the first clean pass — the one failure was `GET /admin/permissions` asserting exactly 7 seeded permissions, which is now 8 because of `manage_tracker`; fixed the hardcoded count in `tests/http_api_test.php`. Re-running the full suite a second time to confirm 65/65 hit this sandbox's own rate limiter and leftover test-user state from the first run rather than surfacing anything new — the fresh-DB run's 64/65-with-one-expected-and-now-fixed-diff is the real signal here, not a phantom later failure caused by testing against an already-tested DB.
+
+4. **`docs/ROADMAP.md` item 10 added** for this (schema written, not yet built — no API/UI).
+
+### NOT DONE
+
+- **No backend API, no admin UI screen** — this session's scope was schema only, by Mahdi's own explicit instruction ("later we will start this from your new migration description file").
+- **No CI-confirmed green run yet** for this push.
+- **ROADMAP items 6/7 (tech debt)** untouched again — four sessions running now; Mahdi's repeated point that this must not become permanent still stands.
+
+### Hand-off for the next developer
+
+1. **Build the CRUD API** for `tracker_items`/`tracker_updates`, gated behind the new `manage_tracker` permission — `annotationRepo.php` is the closest existing pattern to mirror.
+2. **Then an admin UI screen**: list with filters (status/type/priority), detail view showing the `tracker_updates` history in order.
+3. **Watch this push's Actions run** before treating anything above as CI-confirmed — standard practice in this log.
+4. **Tech debt (ROADMAP items 6/7)** still waiting, same standing note as the last several sessions.
+
+**Dependency / hand-off**: item 1 has no blocker but time. Item 2 depends on item 1. Item 3 is a pure verification step, independent of 1–2. Item 4 is independent of all three and can be picked up any time.

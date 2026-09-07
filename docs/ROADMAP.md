@@ -151,6 +151,13 @@ See "Export" under Required behavior above for the full content contract. Markdo
 - **UPDATE 2026-09-06 (thirty-second session)**: #1 and #3 fixed and closed (#3 confirmed via a fresh-DB 51/51 HTTP regression); #4 partially fixed (Register/Reset only). Build not re-verified this session (typecheck only).
 - **UPDATE 2026-09-06 (thirty-third session)**: #3 independently re-confirmed from a second, separate session (fresh DB, 51/51 again). #4 now fully closed across all five auth screens. **`npx expo export --platform web` and `make build-deploy` both run clean** — the build-verification gap flagged twice in a row is closed. Version bumped 5.1.9 → 5.1.10. What's left, in full: (1) a real CI-green run on this push, not yet checked; (2) the live click-through for #1/#2/#4 that only Mahdi (or a sandbox with browser/mail-client access) can do. Full detail: `docs/BUGLOG.md` BUG-047's thirty-third-session update.
 
+#### 12. Bug/feature tracker moved into the database (SCHEMA WRITTEN, NOT YET BUILT — no API/UI yet)
+- **Category:** Internal tooling / DevOps
+- **Status:** Migration `004_add_bug_feature_tracker.sql` written, applied, and verified locally (fresh-DB migrate, 24/24 smoke, HTTP regression clean apart from one hardcoded permission-count assertion that's since been updated for the new seeded permission) as of 2026-09-07 (thirty-eighth session). **No backend API and no admin UI screen exist yet** — schema-only; next session builds on top of this migration.
+- **Request, from Mahdi (2026-09-07)**: `BUGLOG.md`/`ROADMAP.md`/`DEV_STATUS.md` have grown too large to be practical to read (236KB/56KB/308KB as of this session) — replace day-to-day bug/feature status tracking with database rows an admin can query/filter/update from a UI, keeping markdown only for dev-to-dev narrative hand-off, not progress tracking.
+- **Schema, as agreed across this session's chat**: `tracker_items` (one row per item — `code` as primary key, e.g. `BUG-050`/`FEAT-007`; `type`; `title`; `user_description` vs dev-filled `technical_description`; `status` [open/in_progress/fixed_unverified/verified/closed]; `priority`; `dependencies` [function/file names, plain text]; `tests_to_do`; `comments` [live remaining-work TODO, overwritten]) plus `tracker_updates` (append-only history — `item_code` FK with cascade, `done`, `next`). Full reasoning for every column and the code-as-PK choice is documented inline in the migration file itself.
+- **Next steps**: backend CRUD API gated behind the new `manage_tracker` permission (mirrors `annotationRepo.php`'s shape), then an admin UI screen (list + filter by status/type/priority, detail view with the update history).
+
 ---
 
 ### Priority 2 (P2) — For Later (Future Backlog)
