@@ -203,8 +203,8 @@ function AuthGate() {
                   ),
                 })}
               />
-              <Stack.Screen name="ClientsList" component={ClientsListScreen} options={{ title: "Mes clients" }} />
-              <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client" }} />
+              <Stack.Screen name="ClientsList" component={ClientsListScreen} options={{ title: "Mes clients", headerShown: false }} />
+              <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client", headerShown: false }} />
               <Stack.Screen
                 name="CalculationWizard"
                 component={CalculationWizardScreen}
@@ -215,10 +215,10 @@ function AuthGate() {
                 component={CalculationReportScreen}
                 options={{ title: "Rapport de calcul", headerShown: false }}
               />
-              <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: "Mon profil" }} />
-              <Stack.Screen name="AdminUsers" component={AdminUsersScreen} options={{ title: "Utilisateurs" }} />
-              <Stack.Screen name="AdminRoles" component={AdminRolesScreen} options={{ title: "Rôles et permissions" }} />
-              <Stack.Screen name="AdminAnnotations" component={AdminAnnotationsScreen} options={{ title: "Annotations" }} />
+              <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: "Mon profil", headerShown: false }} />
+              <Stack.Screen name="AdminUsers" component={AdminUsersScreen} options={{ title: "Utilisateurs", headerShown: false }} />
+              <Stack.Screen name="AdminRoles" component={AdminRolesScreen} options={{ title: "Rôles et permissions", headerShown: false }} />
+              <Stack.Screen name="AdminAnnotations" component={AdminAnnotationsScreen} options={{ title: "Annotations", headerShown: false }} />
             </Stack.Navigator>
           </AnnotationCapture>
         </NavigationContainer>

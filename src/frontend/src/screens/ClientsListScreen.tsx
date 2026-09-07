@@ -10,6 +10,7 @@ import { useToast } from "../components/Toast";
 import ResponsiveContainer from "../components/ResponsiveContainer";
 import Breadcrumbs from "../components/Breadcrumbs";
 import { useBreakpoint } from "../hooks/useBreakpoint";
+import { colors, radius, spacing, typography } from "../theme/tokens";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ClientsList">;
 
@@ -104,6 +105,7 @@ export default function ClientsListScreen({ navigation }: Props) {
             { icon: "home-outline", onPress: () => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "Home" }] })) },
             { label: "Clients" },
           ]}
+          onProfilePress={() => navigation.navigate("Profile")}
         />
         <View style={styles.header}>
           <Text style={styles.title}>Mes clients</Text>
@@ -190,30 +192,30 @@ export default function ClientsListScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-  title: { fontSize: 22, fontWeight: "700", color: "#1c1c1e" },
-  newButton: { backgroundColor: "#1c1c1e", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
-  newButtonText: { color: "#fff", fontWeight: "600", fontSize: 13 },
-  errorBox: { backgroundColor: "#fdecea", borderRadius: 10, padding: 12, marginBottom: 12 },
-  errorText: { color: "#c53030", fontSize: 13 },
-  emptyState: { marginTop: 40, alignItems: "center", paddingHorizontal: 20 },
-  emptyTitle: { fontSize: 16, fontWeight: "700", color: "#333", marginBottom: 8 },
-  emptyBody: { fontSize: 13, color: "#888", textAlign: "center", lineHeight: 19 },
-  clientCardRow: { flexDirection: "row", alignItems: "stretch", gap: 8, marginBottom: 12 },
-  clientCard: { flex: 1, backgroundColor: "#f9f9fb", borderRadius: 12, padding: 16, borderWidth: 1, borderColor: "#eee" },
-  clientName: { fontSize: 16, fontWeight: "700", color: "#1c1c1e" },
-  clientMeta: { fontSize: 12, color: "#888", marginTop: 4 },
-  deleteBtn: { width: 44, alignItems: "center", justifyContent: "center", backgroundColor: "#fdecea", borderRadius: 12 },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", alignItems: "center", justifyContent: "center", padding: 20 },
-  modalCard: { backgroundColor: "#fff", borderRadius: 14, padding: 20, width: "100%", maxWidth: 400 },
-  modalTitle: { fontSize: 16, fontWeight: "700", marginBottom: 12 },
-  modalInput: { borderWidth: 1, borderColor: "#ddd", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
-  modalInputError: { borderColor: "#c53030" },
-  fieldErrorText: { color: "#c53030", fontSize: 12, marginTop: 6, fontWeight: "600" },
-  modalActions: { flexDirection: "row", justifyContent: "flex-end", marginTop: 16, gap: 10 },
-  modalCancelBtn: { paddingVertical: 10, paddingHorizontal: 14 },
-  modalCancelText: { color: "#666", fontSize: 14 },
-  modalCreateBtn: { backgroundColor: "#1c1c1e", borderRadius: 8, paddingVertical: 10, paddingHorizontal: 18, minWidth: 80, alignItems: "center" },
-  modalCreateText: { color: "#fff", fontWeight: "600", fontSize: 14 },
+  container: { flex: 1, padding: spacing.xl },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.lg },
+  title: { fontSize: typography.display, fontWeight: "700", color: colors.contentPrimary },
+  newButton: { backgroundColor: colors.actionPrimary, borderRadius: radius.md, paddingVertical: spacing.sm, paddingHorizontal: spacing.md + 2 },
+  newButtonText: { color: colors.actionPrimaryText, fontWeight: "600", fontSize: typography.body },
+  errorBox: { backgroundColor: colors.errorSurface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.md },
+  errorText: { color: colors.error, fontSize: typography.body },
+  emptyState: { marginTop: 40, alignItems: "center", paddingHorizontal: spacing.xl },
+  emptyTitle: { fontSize: typography.title, fontWeight: "700", color: colors.contentPrimary, marginBottom: spacing.sm },
+  emptyBody: { fontSize: typography.body, color: colors.contentTertiary, textAlign: "center", lineHeight: 19 },
+  clientCardRow: { flexDirection: "row", alignItems: "stretch", gap: spacing.sm, marginBottom: spacing.md },
+  clientCard: { flex: 1, backgroundColor: colors.surfaceRaised, borderRadius: radius.xl, padding: spacing.lg, borderWidth: 1, borderColor: colors.borderSubtle },
+  clientName: { fontSize: typography.title, fontWeight: "700", color: colors.contentPrimary },
+  clientMeta: { fontSize: typography.small, color: colors.contentTertiary, marginTop: spacing.xs },
+  deleteBtn: { width: 44, alignItems: "center", justifyContent: "center", backgroundColor: colors.errorSurface, borderRadius: radius.xl },
+  modalOverlay: { flex: 1, backgroundColor: colors.surfaceOverlay, alignItems: "center", justifyContent: "center", padding: spacing.xl },
+  modalCard: { backgroundColor: colors.surfaceBase, borderRadius: radius.xxl, padding: spacing.xl, width: "100%", maxWidth: 400 },
+  modalTitle: { fontSize: typography.title, fontWeight: "700", marginBottom: spacing.md },
+  modalInput: { borderWidth: 1, borderColor: colors.borderDefault, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, fontSize: typography.subtitle },
+  modalInputError: { borderColor: colors.error },
+  fieldErrorText: { color: colors.error, fontSize: typography.small, marginTop: 6, fontWeight: "600" },
+  modalActions: { flexDirection: "row", justifyContent: "flex-end", marginTop: spacing.lg, gap: spacing.sm + 2 },
+  modalCancelBtn: { paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md + 2 },
+  modalCancelText: { color: colors.contentSecondary, fontSize: typography.bodyLarge },
+  modalCreateBtn: { backgroundColor: colors.actionPrimary, borderRadius: radius.md, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.lg + 2, minWidth: 80, alignItems: "center" },
+  modalCreateText: { color: colors.actionPrimaryText, fontWeight: "600", fontSize: typography.bodyLarge },
 });

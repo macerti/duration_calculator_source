@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, FlatList } from "react-native";
 import { api } from "../api/client";
 import { NaceRiskEntry } from "../types/engine";
+import { colors, radius, spacing, typography } from "../theme/tokens";
 
 interface Props {
   value: string; // selected NACE code
@@ -87,7 +88,7 @@ export default function NaceSearchField({ value, onChange }: Props) {
               setOpen(true);
             }}
             placeholder="Rechercher un secteur d'activité..."
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.contentQuaternary}
             onFocus={() => setOpen(true)}
           />
           {loading && <ActivityIndicator style={{ marginTop: 6 }} />}
@@ -118,15 +119,15 @@ export default function NaceSearchField({ value, onChange }: Props) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginBottom: 12 },
-  label: { fontSize: 13, color: "#444", marginBottom: 4 },
-  input: { borderWidth: 1, borderColor: "#ddd", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 10, fontSize: 15 },
-  dropdown: { borderWidth: 1, borderColor: "#ddd", borderRadius: 8, marginTop: 4, maxHeight: 220, backgroundColor: "#fff" },
-  resultRow: { paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: "#f0f0f0" },
-  resultCode: { fontSize: 11, color: "#888", fontWeight: "700" },
-  resultDesc: { fontSize: 13, color: "#333", marginTop: 2 },
-  noResults: { fontSize: 12, color: "#999", marginTop: 6, fontStyle: "italic" },
-  selectedRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: "#ddd", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 10, backgroundColor: "#f5f5f7" },
-  selectedText: { fontSize: 13, color: "#333", flex: 1, marginRight: 8 },
-  changeText: { color: "#0066cc", fontSize: 12, fontWeight: "600" },
+  wrap: { marginBottom: spacing.md },
+  label: { fontSize: typography.body, color: colors.contentSecondary, marginBottom: spacing.xs },
+  input: { borderWidth: 1, borderColor: colors.borderDefault, borderRadius: radius.md, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.sm + 2, fontSize: typography.subtitle },
+  dropdown: { borderWidth: 1, borderColor: colors.borderDefault, borderRadius: radius.md, marginTop: spacing.xs, maxHeight: 220, backgroundColor: colors.surfaceBase },
+  resultRow: { paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderSubtle },
+  resultCode: { fontSize: typography.caption, color: colors.contentTertiary, fontWeight: "700" },
+  resultDesc: { fontSize: typography.body, color: colors.contentPrimary, marginTop: 2 },
+  noResults: { fontSize: typography.small, color: colors.contentQuaternary, marginTop: 6, fontStyle: "italic" },
+  selectedRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: colors.borderDefault, borderRadius: radius.md, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.sm + 2, backgroundColor: colors.surfaceSunken },
+  selectedText: { fontSize: typography.body, color: colors.contentPrimary, flex: 1, marginRight: spacing.sm },
+  changeText: { color: colors.link, fontSize: typography.small, fontWeight: "600" },
 });

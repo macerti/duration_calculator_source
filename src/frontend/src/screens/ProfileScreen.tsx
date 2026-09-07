@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, ScrollView } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions } from "@react-navigation/native";
 import { RootStackParamList } from "../../App";
@@ -120,7 +120,7 @@ export default function ProfileScreen({ navigation }: Props) {
 
   return (
     <ResponsiveContainer maxWidth={640}>
-      <View style={styles.container}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         <Breadcrumbs
           items={[
             { icon: "home-outline", onPress: () => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "Home" }] })) },
@@ -237,6 +237,7 @@ export default function ProfileScreen({ navigation }: Props) {
                 style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
                 onPress={() => navigation.navigate("AdminUsers")}
                 accessibilityRole="button"
+                testID="profile-admin-users-button"
               >
                 <Text style={styles.secondaryButtonText}>Gérer les utilisateurs</Text>
               </Pressable>
@@ -246,6 +247,7 @@ export default function ProfileScreen({ navigation }: Props) {
                 style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
                 onPress={() => navigation.navigate("AdminRoles")}
                 accessibilityRole="button"
+                testID="profile-admin-roles-button"
               >
                 <Text style={styles.secondaryButtonText}>Gérer les rôles et permissions</Text>
               </Pressable>
@@ -255,6 +257,7 @@ export default function ProfileScreen({ navigation }: Props) {
                 style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
                 onPress={() => navigation.navigate("AdminAnnotations")}
                 accessibilityRole="button"
+                testID="profile-admin-annotations-button"
               >
                 <Text style={styles.secondaryButtonText}>Gérer les annotations</Text>
               </Pressable>
@@ -269,13 +272,14 @@ export default function ProfileScreen({ navigation }: Props) {
         >
           <Text style={styles.logoutButtonText}>Se déconnecter</Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </ResponsiveContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: spacing.lg, paddingBottom: spacing.xxl * 2 },
+  container: { flex: 1 },
+  scrollContent: { padding: spacing.lg, paddingBottom: spacing.xxl * 2 },
   title: { fontSize: typography.display, fontWeight: "700", color: colors.contentPrimary, marginTop: spacing.md, marginBottom: spacing.lg },
   card: {
     backgroundColor: colors.surfaceRaised,

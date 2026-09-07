@@ -116,7 +116,19 @@ export default function AdminAnnotationsScreen({ navigation }: Props) {
   // testing on mobile ("app showed toasts but no way to export them"). These
   // three actions give an actual, OS-level export path on every platform
   // instead of relying on manual text selection.
-  const exportFilename = () => `annotations-${filter}.${exportFormat === "markdown" ? "md" : "json"}`;
+  // BUG-050 #7: previously always `annotations-{filter}.{ext}` with no
+  // timestamp — every export from the same filter+format landed under the
+  // identical filename, so a browser's download manager silently
+  // disambiguates repeats with its own " (1)", " (2)"… suffix (exactly
+  // what produced `annotations-open__1_.md`, the file this bug was
+  // reported from). A caller can no longer tell two exports apart by name
+  // alone, or know without opening the file how fresh a given copy is.
+  const exportFilename = () => {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    return `annotations-${filter}-${stamp}.${exportFormat === "markdown" ? "md" : "json"}`;
+  };
 
   const shareExport = async () => {
     if (!exportText) return;
@@ -251,14 +263,14 @@ export default function AdminAnnotationsScreen({ navigation }: Props) {
           {exportText !== null && (
             <View style={styles.exportOutputWrap}>
               <View style={styles.exportActionsRow}>
-                <Pressable style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]} onPress={copyExport} accessibilityRole="button">
+                <Pressable style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]} onPress={copyExport} accessibilityRole="button" testID="annotations-export-copy-button">
                   <Text style={styles.secondaryButtonText}>Copier</Text>
                 </Pressable>
-                <Pressable style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]} onPress={shareExport} accessibilityRole="button">
+                <Pressable style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]} onPress={shareExport} accessibilityRole="button" testID="annotations-export-share-button">
                   <Text style={styles.secondaryButtonText}>Partager</Text>
                 </Pressable>
                 {Platform.OS === "web" && (
-                  <Pressable style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]} onPress={downloadExport} accessibilityRole="button">
+                  <Pressable style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]} onPress={downloadExport} accessibilityRole="button" testID="annotations-export-download-button">
                     <Text style={styles.secondaryButtonText}>Télécharger</Text>
                   </Pressable>
                 )}

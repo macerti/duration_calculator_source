@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
+import { colors, radius, spacing, typography } from "../theme/tokens";
 
 interface Props {
   children: React.ReactNode;
@@ -58,10 +59,10 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, backgroundColor: "#fff" },
-  title: { fontSize: 18, fontWeight: "700", color: "#c53030", marginBottom: 10, textAlign: "center" },
-  body: { fontSize: 14, color: "#444", textAlign: "center", lineHeight: 20, marginBottom: 12 },
-  detail: { fontSize: 11, color: "#999", textAlign: "center", marginBottom: 20, fontFamily: "monospace" },
-  button: { backgroundColor: "#1c1c1e", borderRadius: 10, paddingVertical: 12, paddingHorizontal: 24 },
-  buttonText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  container: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.xxl, backgroundColor: colors.surfaceBase },
+  title: { fontSize: typography.heading, fontWeight: "700", color: colors.error, marginBottom: spacing.sm + 2, textAlign: "center" },
+  body: { fontSize: typography.bodyLarge, color: colors.contentSecondary, textAlign: "center", lineHeight: 20, marginBottom: spacing.md },
+  detail: { fontSize: typography.caption, color: colors.contentQuaternary, textAlign: "center", marginBottom: spacing.xl, fontFamily: "monospace" },
+  button: { backgroundColor: colors.actionPrimary, borderRadius: radius.lg, paddingVertical: spacing.md, paddingHorizontal: spacing.xxl },
+  buttonText: { color: colors.actionPrimaryText, fontWeight: "700", fontSize: typography.bodyLarge },
 });

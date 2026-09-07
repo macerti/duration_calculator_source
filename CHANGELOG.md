@@ -2,7 +2,15 @@
 
 Same versioning convention as the other projects: **x** = overhaul, **y** = feature, **z** = bugfix.
 
-## 2026-09-07 (thirty-seventh session) — 5.1.12 — BUG-049 fixed: FEAT-006 annotation export now has a real Copier/Partager/Télécharger path
+## 2026-09-07 (thirty-eighth session) — 5.1.13 — BUG-050: 6 of 8 real live-annotation issues fixed (navigation double-chrome, unreachable/unscrollable Profile, save-button jump, export filename collision, testID starter); 2 logged for clarification/design; full verification deliberately deferred
+
+- **First real live-annotation batch** — Mahdi and a second admin used FEAT-006 for real, exported 8 annotations across 6 screens. Fixed: Profile couldn't scroll (BUG-050 #1 — also explains an earlier "can't find export" report); every screen except the wizard/report had a redundant native header stacked on its own breadcrumb trail, and Profile was unreachable from most of the app (#2/#3, fixed via `headerShown: false` everywhere + a new persistent profile-icon affordance on `Breadcrumbs`); the wizard's save button visually jumped position once autosave completed, caused by a misplaced `marginLeft: "auto"` (#4); the annotation export's filename had no timestamp, causing silent collisions (#7, directly confirmed from the reported filename itself); annotation element-references came back empty because zero `testID`s exist anywhere in the app — confirmed by grep, a few added opportunistically (#8, partial). Logged rather than guessed at: a vague "this total is useless" report needs Mahdi to point at the specific element (#5); AdminRoles' list-based layout and narrow desktop width need an actual design decision, not a blind redesign (#6, now `docs/ROADMAP.md` item 11).
+- **Also this session**: ROADMAP item 6 (design-token migration) taken from 3/9 to 8/9 files; the backend regression suite was independently re-confirmed (24/24, 65/65) as this session's own starting-state check, since the prior session had deferred that same check.
+- **Verified this session**: `npx tsc --noEmit` only — clean. **Deliberately not run**, by direct instruction: `expo export`, `make build-deploy`, hygiene checks, and any backend regression *after* this session's own edits (despite `App.tsx`'s navigation config changing for every screen). Full detail, exact mechanism per item, and the explicit 4-item hand-off: `docs/BUGLOG.md` BUG-050, `docs/DEV_STATUS.md`'s thirty-eighth-session entry.
+
+---
+
+
 
 - **Reported by Mahdi**, live-testing FEAT-006 on mobile: annotations create fine (toast confirms it) but there was "no way to export them."
 - **Root cause**: the export card only rendered the exported text as selectable `<Text>` inside a nested `<ScrollView>` for manual copy — unreliable-to-nonfunctional on mobile.

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import NumberField from "./NumberField";
 import { ShiftRow } from "../types/wizard";
+import { colors, radius, spacing, typography } from "../theme/tokens";
 
 export interface PersonnelFormValue {
   declaredTotal: string;
@@ -172,14 +173,14 @@ export default function PersonnelForm({ value, onChange }: Props) {
 }
 
 const styles = StyleSheet.create({
-  stepIntro: { fontSize: 14, color: "#1c1c1e", fontWeight: "600", marginTop: 18, marginBottom: 8 },
-  shiftCard: { backgroundColor: "#f5f5f7", borderRadius: 10, padding: 12, marginBottom: 10 },
-  shiftHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 4 },
-  shiftLabel: { fontWeight: "600", color: "#333", flex: 1, fontSize: 13 },
-  removeText: { color: "#c53030", fontSize: 13 },
-  validationBox: { borderRadius: 10, padding: 12, marginTop: 12 },
-  validationOk: { backgroundColor: "#eefaf0" },
-  validationWarn: { backgroundColor: "#fff8e6" },
-  validationError: { backgroundColor: "#fdecea" },
-  validationText: { fontSize: 13, fontWeight: "600", color: "#333" },
+  stepIntro: { fontSize: typography.bodyLarge, color: colors.contentPrimary, fontWeight: "600", marginTop: 18, marginBottom: spacing.sm },
+  shiftCard: { backgroundColor: colors.surfaceSunken, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm + 2 },
+  shiftHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.sm, flexWrap: "wrap", gap: spacing.xs },
+  shiftLabel: { fontWeight: "600", color: colors.contentPrimary, flex: 1, fontSize: typography.body },
+  removeText: { color: colors.error, fontSize: typography.body },
+  validationBox: { borderRadius: radius.lg, padding: spacing.md, marginTop: spacing.md },
+  validationOk: { backgroundColor: colors.successSurface },
+  validationWarn: { backgroundColor: colors.warningSurface },
+  validationError: { backgroundColor: colors.errorSurface },
+  validationText: { fontSize: typography.body, fontWeight: "600", color: colors.contentPrimary },
 });

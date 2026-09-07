@@ -8,6 +8,7 @@ import { ParameterSet } from "../types/engine";
 import { resolveMostCriticalRisk } from "../utils/riskResolution";
 import ResponsiveContainer from "../components/ResponsiveContainer";
 import Breadcrumbs from "../components/Breadcrumbs";
+import { colors, radius, spacing, typography } from "../theme/tokens";
 
 type Props = NativeStackScreenProps<RootStackParamList, "CalculationReport">;
 
@@ -64,6 +65,7 @@ export default function CalculationReportScreen({ route, navigation }: Props) {
             { label: dossierRef || "Calcul", onPress: () => navigation.goBack() },
             { label: "Rapport" },
           ]}
+          onProfilePress={() => navigation.navigate("Profile")}
         />
         <Text style={styles.title}>Rapport de calcul</Text>
         <Text style={styles.subtitle}>

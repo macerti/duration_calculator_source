@@ -384,6 +384,7 @@ export default function CalculationWizardScreen({ route, navigation }: Props) {
                 { label: clientName, onPress: goToClientDetail },
                 { label: dossierRef || "Nouveau calcul" },
               ]}
+              onProfilePress={() => navigation.navigate("Profile")}
             />
             {lastSavedAt && (
               <Text style={styles.savedIndicator}>Enregistré {lastSavedAt.toLocaleTimeString("fr-FR")}</Text>
@@ -790,9 +791,19 @@ const styles = StyleSheet.create({
   loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
   scroll: { flex: 1 },
   topRow: { flexDirection: "row", alignItems: "center", gap: 4, flexWrap: "wrap" },
-  savedIndicator: { fontSize: typography.caption, color: colors.contentQuaternary, marginLeft: "auto" },
+  // BUG-050 #4: `savedIndicator` used to carry `marginLeft: "auto"`, so the
+  // save button's horizontal position depended on whether that indicator
+  // happened to be rendered yet. Before the first autosave completes
+  // (`lastSavedAt` still null) the button sat directly next to the
+  // breadcrumb trail; the instant the indicator text appeared, ITS
+  // auto-margin shoved everything after it — the button included — out to
+  // the far right edge. Reported exactly as "shows near the breadcrumb
+  // then goes right." Moving the auto-margin onto the button itself (the
+  // last, always-rendered child of this row) pins it to the right edge
+  // unconditionally, whether or not the indicator text is present.
+  savedIndicator: { fontSize: typography.caption, color: colors.contentQuaternary },
   headerSaveBtn: {
-    marginLeft: spacing.sm,
+    marginLeft: "auto",
     width: 32,
     height: 32,
     borderRadius: radius.pill,

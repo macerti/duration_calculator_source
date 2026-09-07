@@ -15,7 +15,16 @@ export interface Crumb {
   onPress?: () => void; // omit for the current/last crumb
 }
 
-export default function Breadcrumbs({ items }: { items: Crumb[] }) {
+/**
+ * BUG-050 #2/#3: with every screen's native-stack header now hidden (see
+ * App.tsx), this row is the *only* navigation chrome on any given screen —
+ * so it also carries the one persistent, app-wide entry point into
+ * ProfileScreen via `onProfilePress`, right-aligned via `marginLeft: auto`
+ * on its own wrapper so it doesn't disturb the existing crumb-trail layout
+ * or spacing. Omit the prop on ProfileScreen itself (no point linking to
+ * the screen you're already on) — every other screen passes it.
+ */
+export default function Breadcrumbs({ items, onProfilePress }: { items: Crumb[]; onProfilePress?: () => void }) {
   return (
     <View style={styles.row}>
       {items.map((item, i) => {
@@ -37,6 +46,18 @@ export default function Breadcrumbs({ items }: { items: Crumb[] }) {
           </View>
         );
       })}
+      {onProfilePress && (
+        <Pressable
+          onPress={onProfilePress}
+          hitSlop={8}
+          style={styles.profileButton}
+          accessibilityRole="button"
+          accessibilityLabel="Mon profil"
+          testID="breadcrumbs-profile-button"
+        >
+          <Ionicons name="person-circle-outline" size={22} color={colors.contentSecondary} />
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -47,4 +68,5 @@ const styles = StyleSheet.create({
   link: { color: colors.link, fontSize: typography.body },
   current: { color: colors.contentTertiary, fontSize: typography.body, fontWeight: "600" },
   sep: { color: colors.borderDefault, fontSize: typography.body, marginHorizontal: 6 },
+  profileButton: { marginLeft: "auto", paddingLeft: spacing.sm },
 });
