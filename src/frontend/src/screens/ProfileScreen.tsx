@@ -229,7 +229,7 @@ export default function ProfileScreen({ navigation }: Props) {
         </View>
 
         {/* Admin entry points */}
-        {(hasPermission("manage_users") || hasPermission("manage_roles") || hasPermission("manage_annotations")) && (
+        {(hasPermission("manage_users") || hasPermission("manage_roles") || hasPermission("manage_annotations") || hasPermission("manage_tracker")) && (
           <View style={styles.card}>
             <Text style={styles.cardHeading}>Administration</Text>
             {hasPermission("manage_users") && (
@@ -260,6 +260,16 @@ export default function ProfileScreen({ navigation }: Props) {
                 testID="profile-admin-annotations-button"
               >
                 <Text style={styles.secondaryButtonText}>Gérer les annotations</Text>
+              </Pressable>
+            )}
+            {hasPermission("manage_tracker") && (
+              <Pressable
+                style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
+                onPress={() => navigation.navigate("AdminTracker")}
+                accessibilityRole="button"
+                testID="profile-admin-tracker-button"
+              >
+                <Text style={styles.secondaryButtonText}>Suivi bugs/fonctionnalités</Text>
               </Pressable>
             )}
           </View>

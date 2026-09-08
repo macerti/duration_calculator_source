@@ -16,6 +16,7 @@ import ProfileScreen from "./src/screens/ProfileScreen";
 import AdminUsersScreen from "./src/screens/AdminUsersScreen";
 import AdminRolesScreen from "./src/screens/AdminRolesScreen";
 import AdminAnnotationsScreen from "./src/screens/AdminAnnotationsScreen";
+import AdminTrackerScreen from "./src/screens/AdminTrackerScreen";
 import AnnotationCapture from "./src/components/AnnotationCapture";
 import { colors, typography } from "./src/theme/tokens";
 
@@ -42,6 +43,7 @@ export type RootStackParamList = {
   AdminUsers: undefined;
   AdminRoles: undefined;
   AdminAnnotations: undefined;
+  AdminTracker: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -219,6 +221,7 @@ function AuthGate() {
               <Stack.Screen name="AdminUsers" component={AdminUsersScreen} options={{ title: "Utilisateurs", headerShown: false }} />
               <Stack.Screen name="AdminRoles" component={AdminRolesScreen} options={{ title: "Rôles et permissions", headerShown: false }} />
               <Stack.Screen name="AdminAnnotations" component={AdminAnnotationsScreen} options={{ title: "Annotations", headerShown: false }} />
+              <Stack.Screen name="AdminTracker" component={AdminTrackerScreen} options={{ title: "Suivi bugs/fonctionnalités", headerShown: false }} />
             </Stack.Navigator>
           </AnnotationCapture>
         </NavigationContainer>

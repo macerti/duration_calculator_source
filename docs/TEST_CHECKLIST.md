@@ -324,6 +324,15 @@ Failures: 0. Fresh-DB `migrate.php` (5/5 applied, idempotent re-run) → `seed.p
 Notes: this closes the forty-first session's own hand-off item 3 ("full frontend verification, first thing, before any of the above is trusted... don't assume 5.2.0 builds clean until this actually runs"). No frontend source file changed this session — `AdminTrackerScreen.tsx` still doesn't exist — so this confirms only the pre-UI baseline; whoever writes that screen must re-run this same sequence before trusting their own change.
 
 
+### v5.3.0 — 2026-09-08 (forty-fourth session) — `AdminTrackerScreen.tsx` built and wired in, no browser/device available
+
+Tested by: forty-fourth session (automated, sandboxed container — no browser/device available)
+Sections covered: none of the numbered UI sections above — new coverage: `AdminTrackerScreen.tsx` (list/filter/detail/create/edit/log-update/delete), reachable via `ProfileScreen`'s new `manage_tracker`-gated button. First session where the tracker has an actual UI, not just API routes.
+Failures: 0. Backend baseline reconfirmed unchanged: fresh-DB `migrate.php` (5/5, idempotent) → `seed.php` → `smoke_test.php` **24/24** → live `php -S` → `http_api_test.php` **82/82**. Frontend: `npx tsc --noEmit` clean, `npx expo export --platform web --clear` → **559 modules** (558 + 1, exactly as the forty-second session predicted), `make build-deploy` 4/4, `scripts/check-repo-hygiene.sh` 4/4 (secret-scan included).
+Notes: no automated frontend tests exist for this screen (DEBT-004 — no frontend unit-test framework in this project yet) and no live click-through was possible (same standing sandbox limitation as every prior frontend feature) — verification here is typecheck + build + hygiene only, not behavioral. Whoever gets real browser/device access should click through: create an item, log an update, change status/priority, filter by each of the three pickers, delete with the two-tap confirm.
+
+
+
 ## Mandatory source/deployment separation
 
 **SOURCE REPOSITORY RULE:** this repository is the source of truth and is never the deployable artifact. Every application change must be made here first, tested here, then built/packaged and published to **macerti/duration_calculator**. For PHP, the deployable tree is produced from src/backend/ (no compilation). For src/frontend/, the deployable frontend is the generated Expo web export; source-only frontend changes are not deployed until the generated artifact is published to duration_calculator. Never fix application behavior only in the deployment repository. Every hand-off must record the source commit and deployment-artifact commit, or explicitly state that deployment is pending. A task is not deployed until the corresponding artifact exists in duration_calculator and its deployment workflow has been run/passed where applicable.
