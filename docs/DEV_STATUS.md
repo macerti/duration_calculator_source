@@ -1694,3 +1694,54 @@ Converted the file's remaining ~24 raw style values to `src/theme/tokens.ts` usi
 4. **Tech debt (ROADMAP items 6/7)** still waiting, same standing note as the last several sessions.
 
 **Dependency / hand-off**: item 1 has no blocker but time. Item 2 depends on item 1. Item 3 is a pure verification step, independent of 1–2. Item 4 is independent of all three and can be picked up any time.
+
+## 2026-09-07 (fortieth session) — Tracker CRUD data layer + backlog seed migration written; routes, admin UI, and the regression suite explicitly deferred by direct instruction, not started
+
+**Trigger**: standing pipeline instruction (launch PHP+MariaDB locally, pull latest, read logs first, continue the previously-defined next task; reorganize bug/feature/tech-debt tracking behind an admin-visible, filterable, CRUD-able UI; then bugs → features by priority → technical debt, continuously logged, pushed before the token budget runs out). Read the thirty-ninth session's hand-off (build the CRUD API + admin UI on top of migration 004) and treated it as this session's literal starting point. Partway through — data layer and seed migration written, before any route or UI existed — Mahdi explicitly instructed: stop writing more code, update the logs with what's done and what's still needed, and push.
+
+**Read first**: this file's thirty-ninth session entry (hand-off), `docs/ROADMAP.md` item 12, and `docs/BUGLOG.md`'s BUG-048/BUG-050 entries (source material for the seed data below).
+
+**Security note (recurring — see prior sessions' identical note)**: a live GitHub PAT was again pasted in plaintext directly in chat this session. Used only transiently for `git clone`/this session's push; never written to any log, commit, or this project's persistent memory. This token has now been pasted in chat, in plaintext, across essentially every session in this log — rotating it costs a few minutes and removes a standing, growing exposure.
+
+### Done this session
+
+1. **Local sandbox stood up** (PHP 8.3 + MariaDB 10.11 installed fresh; does not persist between sessions — same note every prior session has made). Pulled latest — no new commits since the thirty-ninth session's push; `f8e68e6` was and remains tip.
+2. **Read `docs/DEV_STATUS.md` (thirty-ninth session hand-off), `docs/ROADMAP.md` (item 12), and `docs/BUGLOG.md` (BUG-048 and BUG-050 in full)** to ground this session's plan — and the seed data in point 4 below — in the project's actual recorded state rather than assumption.
+3. **Wrote `src/backend/db/trackerRepo.php`**: the full CRUD data layer for `tracker_items`/`tracker_updates` — `listTrackerItems` (status/type/priority filters), `getTrackerItemByCode` (item + its update history in order), `createTrackerItem`, `updateTrackerItem` (partial — only supplied fields change), `deleteTrackerItem`, `addTrackerUpdate` (logs one history row and refreshes `comments`/optionally `status` in a single transaction, per migration 004's own design note on what `comments` is for), `suggestNextTrackerCode` (collision-free next-code suggestion per prefix, e.g. `BUG` → `BUG-053`). Mirrors `annotationRepo.php`'s shape and validation style throughout, per the prior session's own hand-off note. `php -l` clean. **Not yet required or routed anywhere in `api/index.php`** — the file is currently inert, with zero effect on the running app.
+4. **Wrote and applied migration `005_seed_tracker_backlog.sql`**: seeds the (until now empty) tracker with the actual current backlog — 13 items, each with one `tracker_updates` row summarizing history (`done`) and hand-off (`next`):
+   - `FEAT-006` — annotation tool, pending a live click-through (`fixed_unverified`, p1)
+   - `DEBT-001` — no CI render-smoke-test, the process gap behind BUG-048 (open, p1)
+   - `BUG-051` — `ErrorBoundary`'s `onGoHome` is a no-op on native (open, p2)
+   - `BUG-052` — "this total is useless" annotation, needs Mahdi's clarification on which total (open, p2, blocked)
+   - `DEBT-002` — AdminRoles flat-list layout + narrow desktop width, needs redesign (open, p1)
+   - `DEBT-003` — near-zero `testID` coverage app-wide (open, p2)
+   - `DEBT-004` — top-level `tests/` relocation + missing frontend unit tests (open, p1)
+   - `FEAT-007` — In-App Guided Acceptance Test Runner & Report Exporter (open, p1)
+   - `FEAT-008` — Parameter Admin UI & dossier reference codification (open, p1)
+   - `FEAT-001` — Synthèse per-site tabs + consolidated view (open, p1)
+   - `FEAT-009` — PDF export of the calculation report (open, p1)
+   - `FEAT-004` — production web presence / SEO review (open, p2)
+   - `FEAT-002` — Google sign-in, deferred indefinitely (open, p3)
+
+   `INSERT IGNORE` throughout — idempotent, and deliberately won't overwrite a row an admin has since edited through the (future) UI on a re-run. Verified locally: fresh-DB `migrate.php` applies all 5 migrations; a second run applies 0 new; row counts and spot-checked field content confirmed correct against both source markdown files.
+5. **Assigned this feature itself — `docs/ROADMAP.md` item 12 — its own code, `FEAT-010`** (FEAT-007/008/009 were claimed this same session for the other, unrelated items above), and updated that ROADMAP entry inline with this session's exact status.
+
+### NOT DONE — explicitly, by direct instruction, not an oversight
+
+- **No API routes wired in `api/index.php`** — `trackerRepo.php` exists but nothing calls it yet.
+- **No admin UI screen** — nothing to see, filter, or CRUD yet, despite the data layer and seed data existing underneath.
+- **No tracker-specific tests, and — importantly — the existing backend regression suite (`smoke_test.php`, `http_api_test.php`) was NOT re-run this session at all.** Only the migration itself was verified in isolation (fresh apply + idempotent re-run + row-count/content spot-check). Do not assume the thirty-ninth session's 24/24 smoke or 65/65 HTTP numbers still hold without re-running them fresh.
+- **No CI-confirmed green run yet** for this push.
+- **No bugs fixed, no features built, no other tech debt (`DEBT-001`–`004`) touched** — this session's entire scope was the tracker's data layer and backlog seed, per Mahdi's own explicit instruction partway through to stop coding, log, and push.
+
+### Hand-off for the next developer
+
+1. **Wire the routes in `api/index.php`**: `GET /admin/tracker/items` (list, optional `?status`/`?type`/`?priority`), `GET /admin/tracker/items/:code` (detail + history), `POST /admin/tracker/items` (create), `PUT /admin/tracker/items/:code` (partial update), `DELETE /admin/tracker/items/:code`, `POST /admin/tracker/items/:code/updates` (log an update), `GET /admin/tracker/next-code?prefix=BUG` (suggestion) — all gated behind `requirePermission('manage_tracker')`, CSRF on the mutating ones, next to the annotations routes in `index.php`. Every function these routes need already exists in `trackerRepo.php` and is documented inline there.
+2. **Run the full backend regression suite fresh, first** — establish the real current baseline (see "Not done" above) before adding a single tracker-specific test. Then add an HTTP regression block for `/admin/tracker/*` mirroring the annotations test block — note `listTrackerItems` will start from 13 real seeded rows, not zero, so write assertions accordingly.
+3. **Build `AdminTrackerScreen.tsx`**: list with status/type/priority filters, detail view with the update history in order, create/edit/delete forms, a "log an update" action (`done`/`next`/optionally `status`). Mirror `AdminAnnotationsScreen.tsx`/`useAdminApi.ts` for the pattern. Use a wide `ResponsiveContainer` `maxWidth` (~1100, matching `CalculationWizardScreen`) rather than the 640–800 cap already flagged as its own tech debt (`DEBT-002`/ROADMAP item 11) — no reason to bake that same mistake into a brand-new screen.
+4. **Wire into `App.tsx`** (import + `RootStackParamList` + `Stack.Screen`) **and `ProfileScreen.tsx`** (nav button gated on `hasPermission('manage_tracker')`) — the same three-file pattern every existing admin screen already follows.
+5. **Once routes exist, add a `tracker_items` row for `FEAT-010`** (this feature, tracking itself) — either through the new API directly or a further seed migration, whichever is more convenient at that point.
+6. **Full verification before calling any of this closed**: `tsc --noEmit`, `expo export --platform web --clear`, `make build-deploy`, `scripts/check-repo-hygiene.sh`, the full backend regression suite, then watch this push's and the next one's CI runs.
+7. **Only after the tracker is fully live**: move to bugs (none open at P0/P1 currently — the real remaining work is what this session tracked as `BUG-051`/`052` and `DEBT-001`–`004`), then features by priority (`FEAT-007`/`008`/`001`/`009`, roughly in that order per ROADMAP's own P1 queue), then the rest of tech debt (`DEBT-004`, `tests/` relocation, carried over untouched for four-plus sessions now).
+
+**Dependency / hand-off**: item 1 has no blocker but time. Item 2 depends on item 1 existing. Item 3 can start in parallel with 1–2 (a UI can be built against a not-yet-live API) but needs item 1 to actually work end-to-end. Item 4 depends on item 3. Item 5 depends on item 1. Item 6 depends on 1–4. Item 7 depends on the whole tracker (1–6) being live and confirmed, per Mahdi's own stated ordering: tracker/UI first, then bugs, then features, then tech debt.
