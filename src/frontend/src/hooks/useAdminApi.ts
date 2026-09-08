@@ -47,6 +47,35 @@ export interface Annotation {
   createdByName: string;
 }
 
+/** Matches db/trackerRepo.php's mapTrackerUpdateRow() — FEAT-010. */
+export interface TrackerUpdate {
+  id: number;
+  itemCode: string;
+  done: string;
+  next: string | null;
+  createdAt: string;
+}
+
+/** Matches db/trackerRepo.php's mapTrackerItemRow() — FEAT-010. `updates`
+ * is only populated by getTrackerItem() (the by-code detail fetch);
+ * listTrackerItems() rows never carry it — mirrors the repo layer's own
+ * getTrackerItemByCode()-only attachment of history. */
+export interface TrackerItem {
+  code: string;
+  type: "bug" | "feature" | "techdebt" | "other";
+  title: string;
+  userDescription: string | null;
+  technicalDescription: string | null;
+  status: "open" | "in_progress" | "fixed_unverified" | "verified" | "closed";
+  priority: "p0" | "p1" | "p2" | "p3" | null;
+  dependencies: string | null;
+  testsToDo: string | null;
+  comments: string | null;
+  createdAt: string;
+  updatedAt: string;
+  updates?: TrackerUpdate[];
+}
+
 export class AdminApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -148,5 +177,52 @@ export function useAdminApi(csrfToken: string | null) {
       }
       return text;
     },
+
+    // FEAT-010 — bug/feature/tech-debt tracker (docs/ROADMAP.md item 12).
+    // Mirrors the annotations block above: same request() helper, same
+    // error shape. `type` and `code` are immutable after creation — see
+    // trackerRepo.php's updateTrackerItem() doc comment for why — so
+    // updateTrackerItem()'s fields type deliberately excludes them.
+    listTrackerItems: (filters?: { status?: TrackerItem["status"]; type?: TrackerItem["type"]; priority?: NonNullable<TrackerItem["priority"]> }) => {
+      const params = new URLSearchParams();
+      if (filters?.status) params.set("status", filters.status);
+      if (filters?.type) params.set("type", filters.type);
+      if (filters?.priority) params.set("priority", filters.priority);
+      const qs = params.toString();
+      return request<TrackerItem[]>(`/admin/tracker/items${qs ? `?${qs}` : ""}`);
+    },
+    getTrackerItem: (code: string) => request<TrackerItem>(`/admin/tracker/items/${code}`),
+    createTrackerItem: (fields: {
+      code: string;
+      type: TrackerItem["type"];
+      title: string;
+      userDescription?: string | null;
+      technicalDescription?: string | null;
+      status?: TrackerItem["status"];
+      priority?: TrackerItem["priority"];
+      dependencies?: string | null;
+      testsToDo?: string | null;
+      comments?: string | null;
+    }) => request<TrackerItem>("/admin/tracker/items", { method: "POST", body: JSON.stringify(fields) }),
+    updateTrackerItem: (
+      code: string,
+      fields: Partial<{
+        title: string;
+        userDescription: string | null;
+        technicalDescription: string | null;
+        status: TrackerItem["status"];
+        priority: TrackerItem["priority"];
+        dependencies: string | null;
+        testsToDo: string | null;
+        comments: string | null;
+      }>
+    ) => request<TrackerItem>(`/admin/tracker/items/${code}`, { method: "PUT", body: JSON.stringify(fields) }),
+    deleteTrackerItem: (code: string) => request<{ deleted: string }>(`/admin/tracker/items/${code}`, { method: "DELETE" }),
+    addTrackerUpdate: (code: string, done: string, next?: string | null, status?: TrackerItem["status"]) =>
+      request<TrackerItem>(`/admin/tracker/items/${code}/updates`, {
+        method: "POST",
+        body: JSON.stringify({ done, next: next ?? null, status: status ?? null }),
+      }),
+    suggestNextTrackerCode: (prefix: string) => request<{ code: string }>(`/admin/tracker/next-code?prefix=${encodeURIComponent(prefix)}`),
   };
 }
