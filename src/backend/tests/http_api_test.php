@@ -266,6 +266,68 @@ check($status === 200, 'DELETE /admin/annotations/:id succeeds', "status=$status
 [$status, $afterDelete] = request('GET', "$base/admin/annotations");
 check($status === 200 && $afterDelete === [], 'GET /admin/annotations is empty again after delete', "status=$status " . json_encode($afterDelete));
 
+// --- FEAT-010: bug/feature/tech-debt tracker (docs/ROADMAP.md item 12) ---
+// migrations/005_seed_tracker_backlog.sql seeds 13 real backlog rows on a
+// fresh DB (2 of type 'bug': BUG-051, BUG-052) — this block asserts
+// against that real count, not an empty list, per the session that wrote
+// these routes' own hand-off note to do exactly that.
+[$status] = request('GET', "$base/admin/tracker/items", null, null, false);
+check($status === 401, 'GET /admin/tracker/items with no session is rejected', "status=$status");
+
+[$status, $trackerList] = request('GET', "$base/admin/tracker/items");
+check($status === 200 && count($trackerList ?? []) === 13, 'GET /admin/tracker/items lists the 13 seeded items', "status=$status count=" . count($trackerList ?? []));
+
+[$status, $bugsOnly] = request('GET', "$base/admin/tracker/items?type=bug");
+check($status === 200 && count($bugsOnly ?? []) === 2, 'GET /admin/tracker/items?type=bug filters to the 2 seeded bugs', "status=$status count=" . count($bugsOnly ?? []));
+
+[$status, $badFilter] = request('GET', "$base/admin/tracker/items?status=not-a-status");
+check($status === 400, 'GET /admin/tracker/items rejects an invalid status filter', "status=$status");
+
+[$status, $nextCode] = request('GET', "$base/admin/tracker/next-code?prefix=TEST");
+check($status === 200 && ($nextCode['code'] ?? '') === 'TEST-001', 'GET /admin/tracker/next-code suggests TEST-001 for an unused prefix', "status=$status " . json_encode($nextCode));
+
+[$status, $noCsrfItem] = request('POST', "$base/admin/tracker/items", ['code' => 'TEST-001', 'type' => 'bug', 'title' => 'ci test item']);
+check($status === 403, 'POST /admin/tracker/items without CSRF token is rejected', "status=$status");
+
+[$status, $badCode] = request('POST', "$base/admin/tracker/items", ['code' => 'not a code', 'type' => 'bug', 'title' => 'ci test item'], $csrf);
+check($status === 400, 'POST /admin/tracker/items rejects a malformed code', "status=$status " . json_encode($badCode));
+
+[$status, $newItem] = request('POST', "$base/admin/tracker/items", [
+    'code' => 'TEST-001',
+    'type' => 'bug',
+    'title' => 'ci test item',
+    'priority' => 'p2',
+    'userDescription' => 'reported by the CI script',
+], $csrf);
+check($status === 201 && ($newItem['status'] ?? '') === 'open' && ($newItem['priority'] ?? '') === 'p2' && ($newItem['updates'] ?? null) === [], 'POST /admin/tracker/items creates an item, open by default, empty history', "status=$status " . json_encode($newItem));
+
+[$status, $fetched] = request('GET', "$base/admin/tracker/items/TEST-001");
+check($status === 200 && ($fetched['title'] ?? '') === 'ci test item', 'GET /admin/tracker/items/:code returns the created item', "status=$status " . json_encode($fetched));
+
+[$status] = request('GET', "$base/admin/tracker/items/NOPE-999");
+check($status === 404, 'GET /admin/tracker/items/:code 404s for an unknown code', "status=$status");
+
+[$status, $afterUpdate] = request('PUT', "$base/admin/tracker/items/TEST-001", ['status' => 'in_progress', 'technicalDescription' => 'root cause identified'], $csrf);
+check($status === 200 && ($afterUpdate['status'] ?? '') === 'in_progress' && ($afterUpdate['technicalDescription'] ?? '') === 'root cause identified', 'PUT /admin/tracker/items/:code applies a partial update', "status=$status " . json_encode($afterUpdate));
+
+[$status, $badStatusUpdate] = request('PUT', "$base/admin/tracker/items/TEST-001", ['status' => 'not-a-status'], $csrf);
+check($status === 400, 'PUT /admin/tracker/items/:code rejects an invalid status value', "status=$status");
+
+[$status, $afterLog] = request('POST', "$base/admin/tracker/items/TEST-001/updates", ['done' => 'Fixed the root cause', 'next' => 'Awaiting live verification', 'status' => 'fixed_unverified'], $csrf);
+check($status === 201 && ($afterLog['status'] ?? '') === 'fixed_unverified' && ($afterLog['comments'] ?? '') === 'Awaiting live verification' && count($afterLog['updates'] ?? []) === 1, 'POST /admin/tracker/items/:code/updates logs history and moves status + comments', "status=$status " . json_encode($afterLog));
+
+[$status, $blankDone] = request('POST', "$base/admin/tracker/items/TEST-001/updates", ['done' => '   '], $csrf);
+check($status === 400, 'POST /admin/tracker/items/:code/updates rejects a blank done field', "status=$status");
+
+[$status] = request('DELETE', "$base/admin/tracker/items/TEST-001");
+check($status === 403, 'DELETE /admin/tracker/items/:code without CSRF token is rejected', "status=$status");
+
+[$status] = request('DELETE', "$base/admin/tracker/items/TEST-001", null, $csrf);
+check($status === 200, 'DELETE /admin/tracker/items/:code succeeds with CSRF token', "status=$status");
+
+[$status, $backToBaseline] = request('GET', "$base/admin/tracker/items");
+check($status === 200 && count($backToBaseline ?? []) === 13, 'GET /admin/tracker/items is back to the 13 seeded rows after delete', "status=$status count=" . count($backToBaseline ?? []));
+
 // --- Forgot / reset password ---
 [$status] = request('POST', "$base/auth/forgot-password", ['email' => $testEmail], null, false);
 check($status === 200, 'POST /auth/forgot-password returns 200', "status=$status");

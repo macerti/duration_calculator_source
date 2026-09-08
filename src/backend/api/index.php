@@ -19,6 +19,7 @@ require_once __DIR__ . '/../db/userRepo.php';
 require_once __DIR__ . '/../db/roleRepo.php';
 require_once __DIR__ . '/../db/permissionRepo.php';
 require_once __DIR__ . '/../db/annotationRepo.php';
+require_once __DIR__ . '/../db/trackerRepo.php';
 require_once __DIR__ . '/../db/rateLimiter.php';
 require_once __DIR__ . '/../db/Migrations.php';
 require_once __DIR__ . '/../auth/OAuthSession.php';
@@ -95,6 +96,13 @@ use function AuditEngine\listAnnotations;
 use function AuditEngine\createAnnotation;
 use function AuditEngine\updateAnnotationStatus;
 use function AuditEngine\deleteAnnotation;
+use function AuditEngine\listTrackerItems;
+use function AuditEngine\getTrackerItemByCode;
+use function AuditEngine\createTrackerItem;
+use function AuditEngine\updateTrackerItem;
+use function AuditEngine\deleteTrackerItem;
+use function AuditEngine\addTrackerUpdate;
+use function AuditEngine\suggestNextTrackerCode;
 use function AuditEngine\rateLimitCheck;
 use AuditEngine\Migrations;
 
@@ -891,6 +899,124 @@ try {
         $id = (int)$segments[2];
         deleteAnnotation($id);
         respond(['deleted' => $id]);
+    }
+
+    // =========================================================
+    // FEAT-010 — bug/feature/tech-debt tracker (docs/ROADMAP.md item 12)
+    // Data layer: db/trackerRepo.php (written previous session — see
+    // docs/DEV_STATUS.md, fortieth session). Mirrors the /admin/annotations
+    // block above: requireDb → requirePermission('manage_tracker') →
+    // requireCsrf() on mutating routes; a RuntimeException from the repo
+    // layer is caught and turned into a 400 carrying its French message,
+    // same convention as every other repo layer in this file.
+    // Status/type/priority allowlists are inlined here rather than
+    // imported from trackerRepo.php's TRACKER_* constants, matching how
+    // the annotations block above inlines its own ['open','actioned',
+    // 'dismissed'] rather than importing a constant — this file's existing
+    // precedent for route-layer filter validation.
+    // =========================================================
+
+    // GET /admin/tracker/next-code?prefix=BUG — suggest the next free code.
+    // Checked before the generic /admin/tracker/items block below since
+    // it's a sibling path under /admin/tracker, not a :code segment.
+    if ($method === 'GET' && $segments === ['admin', 'tracker', 'next-code']) {
+        requireDb($dbAvailable);
+        requirePermission('manage_tracker');
+        $prefix = (string)($_GET['prefix'] ?? '');
+        try {
+            $code = suggestNextTrackerCode($prefix);
+        } catch (\RuntimeException $e) {
+            respond(['error' => $e->getMessage()], 400);
+        }
+        respond(['code' => $code]);
+    }
+
+    // GET /admin/tracker/items — list, optional ?status=&?type=&?priority=
+    if ($method === 'GET' && $segments === ['admin', 'tracker', 'items']) {
+        requireDb($dbAvailable);
+        requirePermission('manage_tracker');
+        $statusFilter = isset($_GET['status']) && $_GET['status'] !== '' ? (string)$_GET['status'] : null;
+        $typeFilter = isset($_GET['type']) && $_GET['type'] !== '' ? (string)$_GET['type'] : null;
+        $priorityFilter = isset($_GET['priority']) && $_GET['priority'] !== '' ? (string)$_GET['priority'] : null;
+        if ($statusFilter !== null && !in_array($statusFilter, ['open', 'in_progress', 'fixed_unverified', 'verified', 'closed'], true)) {
+            respond(['error' => 'Invalid status filter.'], 400);
+        }
+        if ($typeFilter !== null && !in_array($typeFilter, ['bug', 'feature', 'techdebt', 'other'], true)) {
+            respond(['error' => 'Invalid type filter.'], 400);
+        }
+        if ($priorityFilter !== null && !in_array($priorityFilter, ['p0', 'p1', 'p2', 'p3'], true)) {
+            respond(['error' => 'Invalid priority filter.'], 400);
+        }
+        respond(listTrackerItems($statusFilter, $typeFilter, $priorityFilter));
+    }
+
+    // POST /admin/tracker/items — create a new item
+    if ($method === 'POST' && $segments === ['admin', 'tracker', 'items']) {
+        requireDb($dbAvailable);
+        requirePermission('manage_tracker');
+        requireCsrf();
+        $body = jsonBody();
+        try {
+            $item = createTrackerItem($body);
+        } catch (\RuntimeException $e) {
+            respond(['error' => $e->getMessage()], 400);
+        }
+        respond($item, 201);
+    }
+
+    // GET /admin/tracker/items/:code — detail + update history
+    if ($method === 'GET' && count($segments) === 4 && $segments[0] === 'admin' && $segments[1] === 'tracker' && $segments[2] === 'items') {
+        requireDb($dbAvailable);
+        requirePermission('manage_tracker');
+        $code = strtoupper((string)$segments[3]);
+        $item = getTrackerItemByCode($code);
+        if ($item === null) respond(['error' => "No tracker item with code $code"], 404);
+        respond($item);
+    }
+
+    // PUT /admin/tracker/items/:code — partial update (code/type immutable — see trackerRepo.php)
+    if ($method === 'PUT' && count($segments) === 4 && $segments[0] === 'admin' && $segments[1] === 'tracker' && $segments[2] === 'items') {
+        requireDb($dbAvailable);
+        requirePermission('manage_tracker');
+        requireCsrf();
+        $code = strtoupper((string)$segments[3]);
+        $body = jsonBody();
+        try {
+            $updated = updateTrackerItem($code, $body);
+        } catch (\RuntimeException $e) {
+            respond(['error' => $e->getMessage()], 400);
+        }
+        respond($updated);
+    }
+
+    // DELETE /admin/tracker/items/:code
+    if ($method === 'DELETE' && count($segments) === 4 && $segments[0] === 'admin' && $segments[1] === 'tracker' && $segments[2] === 'items') {
+        requireDb($dbAvailable);
+        requirePermission('manage_tracker');
+        requireCsrf();
+        $code = strtoupper((string)$segments[3]);
+        deleteTrackerItem($code);
+        respond(['deleted' => $code]);
+    }
+
+    // POST /admin/tracker/items/:code/updates — log a done/next update,
+    // optionally moving status in the same call (see trackerRepo.php's
+    // addTrackerUpdate() for why these are one action, not two requests)
+    if ($method === 'POST' && count($segments) === 5 && $segments[0] === 'admin' && $segments[1] === 'tracker' && $segments[2] === 'items' && $segments[4] === 'updates') {
+        requireDb($dbAvailable);
+        requirePermission('manage_tracker');
+        requireCsrf();
+        $code = strtoupper((string)$segments[3]);
+        $body = jsonBody();
+        $done = (string)($body['done'] ?? '');
+        $next = isset($body['next']) && $body['next'] !== '' ? (string)$body['next'] : null;
+        $newStatus = isset($body['status']) && $body['status'] !== '' ? (string)$body['status'] : null;
+        try {
+            $updated = addTrackerUpdate($code, $done, $next, $newStatus);
+        } catch (\RuntimeException $e) {
+            respond(['error' => $e->getMessage()], 400);
+        }
+        respond($updated, 201);
     }
 
     // POST /auth/logout — destroy session
