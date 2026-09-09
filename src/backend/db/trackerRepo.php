@@ -67,8 +67,13 @@ function mapTrackerUpdateRow(array $r): array
  * @param string|null $status one of TRACKER_STATUSES, or null for no filter
  * @param string|null $type one of TRACKER_TYPES, or null for no filter
  * @param string|null $priority one of TRACKER_PRIORITIES, or null for no filter
+ * @param string|null $search free-text search (code/title/user_description/
+ *   technical_description/comments, case-insensitive substring), or null for
+ *   no filter. Added so an admin can find a specific item across a backlog
+ *   too large to scan visually — same motivation as the status/type/priority
+ *   filters above, just unstructured instead of a fixed set of values.
  */
-function listTrackerItems(?string $status = null, ?string $type = null, ?string $priority = null): array
+function listTrackerItems(?string $status = null, ?string $type = null, ?string $priority = null, ?string $search = null): array
 {
     $pdo = getPdo();
     $sql = 'SELECT code, type, title, user_description, technical_description, status, priority, dependencies, tests_to_do, comments, created_at, updated_at FROM tracker_items';
@@ -77,6 +82,11 @@ function listTrackerItems(?string $status = null, ?string $type = null, ?string 
     if ($status !== null) { $where[] = 'status = ?'; $params[] = $status; }
     if ($type !== null) { $where[] = 'type = ?'; $params[] = $type; }
     if ($priority !== null) { $where[] = 'priority = ?'; $params[] = $priority; }
+    if ($search !== null && trim($search) !== '') {
+        $needle = '%' . str_replace(['%', '_'], ['\\%', '\\_'], trim($search)) . '%';
+        $where[] = '(code LIKE ? OR title LIKE ? OR user_description LIKE ? OR technical_description LIKE ? OR comments LIKE ?)';
+        array_push($params, $needle, $needle, $needle, $needle, $needle);
+    }
     if ($where) $sql .= ' WHERE ' . implode(' AND ', $where);
     // Open work first (priority p0→p3, NULL priority last), then most
     // recently touched — an admin scanning the list wants the most

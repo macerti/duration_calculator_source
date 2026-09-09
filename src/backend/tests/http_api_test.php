@@ -283,6 +283,26 @@ check($status === 200 && count($bugsOnly ?? []) === 2, 'GET /admin/tracker/items
 [$status, $badFilter] = request('GET', "$base/admin/tracker/items?status=not-a-status");
 check($status === 400, 'GET /admin/tracker/items rejects an invalid status filter', "status=$status");
 
+// ?search= — free-text match across code/title/user_description/
+// technical_description/comments (case-insensitive substring).
+[$status, $searchByCode] = request('GET', "$base/admin/tracker/items?search=BUG-051");
+check($status === 200 && count($searchByCode ?? []) === 1 && ($searchByCode[0]['code'] ?? '') === 'BUG-051', 'GET /admin/tracker/items?search= matches by code', "status=$status count=" . count($searchByCode ?? []));
+
+[$status, $searchByTitleWord] = request('GET', "$base/admin/tracker/items?" . http_build_query(['search' => 'annotation']));
+check($status === 200 && count($searchByTitleWord ?? []) >= 1 && in_array('FEAT-006', array_column($searchByTitleWord ?? [], 'code'), true), 'GET /admin/tracker/items?search= matches by title substring', "status=$status count=" . count($searchByTitleWord ?? []));
+
+[$status, $searchCaseInsensitive] = request('GET', "$base/admin/tracker/items?" . http_build_query(['search' => 'ANNOTATION']));
+check($status === 200 && count($searchCaseInsensitive ?? []) === count($searchByTitleWord ?? []), 'GET /admin/tracker/items?search= is case-insensitive', "status=$status");
+
+[$status, $searchNoMatch] = request('GET', "$base/admin/tracker/items?" . http_build_query(['search' => 'zzz-no-such-term-zzz']));
+check($status === 200 && count($searchNoMatch ?? []) === 0, 'GET /admin/tracker/items?search= with no match returns an empty list', "status=$status count=" . count($searchNoMatch ?? []));
+
+[$status, $searchCombined] = request('GET', "$base/admin/tracker/items?" . http_build_query(['search' => 'e', 'type' => 'bug']));
+check($status === 200 && count(array_filter($searchCombined ?? [], fn($i) => $i['type'] !== 'bug')) === 0, 'GET /admin/tracker/items?search= combines with other filters', "status=$status count=" . count($searchCombined ?? []));
+
+[$status, $searchTooLong] = request('GET', "$base/admin/tracker/items?" . http_build_query(['search' => str_repeat('x', 201)]));
+check($status === 400, 'GET /admin/tracker/items?search= rejects an overlong term', "status=$status");
+
 [$status, $nextCode] = request('GET', "$base/admin/tracker/next-code?prefix=TEST");
 check($status === 200 && ($nextCode['code'] ?? '') === 'TEST-001', 'GET /admin/tracker/next-code suggests TEST-001 for an unused prefix', "status=$status " . json_encode($nextCode));
 

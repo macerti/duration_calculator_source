@@ -931,13 +931,14 @@ try {
         respond(['code' => $code]);
     }
 
-    // GET /admin/tracker/items — list, optional ?status=&?type=&?priority=
+    // GET /admin/tracker/items — list, optional ?status=&?type=&?priority=&?search=
     if ($method === 'GET' && $segments === ['admin', 'tracker', 'items']) {
         requireDb($dbAvailable);
         requirePermission('manage_tracker');
         $statusFilter = isset($_GET['status']) && $_GET['status'] !== '' ? (string)$_GET['status'] : null;
         $typeFilter = isset($_GET['type']) && $_GET['type'] !== '' ? (string)$_GET['type'] : null;
         $priorityFilter = isset($_GET['priority']) && $_GET['priority'] !== '' ? (string)$_GET['priority'] : null;
+        $searchFilter = isset($_GET['search']) && trim((string)$_GET['search']) !== '' ? (string)$_GET['search'] : null;
         if ($statusFilter !== null && !in_array($statusFilter, ['open', 'in_progress', 'fixed_unverified', 'verified', 'closed'], true)) {
             respond(['error' => 'Invalid status filter.'], 400);
         }
@@ -947,7 +948,10 @@ try {
         if ($priorityFilter !== null && !in_array($priorityFilter, ['p0', 'p1', 'p2', 'p3'], true)) {
             respond(['error' => 'Invalid priority filter.'], 400);
         }
-        respond(listTrackerItems($statusFilter, $typeFilter, $priorityFilter));
+        if ($searchFilter !== null && mb_strlen($searchFilter) > 200) {
+            respond(['error' => 'Search term too long.'], 400);
+        }
+        respond(listTrackerItems($statusFilter, $typeFilter, $priorityFilter, $searchFilter));
     }
 
     // POST /admin/tracker/items — create a new item
