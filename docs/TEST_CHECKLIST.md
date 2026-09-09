@@ -332,6 +332,15 @@ Failures: 0. Backend baseline reconfirmed unchanged: fresh-DB `migrate.php` (5/5
 Notes: no automated frontend tests exist for this screen (DEBT-004 — no frontend unit-test framework in this project yet) and no live click-through was possible (same standing sandbox limitation as every prior frontend feature) — verification here is typecheck + build + hygiene only, not behavioral. Whoever gets real browser/device access should click through: create an item, log an update, change status/priority, filter by each of the three pickers, delete with the two-tap confirm.
 
 
+### no version — 2026-09-08 (forty-fifth session) — migration 006 (FEAT-010 self-row) + stale-baseline test fix, no browser/device available
+
+Tested by: forty-fifth session (automated, sandboxed container — no browser/device available)
+Sections covered: none of the numbered UI sections above — backend/test-only session, no frontend files touched.
+Failures: 0 in the final state, after fixing 2 genuinely stale assertions. Fresh-DB `migrate.php` (6/6 applied, idempotent) → `seed.php` → `smoke_test.php` **24/24** → live `php -S` → `http_api_test.php` **82/82**.
+Notes: applying migration 006 (seeds the FEAT-010 tracker row) legitimately moved `tracker_items` from 13 to 14 rows, which broke two hardcoded `count === 13` assertions in `tests/http_api_test.php` — both updated to 14, same category as a prior session's permission-count fix, not a real regression. Separately, this session initially produced 35 false-positive failures from running the suite twice against an already-populated database without resetting in between (the suite's own test registrant doesn't bootstrap as admin on a non-fresh DB) — caught before treating it as a code problem; database dropped and rebuilt, and the final run's output was captured to a file and inspected once, deliberately not re-invoked live a third time.
+
+
+
 
 ## Mandatory source/deployment separation
 

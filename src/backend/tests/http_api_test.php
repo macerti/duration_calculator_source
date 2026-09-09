@@ -275,7 +275,7 @@ check($status === 200 && $afterDelete === [], 'GET /admin/annotations is empty a
 check($status === 401, 'GET /admin/tracker/items with no session is rejected', "status=$status");
 
 [$status, $trackerList] = request('GET', "$base/admin/tracker/items");
-check($status === 200 && count($trackerList ?? []) === 13, 'GET /admin/tracker/items lists the 13 seeded items', "status=$status count=" . count($trackerList ?? []));
+check($status === 200 && count($trackerList ?? []) === 14, 'GET /admin/tracker/items lists the 14 seeded items', "status=$status count=" . count($trackerList ?? []));
 
 [$status, $bugsOnly] = request('GET', "$base/admin/tracker/items?type=bug");
 check($status === 200 && count($bugsOnly ?? []) === 2, 'GET /admin/tracker/items?type=bug filters to the 2 seeded bugs', "status=$status count=" . count($bugsOnly ?? []));
@@ -326,7 +326,7 @@ check($status === 403, 'DELETE /admin/tracker/items/:code without CSRF token is 
 check($status === 200, 'DELETE /admin/tracker/items/:code succeeds with CSRF token', "status=$status");
 
 [$status, $backToBaseline] = request('GET', "$base/admin/tracker/items");
-check($status === 200 && count($backToBaseline ?? []) === 13, 'GET /admin/tracker/items is back to the 13 seeded rows after delete', "status=$status count=" . count($backToBaseline ?? []));
+check($status === 200 && count($backToBaseline ?? []) === 14, 'GET /admin/tracker/items is back to the 14 seeded rows after delete', "status=$status count=" . count($backToBaseline ?? []));
 
 // --- Forgot / reset password ---
 [$status] = request('POST', "$base/auth/forgot-password", ['email' => $testEmail], null, false);

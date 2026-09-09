@@ -2,6 +2,17 @@
 
 Same versioning convention as the other projects: **x** = overhaul, **y** = feature, **z** = bugfix.
 
+## 2026-09-08 (forty-fifth session) — no version bump — FEAT-010 fully self-closed: tracker row seeded via migration; caught and fixed a stale-test-baseline regression along the way
+
+- **No version bump**: a data-seed migration and a test-assertion fix aren't user-reachable functionality on their own — nothing here changes what an admin sees or can do beyond one more row in a list they could already view.
+- **Migration `006_seed_feat010_self.sql`** adds the `tracker_items` row for FEAT-010 (this tracker feature) itself, via `INSERT IGNORE` — sidesteps the live-API registration/bootstrap-role path entirely (the forty-fourth session found that path blocked: a second registrant on a DB that already has an active `administrateur` correctly does not get re-bootstrapped as admin). `tracker_items` now has **14 rows**.
+- **Regression caught and fixed, not shipped**: applying migration 006 surfaced two hardcoded `count === 13` assertions in `tests/http_api_test.php` (list-all, and back-to-baseline-after-delete) — both stale test expectations, not code bugs, same category as the forty-first session's permission-count fix. Updated to 14.
+- **Also worth recording**: this session initially saw 35 false-positive failures from running `make test-http` twice in a row against an already-populated database without resetting between runs — recognized as test-environment staleness (the suite's own registrant doesn't bootstrap as admin on a non-fresh DB), not a real regression, before any code was touched to "fix" it. Database dropped and rebuilt, and the final verification run was captured to a file and inspected once rather than re-invoked live, specifically to avoid repeating the same mistake a third time.
+- **Final confirmed state**: fresh-DB `migrate.php` (6/6 applied, idempotent on re-run) → `seed.php` → `smoke_test.php` **24/24** → live `php -S` → `http_api_test.php` **82/82**, zero failures. No frontend files touched.
+- Full detail: `docs/DEV_STATUS.md`'s forty-fifth-session entry.
+
+---
+
 ## 2026-09-08 (forty-fourth session) — 5.3.0 — FEAT-010 tracker: `AdminTrackerScreen.tsx` written, wired in, fully verified — the tracker is now genuinely usable by an admin, not just API-reachable
 
 - **Version bump follows the normal convention this time**: unlike the forty-first session's 5.2.0 bump (explicitly flagged as a deviation — backend-only, nothing user-reachable), this one *is* something user-reachable: a real screen an admin can open, filter, read, and edit. Standard "bump when it's user-reachable" rule applies cleanly here.
