@@ -1957,3 +1957,5 @@ One local-setup-only false alarm worth recording so it isn't rediscovered: `conf
 5. **Environment tooling for a future cold-start sandbox session**: see this session's environment note above — wrap the entire migrate→seed→smoke→serve→http-test→kill sequence in one shell invocation from the first attempt, and set `migration_secret` in `config.php` to match `http_api_test.php`'s hardcoded value before trusting an HTTP regression run.
 
 **Dependency / hand-off**: items 1 and 2 both need a human, neither blocks the other or anything else. Item 3 (start the P1 feature queue) has no blocker. Item 4 needs a design decision before it can start. Item 5 is a process note, not a task with a completion state.
+
+**CI confirmation, real not assumed**: pushed as commit `2b6c589`, watched the triggered run rather than treating the local sandbox verification as sufficient — GitHub Actions run `34310657180` completed **success, all 24 steps green**, including "Assemble deployment artifact", "Deployment artifact content check", and "Publish deployment artifact" to `macerti/duration_calculator`. Confirmed via the GitHub Actions API, same method prior sessions have used.
