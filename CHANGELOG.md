@@ -2,6 +2,15 @@
 
 Same versioning convention as the other projects: **x** = overhaul, **y** = feature, **z** = bugfix.
 
+## 2026-09-09 (forty-sixth session) — no version bump — DEBT-002 part 1 closed (AdminRoles/AdminUsers maxWidth bump); BUG-051 investigated and narrowed, still not closed
+
+- **No version bump**: a two-file layout-width change isn't new functionality, same reasoning as the forty-fifth session's data-seed entry — though unlike that one, this change *is* visibly different on screen (wider admin pages on desktop).
+- **`DEBT-002` part 1 closed**: `AdminRolesScreen.tsx` and `AdminUsersScreen.tsx` both bumped from `ResponsiveContainer maxWidth={800}` to `1100`, matching `AdminTrackerScreen`/`CalculationWizardScreen`'s existing convention — this is the low-risk half flagged as "safe to do immediately" for three consecutive sessions running. Loading-state wrapper left at `640` (bare spinner, no need for width) on both screens. Part 2 (tabs-per-role vs. permissions-matrix redesign) is untouched — needs a design decision first.
+- **`BUG-051` investigated, not closed**: confirmed `ErrorBoundary`'s remount-on-tap already returns native users to the app's default initial route today (no navigation-state persistence exists in this codebase, so a fresh `NavigationContainer` mount has nothing stale to restore) — the bug is narrower than its own title suggests. The real remaining gap is a deterministic/structural crash that would recur immediately regardless of route, which only a true reload (`expo-updates` or equivalent — a new native dependency, not in this repo today) can fix. Left as a recommendation pending a decision rather than added unilaterally.
+- Full detail: `docs/DEV_STATUS.md`'s forty-sixth-session entry.
+
+---
+
 ## 2026-09-08 (forty-fifth session) — no version bump — FEAT-010 fully self-closed: tracker row seeded via migration; caught and fixed a stale-test-baseline regression along the way
 
 - **No version bump**: a data-seed migration and a test-assertion fix aren't user-reachable functionality on their own — nothing here changes what an admin sees or can do beyond one more row in a list they could already view.

@@ -340,6 +340,13 @@ Failures: 0 in the final state, after fixing 2 genuinely stale assertions. Fresh
 Notes: applying migration 006 (seeds the FEAT-010 tracker row) legitimately moved `tracker_items` from 13 to 14 rows, which broke two hardcoded `count === 13` assertions in `tests/http_api_test.php` — both updated to 14, same category as a prior session's permission-count fix, not a real regression. Separately, this session initially produced 35 false-positive failures from running the suite twice against an already-populated database without resetting in between (the suite's own test registrant doesn't bootstrap as admin on a non-fresh DB) — caught before treating it as a code problem; database dropped and rebuilt, and the final run's output was captured to a file and inspected once, deliberately not re-invoked live a third time.
 
 
+### no version — 2026-09-09 (forty-sixth session) — DEBT-002 part 1 (AdminRoles/AdminUsers maxWidth bump), first cold-container environment setup, no browser/device available
+
+Tested by: forty-sixth session (automated, sandboxed container, freshly provisioned PHP+MariaDB — no browser/device available)
+Sections covered: `AdminRolesScreen.tsx`, `AdminUsersScreen.tsx` — layout-width change only, no behavioral/logic change to either screen.
+Failures: 0. Backend baseline reconfirmed unchanged from a cold environment: fresh-DB `migrate.php` (6/6, idempotent) → `seed.php` → `smoke_test.php` **24/24** → live `php -S` → `http_api_test.php` **82/82**. Frontend: `npx tsc --noEmit` clean, `npx expo export --platform web --clear` → **559 modules** (unchanged from the forty-fourth session's count — no new dependency), `make build-deploy` 4/4, `scripts/check-repo-hygiene.sh` 4/4.
+Notes: first session to provision PHP+MariaDB from a bare container rather than continuing an already-set-up one; confirmed the `php -S`-only "background process doesn't survive between tool calls" limitation (twenty-first session) also applies to `mysqld`, worked around with a single consolidated shell script covering the whole migrate→seed→test→teardown sequence. No live click-through possible for the width change — nothing here confirms it actually reads well at 1100px on a real desktop, only that it builds and typechecks. `BUG-051` was investigated this session (see `docs/DEV_STATUS.md`'s forty-sixth-session entry) but no code changed, so no new test coverage from it.
+
 
 
 ## Mandatory source/deployment separation

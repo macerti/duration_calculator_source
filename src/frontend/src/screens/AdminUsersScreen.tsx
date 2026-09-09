@@ -90,7 +90,7 @@ export default function AdminUsersScreen({ navigation }: Props) {
   };
 
   return (
-    <ResponsiveContainer maxWidth={800}>
+    <ResponsiveContainer maxWidth={1100}>
       <View style={styles.container}>
         <Breadcrumbs
           items={[
