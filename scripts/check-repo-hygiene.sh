@@ -69,7 +69,15 @@ STALE_PATTERN='audit-app|audit-mobile|duration-calculator-php|audit-engine'
 # are exempted too — they necessarily name these old paths in comments/docs
 # to describe what they check for, which is the same "explaining history,
 # not treating it as current" situation the header describes for Markdown.
-KNOWN_EXCEPTIONS="src/backend/data/parameters.php scripts/check-repo-hygiene.sh scripts/check-deploy-artifact.sh"
+KNOWN_EXCEPTIONS="src/backend/data/parameters.php scripts/check-repo-hygiene.sh scripts/check-deploy-artifact.sh src/backend/db/migrations/008_extract_buglog_history.sql"
+# 008_extract_buglog_history.sql (migration, 2026-09-09 forty-eighth
+# session): a mechanical, verbatim transcription of docs/BUGLOG.md's 50
+# already-exempted bug entries into tracker_items rows — same "explaining
+# history, not treating it as current" situation as the Markdown
+# exemption above, just relocated into a .sql file because that's where
+# this project's bug/feature tracker now lives (migration 004). Any
+# future migration doing the same for docs/ROADMAP.md should be added
+# here too, for the identical reason.
 
 STALE_HITS=""
 while IFS= read -r f; do
