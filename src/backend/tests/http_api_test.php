@@ -275,10 +275,10 @@ check($status === 200 && $afterDelete === [], 'GET /admin/annotations is empty a
 check($status === 401, 'GET /admin/tracker/items with no session is rejected', "status=$status");
 
 [$status, $trackerList] = request('GET', "$base/admin/tracker/items");
-check($status === 200 && count($trackerList ?? []) === 14, 'GET /admin/tracker/items lists the 14 seeded items', "status=$status count=" . count($trackerList ?? []));
+check($status === 200 && count($trackerList ?? []) === 64, 'GET /admin/tracker/items lists the 64 seeded items (14 original + 50 archived from BUGLOG.md, migration 008)', "status=$status count=" . count($trackerList ?? []));
 
 [$status, $bugsOnly] = request('GET', "$base/admin/tracker/items?type=bug");
-check($status === 200 && count($bugsOnly ?? []) === 2, 'GET /admin/tracker/items?type=bug filters to the 2 seeded bugs', "status=$status count=" . count($bugsOnly ?? []));
+check($status === 200 && count($bugsOnly ?? []) === 52, 'GET /admin/tracker/items?type=bug filters to the 52 seeded bugs (2 original + 50 archived, migration 008)', "status=$status count=" . count($bugsOnly ?? []));
 
 [$status, $badFilter] = request('GET', "$base/admin/tracker/items?status=not-a-status");
 check($status === 400, 'GET /admin/tracker/items rejects an invalid status filter', "status=$status");
@@ -346,7 +346,39 @@ check($status === 403, 'DELETE /admin/tracker/items/:code without CSRF token is 
 check($status === 200, 'DELETE /admin/tracker/items/:code succeeds with CSRF token', "status=$status");
 
 [$status, $backToBaseline] = request('GET', "$base/admin/tracker/items");
-check($status === 200 && count($backToBaseline ?? []) === 14, 'GET /admin/tracker/items is back to the 14 seeded rows after delete', "status=$status count=" . count($backToBaseline ?? []));
+check($status === 200 && count($backToBaseline ?? []) === 64, 'GET /admin/tracker/items is back to the 64 seeded rows after delete', "status=$status count=" . count($backToBaseline ?? []));
+
+// --- Session/action log (migration 007) ---
+[$status] = request('GET', "$base/admin/session-log", null, null, false);
+check($status === 401, 'GET /admin/session-log with no session is rejected', "status=$status");
+
+[$status, $emptyLog] = request('GET', "$base/admin/session-log");
+check($status === 200 && $emptyLog === [], 'GET /admin/session-log starts empty', "status=$status " . json_encode($emptyLog));
+
+[$status] = request('POST', "$base/admin/session-log", ['sessionLabel' => 'ci test', 'summary' => 'ci test entry']);
+check($status === 403, 'POST /admin/session-log without CSRF token is rejected', "status=$status");
+
+[$status, $blankSummary] = request('POST', "$base/admin/session-log", ['sessionLabel' => 'ci test', 'summary' => '   '], $csrf);
+check($status === 400, 'POST /admin/session-log rejects a blank summary', "status=$status");
+
+[$status, $badHash] = request('POST', "$base/admin/session-log", ['sessionLabel' => 'ci test', 'summary' => 'x', 'commitHash' => 'not-hex!'], $csrf);
+check($status === 400, 'POST /admin/session-log rejects a non-hex commit hash', "status=$status");
+
+[$status, $newEntry] = request('POST', "$base/admin/session-log", [
+    'sessionLabel' => 'ci test session',
+    'summary' => 'automated regression entry',
+    'trigger' => 'http_api_test.php',
+    'done' => 'created via POST',
+    'commitHash' => 'abc1234',
+    'ciStatus' => 'pending',
+], $csrf);
+check($status === 201 && ($newEntry['sessionLabel'] ?? '') === 'ci test session' && ($newEntry['commitHash'] ?? '') === 'abc1234' && array_key_exists('notDone', $newEntry ?? []) && $newEntry['notDone'] === null, 'POST /admin/session-log creates an entry', "status=$status " . json_encode($newEntry));
+
+[$status, $listedLog] = request('GET', "$base/admin/session-log");
+check($status === 200 && count($listedLog ?? []) === 1 && ($listedLog[0]['id'] ?? null) === ($newEntry['id'] ?? null), 'GET /admin/session-log lists the created entry', "status=$status count=" . count($listedLog ?? []));
+
+[$status, $limited] = request('GET', "$base/admin/session-log?limit=1");
+check($status === 200 && count($limited ?? []) === 1, 'GET /admin/session-log?limit= is honoured', "status=$status count=" . count($limited ?? []));
 
 // --- Forgot / reset password ---
 [$status] = request('POST', "$base/auth/forgot-password", ['email' => $testEmail], null, false);

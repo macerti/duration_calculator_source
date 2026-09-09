@@ -2,6 +2,17 @@
 
 Same versioning convention as the other projects: **x** = overhaul, **y** = feature, **z** = bugfix.
 
+## 2026-09-09 (forty-eighth session) — no version bump — `session_log` table built (backend + tests only, no UI yet); all 50 `BUGLOG.md` bug entries archived into `tracker_items`
+
+- **No version bump**: a new admin-only table/API with no frontend caller yet, plus a data migration archiving historical bug entries, change nothing an end user or admin can currently see or do — same convention as the forty-fourth/forty-fifth sessions' own backend-only entries.
+- **Migration `007_add_session_log.sql`**: new `session_log` table — a queryable dev-session/action record, requested explicitly by Mahdi as one of "two tables" for consolidating `.md`-based tracking into the database (the other, `tracker_items`/`tracker_updates`, already existed since migration `004`). `db/sessionLogRepo.php` (list/create only — deliberately append-only, no update/delete) + two new routes (`GET`/`POST /admin/session-log`, gated by the existing `manage_tracker` permission) + 8 new HTTP tests.
+- **Migration `008_extract_buglog_history.sql`**: mechanically parsed all 50 closed entries out of `docs/BUGLOG.md` into `tracker_items` (`type='bug'`, `status='closed'`, full original prose preserved verbatim) + one `tracker_updates` row each. Caught and fixed a parser bug before trusting the output (one heading, `BUG-024`, had an extra parenthetical annotation the first pass silently dropped) by diffing the parsed code list against every `### BUG-` heading in the file, not by trusting the row count alone.
+- **`docs/BUGLOG.md`/`docs/ROADMAP.md` are NOT archived yet** — `ROADMAP.md` still has real open items with no tracker row (see `docs/DEV_STATUS.md`'s forty-eighth-session entry for the exact list); archiving either file before that's finished would lose them.
+- **Final confirmed state**: fresh-DB `migrate.php` **8/8** → `seed.php` → `smoke_test.php` **24/24** → `http_api_test.php` **96/96** (88 prior baseline + 8 new), zero failures.
+- Full detail: `docs/DEV_STATUS.md`'s forty-eighth-session entry.
+
+---
+
 ## 2026-09-09 (forty-sixth session) — no version bump — DEBT-002 part 1 closed (AdminRoles/AdminUsers maxWidth bump); BUG-051 investigated and narrowed, still not closed
 
 - **No version bump**: a two-file layout-width change isn't new functionality, same reasoning as the forty-fifth session's data-seed entry — though unlike that one, this change *is* visibly different on screen (wider admin pages on desktop).

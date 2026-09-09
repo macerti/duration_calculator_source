@@ -20,6 +20,7 @@ require_once __DIR__ . '/../db/roleRepo.php';
 require_once __DIR__ . '/../db/permissionRepo.php';
 require_once __DIR__ . '/../db/annotationRepo.php';
 require_once __DIR__ . '/../db/trackerRepo.php';
+require_once __DIR__ . '/../db/sessionLogRepo.php';
 require_once __DIR__ . '/../db/rateLimiter.php';
 require_once __DIR__ . '/../db/Migrations.php';
 require_once __DIR__ . '/../auth/OAuthSession.php';
@@ -103,6 +104,8 @@ use function AuditEngine\updateTrackerItem;
 use function AuditEngine\deleteTrackerItem;
 use function AuditEngine\addTrackerUpdate;
 use function AuditEngine\suggestNextTrackerCode;
+use function AuditEngine\listSessionLog;
+use function AuditEngine\createSessionLogEntry;
 use function AuditEngine\rateLimitCheck;
 use AuditEngine\Migrations;
 
@@ -1021,6 +1024,46 @@ try {
             respond(['error' => $e->getMessage()], 400);
         }
         respond($updated, 201);
+    }
+
+    // =========================================================
+    // Session/action log (migration 007, docs/DEV_STATUS.md
+    // forty-eighth session) — table 1 of the two Mahdi asked for
+    // 2026-09-09 ("one for logs, every action done... the other for
+    // features, bugs" — table 2 is tracker_items/tracker_updates
+    // directly above). Data layer: db/sessionLogRepo.php. Same
+    // requireDb → requirePermission('manage_tracker') → requireCsrf()
+    // pattern as every other admin block in this file. Deliberately
+    // only GET (list) and POST (create) — no PUT/DELETE, see migration
+    // 007's comment point 5 for why this table is append-only by design.
+    // =========================================================
+
+    // GET /admin/session-log — list, most recent first, optional ?limit=
+    if ($method === 'GET' && $segments === ['admin', 'session-log']) {
+        requireDb($dbAvailable);
+        requirePermission('manage_tracker');
+        $limit = null;
+        if (isset($_GET['limit']) && $_GET['limit'] !== '') {
+            if (!ctype_digit((string)$_GET['limit'])) {
+                respond(['error' => 'Invalid limit.'], 400);
+            }
+            $limit = (int)$_GET['limit'];
+        }
+        respond(listSessionLog($limit));
+    }
+
+    // POST /admin/session-log — record a new session/action entry
+    if ($method === 'POST' && $segments === ['admin', 'session-log']) {
+        requireDb($dbAvailable);
+        requirePermission('manage_tracker');
+        requireCsrf();
+        $body = jsonBody();
+        try {
+            $entry = createSessionLogEntry($body);
+        } catch (\RuntimeException $e) {
+            respond(['error' => $e->getMessage()], 400);
+        }
+        respond($entry, 201);
     }
 
     // POST /auth/logout — destroy session

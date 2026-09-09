@@ -393,3 +393,13 @@ After FEAT-003 and repository architecture work, the next manual test cycle is a
 After the mandatory versioning and repository-architecture work, include a dedicated browser audit covering FEAT-004 and BUG-029. Test: production title/favicon; no Vite/React/default placeholder identity; invalid public URL → branded 404; direct load/refresh; browser back/forward for any new routes; wizard state preservation and no sensitive data in URLs; public metadata/canonical/robots/sitemap behavior; mobile/desktop layout; browser console errors; production source-map exposure; production bundle loading/performance; image alt/accessibility; structured-data validity where used.
 
 Do not treat SEO checklist completion as sufficient evidence. Confirm that routing and metadata fit the actual boundary between public pages and private/stateful calculation workflows.
+
+
+### no version — 2026-09-09 (forty-eighth session) — `session_log` table (migration 007) + full `BUGLOG.md` archival into `tracker_items` (migration 008); backend + tests only
+
+Tested by: forty-eighth session (automated, sandboxed container, freshly provisioned PHP+MariaDB — no browser/device available)
+
+Failures: 0 in the final confirmed state, after fixing one real parser gap (a dropped bug entry, caught by diffing parsed codes against the source file rather than trusting the row count) and 3 now-stale hardcoded test assertions (migration 008 legitimately grew `tracker_items` from 14 to 64 rows). Fresh-DB `migrate.php` (**8/8** applied, idempotent on re-run) → `seed.php` → `smoke_test.php` **24/24** → live `php -S` → `http_api_test.php` **96/96** (88 prior baseline + 8 new `session_log` tests).
+
+Notes: rediscovered the already-documented (forty-sixth session, above) `mysqld`-doesn't-survive-between-tool-calls limitation live rather than recalled from this file — see `docs/DEV_STATUS.md`'s forty-eighth-session entry for the self-critique and two genuinely new environment gotchas found this session (MySQL host-based grants for `127.0.0.1` vs. `localhost`; `config.php` needs an explicit `app_url` or the mail-log verify-link test false-fails). No frontend files touched, no browser/device testing performed. `docs/BUGLOG.md`/`docs/ROADMAP.md` extraction into the tracker DB is roughly two-thirds done — `ROADMAP.md`'s own seeding and either file's actual archival are explicitly not done yet (see hand-off).
+
