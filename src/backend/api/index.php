@@ -104,6 +104,7 @@ use function AuditEngine\updateTrackerItem;
 use function AuditEngine\deleteTrackerItem;
 use function AuditEngine\addTrackerUpdate;
 use function AuditEngine\suggestNextTrackerCode;
+use function AuditEngine\createAnnotationTrackerItem;
 use function AuditEngine\listSessionLog;
 use function AuditEngine\createSessionLogEntry;
 use function AuditEngine\rateLimitCheck;
@@ -935,21 +936,36 @@ try {
     }
 
     // GET /admin/tracker/items — list, optional ?status=&?type=&?priority=&?search=
+    // status/type/priority each accept a comma-separated list for the
+    // multiselect filter UI added 2026-09-10 (AdminTrackerScreen.tsx can
+    // now check several values at once, e.g. ?status=open,in_progress) —
+    // a single bare value still works exactly as before, split() on a
+    // string with no comma just returns a 1-element array.
     if ($method === 'GET' && $segments === ['admin', 'tracker', 'items']) {
         requireDb($dbAvailable);
         requirePermission('manage_tracker');
-        $statusFilter = isset($_GET['status']) && $_GET['status'] !== '' ? (string)$_GET['status'] : null;
-        $typeFilter = isset($_GET['type']) && $_GET['type'] !== '' ? (string)$_GET['type'] : null;
-        $priorityFilter = isset($_GET['priority']) && $_GET['priority'] !== '' ? (string)$_GET['priority'] : null;
+        $splitFilter = function (string $key) {
+            if (!isset($_GET[$key]) || $_GET[$key] === '') return [];
+            return array_values(array_filter(array_map('trim', explode(',', (string)$_GET[$key])), fn($v) => $v !== ''));
+        };
+        $statusFilter = $splitFilter('status');
+        $typeFilter = $splitFilter('type');
+        $priorityFilter = $splitFilter('priority');
         $searchFilter = isset($_GET['search']) && trim((string)$_GET['search']) !== '' ? (string)$_GET['search'] : null;
-        if ($statusFilter !== null && !in_array($statusFilter, ['open', 'in_progress', 'fixed_unverified', 'verified', 'closed'], true)) {
-            respond(['error' => 'Invalid status filter.'], 400);
+        foreach ($statusFilter as $s) {
+            if (!in_array($s, ['open', 'in_progress', 'fixed_unverified', 'verified', 'closed'], true)) {
+                respond(['error' => 'Invalid status filter.'], 400);
+            }
         }
-        if ($typeFilter !== null && !in_array($typeFilter, ['bug', 'feature', 'techdebt', 'other'], true)) {
-            respond(['error' => 'Invalid type filter.'], 400);
+        foreach ($typeFilter as $t) {
+            if (!in_array($t, ['bug', 'feature', 'techdebt', 'other', 'annotation'], true)) {
+                respond(['error' => 'Invalid type filter.'], 400);
+            }
         }
-        if ($priorityFilter !== null && !in_array($priorityFilter, ['p0', 'p1', 'p2', 'p3'], true)) {
-            respond(['error' => 'Invalid priority filter.'], 400);
+        foreach ($priorityFilter as $p) {
+            if (!in_array($p, ['p0', 'p1', 'p2', 'p3'], true)) {
+                respond(['error' => 'Invalid priority filter.'], 400);
+            }
         }
         if ($searchFilter !== null && mb_strlen($searchFilter) > 200) {
             respond(['error' => 'Search term too long.'], 400);
@@ -965,6 +981,34 @@ try {
         $body = jsonBody();
         try {
             $item = createTrackerItem($body);
+        } catch (\RuntimeException $e) {
+            respond(['error' => $e->getMessage()], 400);
+        }
+        respond($item, 201);
+    }
+
+    // POST /admin/tracker/annotations — pin tool creates a tracker_items
+    // row directly (migration 009, 2026-09-10 annotations/tracker merge).
+    // Replaces POST /admin/annotations as AnnotationCapture.tsx's only
+    // create path — same request body shape as that older route, but
+    // returns a TrackerItem, not an Annotation, and is gated by
+    // manage_tracker rather than manage_annotations (see migration 009's
+    // header comment for why that permission consolidation is safe:
+    // both are only ever granted to `administrateur` today).
+    if ($method === 'POST' && $segments === ['admin', 'tracker', 'annotations']) {
+        requireDb($dbAvailable);
+        $authUser = requirePermission('manage_tracker');
+        requireCsrf();
+        $body = jsonBody();
+        $screen = requireNonEmptyString((string)($body['screen'] ?? ''), 'screen', 150);
+        $elementRef = isset($body['elementRef']) && $body['elementRef'] !== '' ? (string)$body['elementRef'] : null;
+        if (!isset($body['x']) || !isset($body['y']) || !is_numeric($body['x']) || !is_numeric($body['y'])) {
+            respond(['error' => "'x' and 'y' are required numeric fields"], 400);
+        }
+        $comment = requireNonEmptyString((string)($body['comment'] ?? ''), 'comment', 5000);
+        $appVersion = requireNonEmptyString((string)($body['appVersion'] ?? ''), 'appVersion', 30);
+        try {
+            $item = createAnnotationTrackerItem($screen, $elementRef, (float)$body['x'], (float)$body['y'], $comment, $appVersion, (int)$authUser['id']);
         } catch (\RuntimeException $e) {
             respond(['error' => $e->getMessage()], 400);
         }

@@ -30,7 +30,12 @@ namespace AuditEngine;
  * silently landing in the table (the DB layer alone can't do that for
  * a plain VARCHAR).
  */
-const TRACKER_TYPES = ['bug', 'feature', 'techdebt', 'other'];
+// 'annotation' added migration 009 (2026-09-10, annotations/tracker
+// merge): the placeholder type a row created via the in-app pin tool
+// gets, before a dev reclassifies it as bug/feature/techdebt/other and
+// fills in the technical fields — see createAnnotationTrackerItem()
+// below and migration 009's own header comment for the full workflow.
+const TRACKER_TYPES = ['bug', 'feature', 'techdebt', 'other', 'annotation'];
 const TRACKER_STATUSES = ['open', 'in_progress', 'fixed_unverified', 'verified', 'closed'];
 const TRACKER_PRIORITIES = ['p0', 'p1', 'p2', 'p3'];
 
@@ -47,6 +52,16 @@ function mapTrackerItemRow(array $r): array
         'dependencies' => $r['dependencies'],
         'testsToDo' => $r['tests_to_do'],
         'comments' => $r['comments'],
+        // Annotation-capture columns (migration 009) — NULL for every
+        // normal dev-created row; only populated for a row created
+        // through the in-app pin tool. See createAnnotationTrackerItem().
+        'screen' => $r['screen'] ?? null,
+        'elementRef' => $r['element_ref'] ?? null,
+        'x' => isset($r['x']) && $r['x'] !== null ? (float)$r['x'] : null,
+        'y' => isset($r['y']) && $r['y'] !== null ? (float)$r['y'] : null,
+        'appVersion' => $r['app_version'] ?? null,
+        'createdBy' => isset($r['created_by']) && $r['created_by'] !== null ? (int)$r['created_by'] : null,
+        'sourceAnnotationId' => isset($r['source_annotation_id']) && $r['source_annotation_id'] !== null ? (int)$r['source_annotation_id'] : null,
         'createdAt' => $r['created_at'],
         'updatedAt' => $r['updated_at'],
     ];
@@ -64,24 +79,47 @@ function mapTrackerUpdateRow(array $r): array
 }
 
 /**
- * @param string|null $status one of TRACKER_STATUSES, or null for no filter
- * @param string|null $type one of TRACKER_TYPES, or null for no filter
- * @param string|null $priority one of TRACKER_PRIORITIES, or null for no filter
+ * @param array|string|null $status one or more of TRACKER_STATUSES, or
+ *   null/[] for no filter. Accepts a single string too (old call shape,
+ *   kept working rather than forcing every caller to wrap a lone value
+ *   in an array) — normalized to an array internally either way.
+ * @param array|string|null $type one or more of TRACKER_TYPES, or null/[]
+ *   for no filter. Same single-string-or-array acceptance as $status.
+ * @param array|string|null $priority one or more of TRACKER_PRIORITIES, or
+ *   null/[] for no filter. Same single-string-or-array acceptance.
  * @param string|null $search free-text search (code/title/user_description/
  *   technical_description/comments, case-insensitive substring), or null for
  *   no filter. Added so an admin can find a specific item across a backlog
  *   too large to scan visually — same motivation as the status/type/priority
  *   filters above, just unstructured instead of a fixed set of values.
+ *
+ * Multiselect (arrays) added 2026-09-10 per Mahdi's request for
+ * `AdminTrackerScreen.tsx`'s filters to let an admin check several
+ * statuses/types/priorities at once instead of exactly one — e.g. "show
+ * me everything that isn't closed" (open + in_progress + fixed_unverified
+ * + verified all checked together) is the screen's new default view.
  */
-function listTrackerItems(?string $status = null, ?string $type = null, ?string $priority = null, ?string $search = null): array
+function listTrackerItems($status = null, $type = null, $priority = null, ?string $search = null): array
 {
+    $normalize = function ($v): array {
+        if ($v === null) return [];
+        if (is_array($v)) return array_values(array_filter($v, fn($x) => $x !== null && $x !== ''));
+        return $v === '' ? [] : [$v];
+    };
+    $statuses = $normalize($status);
+    $types = $normalize($type);
+    $priorities = $normalize($priority);
+
     $pdo = getPdo();
-    $sql = 'SELECT code, type, title, user_description, technical_description, status, priority, dependencies, tests_to_do, comments, created_at, updated_at FROM tracker_items';
+    $sql = 'SELECT code, type, title, user_description, technical_description, status, priority, dependencies, tests_to_do, comments,
+                   screen, element_ref, x, y, app_version, created_by, source_annotation_id, created_at, updated_at
+            FROM tracker_items';
     $where = [];
     $params = [];
-    if ($status !== null) { $where[] = 'status = ?'; $params[] = $status; }
-    if ($type !== null) { $where[] = 'type = ?'; $params[] = $type; }
-    if ($priority !== null) { $where[] = 'priority = ?'; $params[] = $priority; }
+    $inClause = fn(array $vals) => '(' . implode(',', array_fill(0, count($vals), '?')) . ')';
+    if ($statuses) { $where[] = 'status IN ' . $inClause($statuses); array_push($params, ...$statuses); }
+    if ($types) { $where[] = 'type IN ' . $inClause($types); array_push($params, ...$types); }
+    if ($priorities) { $where[] = 'priority IN ' . $inClause($priorities); array_push($params, ...$priorities); }
     if ($search !== null && trim($search) !== '') {
         $needle = '%' . str_replace(['%', '_'], ['\\%', '\\_'], trim($search)) . '%';
         $where[] = '(code LIKE ? OR title LIKE ? OR user_description LIKE ? OR technical_description LIKE ? OR comments LIKE ?)';
@@ -104,7 +142,8 @@ function listTrackerItems(?string $status = null, ?string $type = null, ?string 
 function getTrackerItemByCode(string $code): ?array
 {
     $stmt = getPdo()->prepare(
-        'SELECT code, type, title, user_description, technical_description, status, priority, dependencies, tests_to_do, comments, created_at, updated_at
+        'SELECT code, type, title, user_description, technical_description, status, priority, dependencies, tests_to_do, comments,
+                screen, element_ref, x, y, app_version, created_by, source_annotation_id, created_at, updated_at
          FROM tracker_items WHERE code = ?'
     );
     $stmt->execute([$code]);
@@ -366,4 +405,85 @@ function suggestNextTrackerCode(string $prefix): string
     }
     $next = $max + 1;
     return $prefix . '-' . str_pad((string)$next, $width, '0', STR_PAD_LEFT);
+}
+
+/**
+ * Creates a `tracker_items` row directly from the in-app annotation pin
+ * tool (migration 009 — merging FEAT-006's `annotations` table into this
+ * one) — "user creates an annotation directly in db, then a dev fills
+ * the NULL fields in later," per Mahdi's 2026-09-10 request. This is now
+ * `AnnotationCapture.tsx`'s only create path; `annotationRepo.php`'s
+ * `createAnnotation()` is left in place but unlinked from any UI (see
+ * migration 009's own header comment for why that table/function isn't
+ * removed outright).
+ *
+ * Auto-generates the next free `ANN-NNN` code via `suggestNextTrackerCode()`
+ * — same mechanism a human dev's "Suggérer" button in the manual create
+ * form already uses — so pinning a comment stays a single tap-and-type
+ * action; nobody has to think up a code for a quick in-app note.
+ * `type='annotation'`, `status='open'`, and the six capture columns
+ * below are the only things set. `technicalDescription`, `priority`,
+ * `dependencies`, and `testsToDo` are deliberately left NULL — that is
+ * the "fields for the next dev to fill in" this whole merge is for.
+ *
+ * @param string $screen screen/route name the pin was made on (frontend-
+ *   supplied, free text — same as annotations.screen was)
+ * @param string|null $elementRef best-effort UI element reference, or
+ *   null (same semantics as annotations.element_ref)
+ * @param float $x capture x position
+ * @param float $y capture y position
+ * @param string $comment the reporter's own words — becomes both
+ *   `title` (truncated to 200 chars, migration 008's own truncation
+ *   rule reused rather than reinvented) and the full `userDescription`
+ * @param string $appVersion the app's own version-footer string at
+ *   capture time (same single-source-of-truth reuse as annotations had)
+ * @param int $createdBy the authenticated admin's user id
+ * @throws \RuntimeException on blank/oversized input — same validation
+ *   annotationRepo.php's createAnnotation() used to apply, mirrored here
+ *   since this function replaces it as the only caller of these rules
+ */
+function createAnnotationTrackerItem(string $screen, ?string $elementRef, float $x, float $y, string $comment, string $appVersion, int $createdBy): array
+{
+    $screen = trim($screen);
+    if ($screen === '') {
+        throw new \RuntimeException("Le champ « screen » est obligatoire.");
+    }
+    if (mb_strlen($screen) > 150) {
+        throw new \RuntimeException('Le champ « screen » ne peut pas dépasser 150 caractères.');
+    }
+    $elementRef = ($elementRef === null || trim($elementRef) === '') ? null : trim($elementRef);
+    if ($elementRef !== null && mb_strlen($elementRef) > 150) {
+        throw new \RuntimeException("Le champ « elementRef » ne peut pas dépasser 150 caractères.");
+    }
+    $comment = trim($comment);
+    if ($comment === '') {
+        throw new \RuntimeException('Le commentaire est obligatoire.');
+    }
+    if (mb_strlen($comment) > 5000) {
+        throw new \RuntimeException('Le commentaire ne peut pas dépasser 5000 caractères.');
+    }
+    $appVersion = trim($appVersion);
+    if ($appVersion === '') {
+        throw new \RuntimeException("Le champ « appVersion » est obligatoire.");
+    }
+    if (mb_strlen($appVersion) > 30) {
+        throw new \RuntimeException("Le champ « appVersion » ne peut pas dépasser 30 caractères.");
+    }
+
+    $code = suggestNextTrackerCode('ANN');
+    $title = mb_strlen($comment) > 200 ? mb_substr($comment, 0, 197) . '...' : $comment;
+
+    $stmt = getPdo()->prepare(
+        'INSERT INTO tracker_items (code, type, title, user_description, status, screen, element_ref, x, y, app_version, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    );
+    $stmt->execute([$code, 'annotation', $title, $comment, 'open', $screen, $elementRef, $x, $y, $appVersion, $createdBy]);
+
+    $created = getTrackerItemByCode($code);
+    if ($created === null) {
+        // Should be unreachable (we just inserted it) — same defensive
+        // pattern as createTrackerItem()'s own equivalent check.
+        throw new \RuntimeException('Élément créé mais introuvable après insertion.');
+    }
+    return $created;
 }

@@ -348,6 +348,66 @@ check($status === 200, 'DELETE /admin/tracker/items/:code succeeds with CSRF tok
 [$status, $backToBaseline] = request('GET', "$base/admin/tracker/items");
 check($status === 200 && count($backToBaseline ?? []) === 64, 'GET /admin/tracker/items is back to the 64 seeded rows after delete', "status=$status count=" . count($backToBaseline ?? []));
 
+// --- Multiselect status/type/priority filters (2026-09-10, AdminTrackerScreen.tsx filter rework) ---
+// Comma-separated is the wire format; a bare single value must still work
+// exactly as before (backward compatibility for any existing caller).
+[$status, $multiStatus] = request('GET', "$base/admin/tracker/items?" . http_build_query(['status' => 'open,in_progress']));
+check($status === 200 && count($multiStatus ?? []) > 0 && count(array_filter($multiStatus ?? [], fn($i) => !in_array($i['status'], ['open', 'in_progress'], true))) === 0, 'GET /admin/tracker/items?status= accepts a comma-separated multiselect', "status=$status count=" . count($multiStatus ?? []));
+
+[$status, $multiType] = request('GET', "$base/admin/tracker/items?" . http_build_query(['type' => 'bug,feature']));
+check($status === 200 && count($multiType ?? []) > 0 && count(array_filter($multiType ?? [], fn($i) => !in_array($i['type'], ['bug', 'feature'], true))) === 0, 'GET /admin/tracker/items?type= accepts a comma-separated multiselect', "status=$status count=" . count($multiType ?? []));
+
+[$status] = request('GET', "$base/admin/tracker/items?" . http_build_query(['status' => 'open,not-a-real-status']));
+check($status === 400, 'GET /admin/tracker/items?status= rejects a multiselect containing one invalid value', "status=$status");
+
+[$status, $singleStillWorks] = request('GET', "$base/admin/tracker/items?type=bug");
+check($status === 200 && count($singleStillWorks ?? []) === 52, 'GET /admin/tracker/items?type= (single bare value) still works after the multiselect change', "status=$status count=" . count($singleStillWorks ?? []));
+
+// --- POST /admin/tracker/annotations (migration 009 merge: the in-app pin
+// tool's new, single create path into the tracker instead of a separate
+// annotations table — "why have two lists, merge them", Mahdi 2026-09-10) ---
+[$status] = request('POST', "$base/admin/tracker/annotations", ['screen' => 'HomeScreen', 'x' => 10, 'y' => 20, 'comment' => 'ci pin test', 'appVersion' => '5.1.10'], null, false);
+check($status === 401, 'POST /admin/tracker/annotations with no session is rejected', "status=$status");
+
+[$status] = request('POST', "$base/admin/tracker/annotations", ['screen' => 'HomeScreen', 'x' => 10, 'y' => 20, 'comment' => 'ci pin test', 'appVersion' => '5.1.10']);
+check($status === 403, 'POST /admin/tracker/annotations without CSRF token is rejected', "status=$status");
+
+[$status, $blankPin] = request('POST', "$base/admin/tracker/annotations", ['screen' => 'HomeScreen', 'x' => 10, 'y' => 20, 'comment' => '   ', 'appVersion' => '5.1.10'], $csrf);
+check($status === 400, 'POST /admin/tracker/annotations rejects a blank comment', "status=$status " . json_encode($blankPin));
+
+[$status, $pinItem] = request('POST', "$base/admin/tracker/annotations", [
+    'screen' => 'HomeScreen',
+    'elementRef' => 'header-title',
+    'x' => 123.5,
+    'y' => 45,
+    'comment' => 'ci test comment on the header via the merged pin tool',
+    'appVersion' => '5.1.10',
+], $csrf);
+check(
+    $status === 201
+    && ($pinItem['type'] ?? '') === 'annotation'
+    && ($pinItem['status'] ?? '') === 'open'
+    && ($pinItem['screen'] ?? '') === 'HomeScreen'
+    && ($pinItem['elementRef'] ?? '') === 'header-title'
+    && (float)($pinItem['x'] ?? 0) === 123.5
+    && ($pinItem['userDescription'] ?? '') === 'ci test comment on the header via the merged pin tool'
+    && ($pinItem['technicalDescription'] ?? null) === null
+    && ($pinItem['priority'] ?? null) === null
+    && str_starts_with($pinItem['code'] ?? '', 'ANN-'),
+    'POST /admin/tracker/annotations creates a tracker_items row directly (type=annotation, technicalDescription/priority left NULL for a dev to fill in later)',
+    "status=$status " . json_encode($pinItem)
+);
+
+[$status, $withPinItem] = request('GET', "$base/admin/tracker/items?type=annotation");
+check($status === 200 && count($withPinItem ?? []) === 1 && ($withPinItem[0]['code'] ?? '') === ($pinItem['code'] ?? ''), 'GET /admin/tracker/items?type=annotation lists the pinned item — one merged list, not two', "status=$status count=" . count($withPinItem ?? []));
+
+// A dev now completes the row — exactly the hand-off workflow this merge is for.
+[$status, $triaged] = request('PUT', "$base/admin/tracker/items/{$pinItem['code']}", ['technicalDescription' => 'Confirmed: header title tap target is too small', 'priority' => 'p2'], $csrf);
+check($status === 200 && ($triaged['technicalDescription'] ?? '') === 'Confirmed: header title tap target is too small' && ($triaged['priority'] ?? '') === 'p2', 'a dev can PUT the NULL technicalDescription/priority fields in afterwards, same as any other tracker item', "status=$status " . json_encode($triaged));
+
+[$status] = request('DELETE', "$base/admin/tracker/items/{$pinItem['code']}", null, $csrf);
+check($status === 200, 'cleanup: DELETE the pinned test item', "status=$status");
+
 // --- Session/action log (migration 007) ---
 [$status] = request('GET', "$base/admin/session-log", null, null, false);
 check($status === 401, 'GET /admin/session-log with no session is rejected', "status=$status");
