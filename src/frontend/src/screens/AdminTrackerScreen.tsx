@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Pressable, TextInput } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CommonActions } from "@react-navigation/native";
@@ -9,12 +9,11 @@ import { useToast } from "../components/Toast";
 import Breadcrumbs from "../components/Breadcrumbs";
 import ResponsiveContainer from "../components/ResponsiveContainer";
 import SegmentedPicker from "../components/SegmentedPicker";
+import MultiSelectFilter from "../components/MultiSelectFilter";
+import CollapsibleSection from "../components/CollapsibleSection";
 import { colors, spacing, radius, typography } from "../theme/tokens";
 
 type Props = NativeStackScreenProps<RootStackParamList, "AdminTracker">;
-type StatusFilter = "all" | TrackerItem["status"];
-type TypeFilter = "all" | TrackerItem["type"];
-type PriorityFilter = "all" | NonNullable<TrackerItem["priority"]>;
 
 const STATUS_LABELS: Record<TrackerItem["status"], string> = {
   open: "Ouvert",
@@ -28,10 +27,45 @@ const TYPE_LABELS: Record<TrackerItem["type"], string> = {
   feature: "Fonctionnalité",
   techdebt: "Dette technique",
   other: "Autre",
+  // Added 2026-09-10, migration 009 (annotations/tracker merge) — the
+  // placeholder type a row created via the in-app pin tool gets before a
+  // dev reclassifies it. See createAnnotationTrackerItem() in
+  // trackerRepo.php.
+  annotation: "Annotation",
 };
 const PRIORITY_LABELS: Record<NonNullable<TrackerItem["priority"]>, string> = {
   p0: "P0", p1: "P1", p2: "P2", p3: "P3",
 };
+const ALL_STATUSES = Object.keys(STATUS_LABELS) as TrackerItem["status"][];
+const ALL_TYPES = Object.keys(TYPE_LABELS) as TrackerItem["type"][];
+const ALL_PRIORITIES = Object.keys(PRIORITY_LABELS) as NonNullable<TrackerItem["priority"]>[];
+// "always defaultly set to show all what's not closed" — Mahdi, 2026-09-10.
+// Every status except 'closed' checked on load; type/priority start with
+// nothing checked, which — for a multiselect — means "no filter on this
+// field" (matches listTrackerItems()'s own empty-array-means-no-filter
+// semantics), not "show nothing".
+const DEFAULT_STATUS_FILTER: TrackerItem["status"][] = ["open", "in_progress", "fixed_unverified", "verified"];
+const SEARCH_DEBOUNCE_MS = 300; // matches NaceSearchField.tsx's own debounce timing
+
+/** Status line shown next to "Filtres et recherche" whether the section is
+ * expanded or collapsed, so collapsing it to save space never hides *that*
+ * something is filtered — only the controls used to change it. */
+function filterSummary(
+  statusFilter: TrackerItem["status"][],
+  typeFilter: TrackerItem["type"][],
+  priorityFilter: NonNullable<TrackerItem["priority"]>[],
+  search: string,
+  resultCount: number | null
+): string {
+  let active = 0;
+  if (statusFilter.length > 0 && statusFilter.length < ALL_STATUSES.length) active++;
+  if (typeFilter.length > 0) active++;
+  if (priorityFilter.length > 0) active++;
+  if (search.trim() !== "") active++;
+  const filterPart = active === 0 ? "Aucun filtre actif" : `${active} filtre${active > 1 ? "s" : ""} actif${active > 1 ? "s" : ""}`;
+  const countPart = resultCount === null ? "" : ` · ${resultCount} résultat${resultCount !== 1 ? "s" : ""}`;
+  return filterPart + countPart;
+}
 
 /**
  * AdminTrackerScreen — FEAT-010 (docs/ROADMAP.md item 12). Admin-visible,
@@ -59,21 +93,33 @@ export default function AdminTrackerScreen({ navigation }: Props) {
 
   const [items, setItems] = useState<TrackerItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
-  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<TrackerItem["status"][]>(DEFAULT_STATUS_FILTER);
+  const [typeFilter, setTypeFilter] = useState<TrackerItem["type"][]>([]);
+  const [priorityFilter, setPriorityFilter] = useState<NonNullable<TrackerItem["priority"]>[]>([]);
+  const [searchInput, setSearchInput] = useState(""); // raw typed value, debounced below
+  const [search, setSearch] = useState(""); // value actually sent to the API
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [detail, setDetail] = useState<TrackerItem | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [busyCode, setBusyCode] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => setSearch(searchInput), SEARCH_DEBOUNCE_MS);
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [searchInput]);
+
   const load = useCallback(async () => {
     try {
       const rows = await api.listTrackerItems({
-        status: statusFilter === "all" ? undefined : statusFilter,
-        type: typeFilter === "all" ? undefined : typeFilter,
-        priority: priorityFilter === "all" ? undefined : priorityFilter,
+        status: statusFilter.length > 0 ? statusFilter : undefined,
+        type: typeFilter.length > 0 ? typeFilter : undefined,
+        priority: priorityFilter.length > 0 ? priorityFilter : undefined,
+        search: search.trim() !== "" ? search.trim() : undefined,
       });
       setItems(rows);
       setError(null);
@@ -81,7 +127,7 @@ export default function AdminTrackerScreen({ navigation }: Props) {
       setError(e instanceof AdminApiError ? e.message : "Erreur de chargement.");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [csrfToken, statusFilter, typeFilter, priorityFilter]);
+  }, [csrfToken, statusFilter, typeFilter, priorityFilter, search]);
 
   useEffect(() => {
     if (allowed) load();
@@ -109,10 +155,13 @@ export default function AdminTrackerScreen({ navigation }: Props) {
   const refreshList = (updated: TrackerItem) => {
     setItems((prev) => {
       if (!prev) return prev;
+      // Empty array = no filter on that field, same semantics as
+      // listTrackerItems() itself — see the DEFAULT_STATUS_FILTER comment
+      // above for why an empty selection means "all", not "none".
       const stillMatches =
-        (statusFilter === "all" || updated.status === statusFilter) &&
-        (typeFilter === "all" || updated.type === typeFilter) &&
-        (priorityFilter === "all" || updated.priority === priorityFilter);
+        (statusFilter.length === 0 || statusFilter.includes(updated.status)) &&
+        (typeFilter.length === 0 || typeFilter.includes(updated.type)) &&
+        (priorityFilter.length === 0 || (updated.priority !== null && priorityFilter.includes(updated.priority)));
       const exists = prev.some((x) => x.code === updated.code);
       if (!stillMatches) return prev.filter((x) => x.code !== updated.code);
       if (exists) return prev.map((x) => (x.code === updated.code ? updated : x));
@@ -195,45 +244,56 @@ export default function AdminTrackerScreen({ navigation }: Props) {
           </View>
         )}
 
-        <View style={styles.filtersRow}>
-          <SegmentedPicker
+        <CollapsibleSection
+          title="Filtres et recherche"
+          summary={filterSummary(statusFilter, typeFilter, priorityFilter, search, items?.length ?? null)}
+          defaultExpanded={false}
+        >
+          <View style={styles.searchRow}>
+            <TextInput
+              style={styles.searchInput}
+              value={searchInput}
+              onChangeText={setSearchInput}
+              placeholder="Rechercher (code, titre, description, commentaires)…"
+              placeholderTextColor={colors.contentTertiary}
+              accessibilityLabel="Rechercher dans le suivi"
+            />
+            {searchInput !== "" && (
+              <Pressable onPress={() => setSearchInput("")} accessibilityRole="button" accessibilityLabel="Effacer la recherche">
+                <Text style={styles.clearSearchText}>Effacer</Text>
+              </Pressable>
+            )}
+          </View>
+          <MultiSelectFilter
             label="Statut"
-            value={statusFilter}
-            options={[
-              { value: "all", label: "Tous" },
-              { value: "open", label: "Ouvert" },
-              { value: "in_progress", label: "En cours" },
-              { value: "fixed_unverified", label: "Corrigé (non vérif.)" },
-              { value: "verified", label: "Vérifié" },
-              { value: "closed", label: "Fermé" },
-            ]}
-            onChange={(v) => setStatusFilter(v as StatusFilter)}
+            selected={statusFilter}
+            options={ALL_STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] }))}
+            onChange={setStatusFilter}
           />
-          <SegmentedPicker
+          <MultiSelectFilter
             label="Type"
-            value={typeFilter}
-            options={[
-              { value: "all", label: "Tous" },
-              { value: "bug", label: "Bug" },
-              { value: "feature", label: "Fonctionnalité" },
-              { value: "techdebt", label: "Dette technique" },
-              { value: "other", label: "Autre" },
-            ]}
-            onChange={(v) => setTypeFilter(v as TypeFilter)}
+            selected={typeFilter}
+            options={ALL_TYPES.map((t) => ({ value: t, label: TYPE_LABELS[t] }))}
+            onChange={setTypeFilter}
           />
-          <SegmentedPicker
+          <MultiSelectFilter
             label="Priorité"
-            value={priorityFilter}
-            options={[
-              { value: "all", label: "Toutes" },
-              { value: "p0", label: "P0" },
-              { value: "p1", label: "P1" },
-              { value: "p2", label: "P2" },
-              { value: "p3", label: "P3" },
-            ]}
-            onChange={(v) => setPriorityFilter(v as PriorityFilter)}
+            selected={priorityFilter}
+            options={ALL_PRIORITIES.map((p) => ({ value: p, label: PRIORITY_LABELS[p] }))}
+            onChange={setPriorityFilter}
           />
-        </View>
+          <Pressable
+            onPress={() => {
+              setStatusFilter(DEFAULT_STATUS_FILTER);
+              setTypeFilter([]);
+              setPriorityFilter([]);
+              setSearchInput("");
+            }}
+            accessibilityRole="button"
+          >
+            <Text style={styles.resetLink}>Réinitialiser (tout sauf fermé)</Text>
+          </Pressable>
+        </CollapsibleSection>
 
         {items === null && !error && <ActivityIndicator style={{ marginTop: 40 }} />}
 
@@ -363,6 +423,16 @@ function DetailPanel({
         </Pressable>
       </View>
       <Text style={styles.detailTitle}>{item.title}</Text>
+
+      {item.screen && (
+        <Field label="Origine (annotation in-app)">
+          <Text style={styles.fieldValue}>
+            Écran : {item.screen}
+            {item.elementRef ? ` · Élément : ${item.elementRef}` : ""}
+            {"\n"}Position : ({item.x ?? "?"}, {item.y ?? "?"}){item.appVersion ? ` · v${item.appVersion}` : ""}
+          </Text>
+        </Field>
+      )}
 
       {item.userDescription && (
         <Field label="Description utilisateur">
@@ -579,7 +649,10 @@ const styles = StyleSheet.create({
   errorBox: { backgroundColor: colors.errorSurface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.md },
   errorText: { color: colors.error, fontSize: typography.body },
   emptyText: { fontSize: typography.body, color: colors.contentTertiary, textAlign: "center", marginTop: spacing.xl },
-  filtersRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.lg, marginBottom: spacing.sm },
+  searchRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginBottom: spacing.md + 2 },
+  searchInput: { flex: 1, borderWidth: 1, borderColor: colors.borderDefault, borderRadius: radius.md, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.sm + 2, fontSize: typography.subtitle, backgroundColor: colors.surfaceBase },
+  clearSearchText: { color: colors.link, fontSize: typography.small, fontWeight: "600" },
+  resetLink: { color: colors.link, fontSize: typography.small, fontWeight: "600", marginTop: spacing.xs },
   contentRow: { flexDirection: "row", gap: spacing.lg, flex: 1, minHeight: 400 },
   listCol: { flex: 1, maxWidth: 460 },
   detailCol: { flex: 1.3 },

@@ -29,13 +29,22 @@ interface CapturedPoint {
 
 /**
  * AnnotationCapture — FEAT-006 (docs/ROADMAP.md item 10). Wraps the
- * authenticated app so an admin (manage_annotations) can right-click
- * (web) or long-press (native) anywhere to pin a timestamped,
- * app-version-stamped comment. Renders `children` completely unmodified
- * when the current user lacks the permission — no wrapper view, no
- * listeners attached — so a non-admin sees zero behavioral difference,
- * exactly per the spec's acceptance criteria (browser's default context
- * menu untouched on web, no special handling at all on native).
+ * authenticated app so an admin (manage_tracker — see below) can
+ * right-click (web) or long-press (native) anywhere to pin a
+ * timestamped, app-version-stamped comment. Renders `children` completely
+ * unmodified when the current user lacks the permission — no wrapper
+ * view, no listeners attached — so a non-admin sees zero behavioral
+ * difference, exactly per the spec's acceptance criteria (browser's
+ * default context menu untouched on web, no special handling at all on
+ * native).
+ *
+ * Gate changed from `manage_annotations` to `manage_tracker` 2026-09-10
+ * (migration 009, annotations/tracker merge) — this now creates a
+ * `tracker_items` row directly (see createAnnotationItem() in
+ * useAdminApi.ts) rather than a separate `annotations` row, so it's gated
+ * by the same permission as the tracker it writes into. Both permissions
+ * are only ever granted to `administrateur` today, so nothing loses
+ * access — see migration 009's own header comment.
  *
  * Must be rendered inside <AuthProvider> (for useAuthContext). Deliberately
  * NOT rendered inside <Stack.Navigator> itself — it wraps the navigator
@@ -56,7 +65,7 @@ export default function AnnotationCapture({
   screenName: string;
 }) {
   const { csrfToken, hasPermission } = useAuthContext();
-  const enabled = hasPermission("manage_annotations");
+  const enabled = hasPermission("manage_tracker");
   const api = useAdminApi(csrfToken);
   const toast = useToast();
 
@@ -154,7 +163,13 @@ export default function AnnotationCapture({
     if (!captured || comment.trim() === "") return;
     setSubmitting(true);
     try {
-      await api.createAnnotation(screenName, captured.elementRef, captured.x, captured.y, comment.trim(), APP_VERSION);
+      // Migration 009 (2026-09-10) — creates a tracker_items row directly
+      // (type: "annotation") instead of a separate annotations row. The
+      // toast message stays the same ("comment added") since the workflow
+      // looks identical to the person pinning it; what a dev sees on the
+      // other end (AdminTrackerScreen.tsx, not a separate screen) is what
+      // changed.
+      await api.createAnnotationItem(screenName, captured.elementRef, captured.x, captured.y, comment.trim(), APP_VERSION);
       toast.show("Commentaire ajouté.", "success");
       closeAll();
     } catch (e: any) {

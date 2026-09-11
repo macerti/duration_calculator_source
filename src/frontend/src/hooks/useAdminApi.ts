@@ -59,10 +59,15 @@ export interface TrackerUpdate {
 /** Matches db/trackerRepo.php's mapTrackerItemRow() — FEAT-010. `updates`
  * is only populated by getTrackerItem() (the by-code detail fetch);
  * listTrackerItems() rows never carry it — mirrors the repo layer's own
- * getTrackerItemByCode()-only attachment of history. */
+ * getTrackerItemByCode()-only attachment of history.
+ *
+ * `screen`/`elementRef`/`x`/`y`/`appVersion`/`createdBy`/`sourceAnnotationId`
+ * added by migration 009 (2026-09-10, annotations/tracker merge) — NULL on
+ * every normal dev-created row, populated only for `type === "annotation"`
+ * rows created via the in-app pin tool (see createAnnotationItem() below). */
 export interface TrackerItem {
   code: string;
-  type: "bug" | "feature" | "techdebt" | "other";
+  type: "bug" | "feature" | "techdebt" | "other" | "annotation";
   title: string;
   userDescription: string | null;
   technicalDescription: string | null;
@@ -71,6 +76,13 @@ export interface TrackerItem {
   dependencies: string | null;
   testsToDo: string | null;
   comments: string | null;
+  screen: string | null;
+  elementRef: string | null;
+  x: number | null;
+  y: number | null;
+  appVersion: string | null;
+  createdBy: number | null;
+  sourceAnnotationId: number | null;
   createdAt: string;
   updatedAt: string;
   updates?: TrackerUpdate[];
@@ -183,11 +195,28 @@ export function useAdminApi(csrfToken: string | null) {
     // error shape. `type` and `code` are immutable after creation — see
     // trackerRepo.php's updateTrackerItem() doc comment for why — so
     // updateTrackerItem()'s fields type deliberately excludes them.
-    listTrackerItems: (filters?: { status?: TrackerItem["status"]; type?: TrackerItem["type"]; priority?: NonNullable<TrackerItem["priority"]> }) => {
+    //
+    // status/type/priority accept an array (multiselect, added 2026-09-10
+    // for AdminTrackerScreen.tsx's filter rework — sent comma-joined,
+    // matching api/index.php's ?status=a,b,c parsing) or a single value,
+    // kept working for any other caller. `search` matches the backend's
+    // ?search= free-text filter (existed unwired since the forty-seventh
+    // session; wired here for the first time).
+    listTrackerItems: (filters?: {
+      status?: TrackerItem["status"] | TrackerItem["status"][];
+      type?: TrackerItem["type"] | TrackerItem["type"][];
+      priority?: NonNullable<TrackerItem["priority"]> | NonNullable<TrackerItem["priority"]>[];
+      search?: string;
+    }) => {
       const params = new URLSearchParams();
-      if (filters?.status) params.set("status", filters.status);
-      if (filters?.type) params.set("type", filters.type);
-      if (filters?.priority) params.set("priority", filters.priority);
+      const join = (v?: string | string[]) => (Array.isArray(v) ? v.join(",") : v);
+      const status = join(filters?.status);
+      const type = join(filters?.type);
+      const priority = join(filters?.priority);
+      if (status) params.set("status", status);
+      if (type) params.set("type", type);
+      if (priority) params.set("priority", priority);
+      if (filters?.search?.trim()) params.set("search", filters.search.trim());
       const qs = params.toString();
       return request<TrackerItem[]>(`/admin/tracker/items${qs ? `?${qs}` : ""}`);
     },
@@ -224,5 +253,18 @@ export function useAdminApi(csrfToken: string | null) {
         body: JSON.stringify({ done, next: next ?? null, status: status ?? null }),
       }),
     suggestNextTrackerCode: (prefix: string) => request<{ code: string }>(`/admin/tracker/next-code?prefix=${encodeURIComponent(prefix)}`),
+
+    /** The in-app pin tool's create call (migration 009, 2026-09-10
+     * annotations/tracker merge) — replaces createAnnotation() above as
+     * AnnotationCapture.tsx's only create path. Creates a `tracker_items`
+     * row directly (`type: "annotation"`, auto-coded `ANN-NNN`,
+     * `technicalDescription`/`priority`/`dependencies`/`testsToDo` all
+     * left NULL) for a dev to triage and complete later via
+     * updateTrackerItem() — same as any other tracker item from there on. */
+    createAnnotationItem: (screen: string, elementRef: string | null, x: number, y: number, comment: string, appVersion: string) =>
+      request<TrackerItem>("/admin/tracker/annotations", {
+        method: "POST",
+        body: JSON.stringify({ screen, elementRef, x, y, comment, appVersion }),
+      }),
   };
 }

@@ -2,6 +2,18 @@
 
 Same versioning convention as the other projects: **x** = overhaul, **y** = feature, **z** = bugfix.
 
+## 2026-09-10 (fifty-first session) — 5.4.0 — `AdminTrackerScreen.tsx` filters rebuilt as collapsible multiselect + search; annotation pin tool now writes directly into the tracker (one merged list, not two)
+
+- **Version bump follows the normal convention**: same reasoning as the forty-fourth session's 5.3.0 bump — this is something an admin directly sees and uses differently starting now, not a backend-only change with no caller yet.
+- **Filters rebuilt**: `AdminTrackerScreen.tsx`'s three single-select `SegmentedPicker`s (status/type/priority) replaced with a new `MultiSelectFilter.tsx` component (check several values at once) inside a new `CollapsibleSection.tsx` panel, alongside a debounced search box wired to the backend's `?search=` param (present since the forty-seventh session, unwired until now). Default status selection is now **everything except `closed`**, not the previous literal "all" — Mahdi's explicit request. The panel's header always shows an active-filter/result-count summary, whether expanded or collapsed, so collapsing it to save space never hides that something is filtered.
+- **Annotations merged into the tracker**: the in-app pin tool (`AnnotationCapture.tsx`) now calls a new `createAnnotationItem()` (→ `POST /admin/tracker/annotations`, added last session) instead of the old separate-table `createAnnotation()` — a pinned comment is now a `tracker_items` row (`type: "annotation"`) from the moment it's created, appearing directly in the one tracker list a dev already has open, with `technicalDescription`/`priority` left blank for that dev to fill in. `AdminAnnotationsScreen.tsx` (the separate browse/manage screen) is retired — deleted, unwired from `App.tsx` and `ProfileScreen.tsx`. The pin tool's permission gate moved from `manage_annotations` to `manage_tracker` accordingly (both were only ever granted to the same role, so nobody loses access). The old `annotations` table and its other backend routes are untouched, just no longer written to — see migration `009`'s own header for why that data isn't deleted outright.
+- **Two new reusable components**: `MultiSelectFilter.tsx` and `CollapsibleSection.tsx`, neither tracker-specific, available for the next screen that needs the same pattern.
+- **Final confirmed state**: `npx tsc --noEmit` clean; backend baseline reconfirmed unchanged (`smoke_test.php` **24/24**, `http_api_test.php` **107/107**, from the previous session's backend work). No `expo export`/live click-through — same standing sandbox limitation as every frontend feature in this project.
+- **Not done**: `AdminSessionLogScreen` still doesn't exist; `BUG-051`/`052`, `FEAT-007`/`008`/`001`/`009`, and `DEBT-001`/`003`/`004` all untouched.
+- Full detail: `docs/DEV_STATUS.md`'s fifty-first-session entry.
+
+---
+
 ## 2026-09-09 (forty-eighth session) — no version bump — `session_log` table built (backend + tests only, no UI yet); all 50 `BUGLOG.md` bug entries archived into `tracker_items`
 
 - **No version bump**: a new admin-only table/API with no frontend caller yet, plus a data migration archiving historical bug entries, change nothing an end user or admin can currently see or do — same convention as the forty-fourth/forty-fifth sessions' own backend-only entries.
