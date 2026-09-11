@@ -16,6 +16,7 @@ import ProfileScreen from "./src/screens/ProfileScreen";
 import AdminUsersScreen from "./src/screens/AdminUsersScreen";
 import AdminRolesScreen from "./src/screens/AdminRolesScreen";
 import AdminTrackerScreen from "./src/screens/AdminTrackerScreen";
+import GuidedTestRunnerScreen from "./src/screens/GuidedTestRunnerScreen";
 import AnnotationCapture from "./src/components/AnnotationCapture";
 import { colors, typography } from "./src/theme/tokens";
 
@@ -42,6 +43,7 @@ export type RootStackParamList = {
   AdminUsers: undefined;
   AdminRoles: undefined;
   AdminTracker: undefined;
+  GuidedTestRunner: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -219,6 +221,7 @@ function AuthGate() {
               <Stack.Screen name="AdminUsers" component={AdminUsersScreen} options={{ title: "Utilisateurs", headerShown: false }} />
               <Stack.Screen name="AdminRoles" component={AdminRolesScreen} options={{ title: "Rôles et permissions", headerShown: false }} />
               <Stack.Screen name="AdminTracker" component={AdminTrackerScreen} options={{ title: "Suivi bugs/fonctionnalités", headerShown: false }} />
+              <Stack.Screen name="GuidedTestRunner" component={GuidedTestRunnerScreen} options={{ title: "Mode Test Guidé", headerShown: false }} />
             </Stack.Navigator>
           </AnnotationCapture>
         </NavigationContainer>

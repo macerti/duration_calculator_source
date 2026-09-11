@@ -12,6 +12,13 @@ Each scenario has a stable **ID** (e.g. `CLI-01`) — reference these IDs in
 bug reports and in the history log so we can track a specific scenario's
 pass/fail across versions over time.
 
+**Guided Test Mode (FEAT-007, added v5.5.0)**: every scenario below is now
+also walkable in-app (Profil → Mode Test Guidé, needs `manage_tracker`),
+which generates a Markdown report in this same Test History format —
+ready to paste below — plus a JSON export. This file stays the canonical,
+human-edited source; `src/frontend/src/data/acceptanceTests.ts` is a
+manually-kept-in-sync transcription, not an automated one.
+
 ---
 
 ## 1. Connectivity & Home
