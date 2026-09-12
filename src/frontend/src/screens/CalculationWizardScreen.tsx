@@ -334,23 +334,19 @@ export default function CalculationWizardScreen({ route, navigation }: Props) {
     return roundingOverrides[key] ?? safe;
   };
 
-  const finalTotal = result
-    ? result.sites.reduce((sum: number, site: any) => {
-        return (
-          sum +
-          site.standards.reduce((s2: number, std: any) => {
-            let t = 0;
-            t += getRounded(roundKey(site.siteId, std.standard, "stage1"), std.stage1Days);
-            t += getRounded(roundKey(site.siteId, std.standard, "stage2"), std.stage2Days);
-            std.years.forEach((y: any) => {
-              if (y.year !== 1) t += getRounded(roundKey(site.siteId, std.standard, `year${y.year}`), y.onSiteDurationFinal);
-              t += getRounded(roundKey(site.siteId, std.standard, `report${y.year}`), y.reportWritingFinal);
-            });
-            return s2 + t;
-          }, 0)
-        );
-      }, 0)
-    : 0;
+  // BUG-052 (annotation "this total is useless", confirmed 2026-09-12 by
+  // Mahdi as referring to this box specifically, not the per-year
+  // "Récapitulatif annuel" breakdown above it): this summed every site,
+  // every standard, and every year of the audit cycle into one blended
+  // number with no correspondence to any single audit visit — each
+  // year's audit (Stage 1+2, Surveillance 1, Surveillance 2) is planned
+  // and reported separately, so a 3-year combined figure isn't something
+  // an auditor actually uses. Purely presentational (confirmed unused
+  // anywhere else — not saved to the case, not read by
+  // CalculationReportScreen.tsx) so removing it changes no calculation
+  // or stored data, only this display. Removed rather than relabeled,
+  // per Mahdi's own "useless" wording — the per-year breakdown already
+  // covers the one figure that's actually meaningful.
 
   if (loadingExisting) {
     return (
@@ -764,11 +760,6 @@ export default function CalculationWizardScreen({ route, navigation }: Props) {
                     );
                   })}
 
-                  <View style={styles.finalTotalBox}>
-                    <Text style={styles.finalTotalLabel}>Durée totale à auditer</Text>
-                    <Text style={styles.finalTotalValue}>{finalTotal.toFixed(2)} jours</Text>
-                  </View>
-
                   <Pressable
                     style={styles.reportButton}
                     onPress={() => navigation.navigate("CalculationReport", { clientId, clientName, dossierRef, sites, result, roundingOverrides })}
@@ -865,9 +856,8 @@ const styles = StyleSheet.create({
   yearlyBreakdownYear: { fontSize: typography.small, fontWeight: "700", color: colors.contentSecondary },
   yearlyBreakdownTotal: { fontSize: typography.small, fontWeight: "700", color: colors.contentPrimary },
   yearlyBreakdownDetail: { fontSize: typography.caption, color: colors.contentQuaternary, marginTop: 1 },
-  finalTotalBox: { backgroundColor: colors.actionPrimary, borderRadius: radius.xl, padding: spacing.lg - 2, alignItems: "center", marginTop: spacing.sm },
-  finalTotalLabel: { color: "#aaa", fontSize: typography.small, marginBottom: 4 },
-  finalTotalValue: { color: colors.contentInverse, fontSize: typography.hero, fontWeight: "800" },
+  // finalTotalBox/finalTotalLabel/finalTotalValue removed 2026-09-12
+  // (BUG-052) along with the box that used them.
   reportButton: { borderWidth: 1, borderColor: colors.borderStrong, borderRadius: radius.lg, paddingVertical: spacing.md, alignItems: "center", marginTop: spacing.md },
   reportButtonText: { color: colors.contentPrimary, fontWeight: "700", fontSize: typography.bodyLarge },
 });

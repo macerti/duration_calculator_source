@@ -272,6 +272,16 @@ export default function ProfileScreen({ navigation }: Props) {
                 <Text style={styles.secondaryButtonText}>Mode Test Guidé (FEAT-007)</Text>
               </Pressable>
             )}
+            {hasPermission("manage_tracker") && (
+              <Pressable
+                style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
+                onPress={() => navigation.navigate("AdminSessionLog")}
+                accessibilityRole="button"
+                testID="profile-admin-session-log-button"
+              >
+                <Text style={styles.secondaryButtonText}>Journal des sessions</Text>
+              </Pressable>
+            )}
           </View>
         )}
 

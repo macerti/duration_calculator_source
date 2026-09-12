@@ -16,6 +16,7 @@ import ProfileScreen from "./src/screens/ProfileScreen";
 import AdminUsersScreen from "./src/screens/AdminUsersScreen";
 import AdminRolesScreen from "./src/screens/AdminRolesScreen";
 import AdminTrackerScreen from "./src/screens/AdminTrackerScreen";
+import AdminSessionLogScreen from "./src/screens/AdminSessionLogScreen";
 import GuidedTestRunnerScreen from "./src/screens/GuidedTestRunnerScreen";
 import AnnotationCapture from "./src/components/AnnotationCapture";
 import { colors, typography } from "./src/theme/tokens";
@@ -43,6 +44,7 @@ export type RootStackParamList = {
   AdminUsers: undefined;
   AdminRoles: undefined;
   AdminTracker: undefined;
+  AdminSessionLog: undefined;
   GuidedTestRunner: undefined;
 };
 
@@ -221,6 +223,7 @@ function AuthGate() {
               <Stack.Screen name="AdminUsers" component={AdminUsersScreen} options={{ title: "Utilisateurs", headerShown: false }} />
               <Stack.Screen name="AdminRoles" component={AdminRolesScreen} options={{ title: "Rôles et permissions", headerShown: false }} />
               <Stack.Screen name="AdminTracker" component={AdminTrackerScreen} options={{ title: "Suivi bugs/fonctionnalités", headerShown: false }} />
+              <Stack.Screen name="AdminSessionLog" component={AdminSessionLogScreen} options={{ title: "Journal des sessions", headerShown: false }} />
               <Stack.Screen name="GuidedTestRunner" component={GuidedTestRunnerScreen} options={{ title: "Mode Test Guidé", headerShown: false }} />
             </Stack.Navigator>
           </AnnotationCapture>
@@ -231,6 +234,28 @@ function AuthGate() {
 }
 
 export default function App() {
+  // BUG-051: ErrorBoundary's "Retour à l'accueil" previously just called
+  // setState({error: null}) via onGoHome's native no-op branch — which
+  // re-renders the *exact same* crashed component tree with the exact
+  // same props/state that caused the crash, so any crash that isn't a
+  // one-off (state-dependent, not just a bad render on mount) immediately
+  // re-triggers. See the comment on `navigationRef` above for a concrete
+  // case (BUG-048) where remounting the same tree hit the same crash
+  // again right away. Web already had a real fix (`window.location.reload()`
+  // — a full page reload, discarding all JS state). This gives native the
+  // equivalent: bumping `errorResetKey` and using it as the root
+  // `<ErrorBoundary>`'s `key` forces React to fully unmount and recreate
+  // the entire tree below it (ErrorBoundary's own state included),
+  // discarding everything — the same practical effect as a page reload.
+  // Deliberately not `expo-updates` (the option this bug's own tracker
+  // entry floated): that's a native module requiring an EAS rebuild to
+  // actually take effect, for an app that today is shipped only as the
+  // web export (see REPOSITORY_ARCHITECTURE.md) — adding it now would be
+  // an unverifiable dependency on a rebuild pipeline that doesn't run
+  // yet, for a problem a plain React remount already solves without any
+  // native code. Worth revisiting if/when a real native build ships.
+  const [errorResetKey, setErrorResetKey] = useState(0);
+
   // Mobile web: a native browser "pull down to reload" gesture would reload
   // the whole page and wipe all in-progress wizard state. This disables that
   // specific browser gesture (vertical overscroll bounce/refresh) without
@@ -245,7 +270,16 @@ export default function App() {
   }, []);
 
   return (
-    <ErrorBoundary onGoHome={() => Platform.OS === "web" && typeof window !== "undefined" && window.location.reload()}>
+    <ErrorBoundary
+      key={errorResetKey}
+      onGoHome={() => {
+        if (Platform.OS === "web" && typeof window !== "undefined") {
+          window.location.reload();
+        } else {
+          setErrorResetKey((k) => k + 1);
+        }
+      }}
+    >
       <ToastProvider>
         <View style={styles.root}>
           {/* Auth gate: handles login/loading/app rendering */}

@@ -88,6 +88,23 @@ export interface TrackerItem {
   updates?: TrackerUpdate[];
 }
 
+/** Matches db/sessionLogRepo.php's mapSessionLogRow() — migration 007
+ * (session_log table). Append-only by design (see the migration's own
+ * comment, point 5): no update/delete here, matching the backend's
+ * GET/POST-only routes. */
+export interface SessionLogEntry {
+  id: number;
+  sessionLabel: string;
+  summary: string;
+  trigger: string | null;
+  done: string | null;
+  notDone: string | null;
+  handoff: string | null;
+  commitHash: string | null;
+  ciStatus: string | null;
+  createdAt: string;
+}
+
 export class AdminApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -266,5 +283,23 @@ export function useAdminApi(csrfToken: string | null) {
         method: "POST",
         body: JSON.stringify({ screen, elementRef, x, y, comment, appVersion }),
       }),
+
+    // Session/action log (migration 007, forty-eighth session) — "table 1"
+    // of Mahdi's two-table ask, live since that session but with no UI
+    // caller until now (flagged in every hand-off since). Append-only:
+    // list + create only, no update/delete method exists here at all,
+    // matching the backend's own GET/POST-only routes.
+    listSessionLog: (limit?: number) =>
+      request<SessionLogEntry[]>(`/admin/session-log${limit ? `?limit=${limit}` : ""}`),
+    createSessionLogEntry: (fields: {
+      sessionLabel: string;
+      summary: string;
+      trigger?: string | null;
+      done?: string | null;
+      notDone?: string | null;
+      handoff?: string | null;
+      commitHash?: string | null;
+      ciStatus?: string | null;
+    }) => request<SessionLogEntry>("/admin/session-log", { method: "POST", body: JSON.stringify(fields) }),
   };
 }
