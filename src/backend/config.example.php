@@ -50,6 +50,25 @@ return [
     // place.
     'migration_secret' => '',
 
+    // Shared secret for GET /dev-export — a read-only JSON snapshot of
+    // tracker_items/tracker_updates/session_log (bugs, features, tech
+    // debt, and annotations, which have lived inside tracker_items as
+    // type='annotation' since migration 009 — plus dev session history).
+    // Never touches clients/cases/sites/users; this is dev/ops metadata
+    // only, by design, which is what makes exposing it this way safe.
+    //
+    // Set this to a DIFFERENT long random value than migration_secret
+    // (e.g. `openssl rand -hex 32`) and put the SAME value in the
+    // `DEV_EXPORT_SECRET` GitHub Actions secret on THIS repo
+    // (macerti/duration_calculator_source, not the deploy repo — the
+    // scheduled workflow that calls this endpoint lives and pushes here).
+    // Leave empty ('') to disable the endpoint entirely (returns 501).
+    //
+    // Same one-time-by-hand caveat as migration_secret above: config.php
+    // is gitignored and lives only on the server, so nothing that runs
+    // on GitHub can set this half of the pair for you.
+    'dev_export_secret' => '',
+
     // -----------------------------------------------------------------
     // SSO — Microsoft Entra ID (Azure AD) & Google OAuth 2.0
     // Leave empty ('') to disable that provider.

@@ -278,7 +278,7 @@ check($status === 200 && $afterDelete === [], 'GET /admin/annotations is empty a
 check($status === 401, 'GET /admin/tracker/items with no session is rejected', "status=$status");
 
 [$status, $trackerList] = request('GET', "$base/admin/tracker/items");
-check($status === 200 && count($trackerList ?? []) === 64, 'GET /admin/tracker/items lists the 64 seeded items (14 original + 50 archived from BUGLOG.md, migration 008)', "status=$status count=" . count($trackerList ?? []));
+check($status === 200 && count($trackerList ?? []) === 66, 'GET /admin/tracker/items lists the 66 seeded items (14 original + 50 archived from BUGLOG.md, migration 008 + 2 from migration 014)', "status=$status count=" . count($trackerList ?? []));
 
 [$status, $bugsOnly] = request('GET', "$base/admin/tracker/items?type=bug");
 check($status === 200 && count($bugsOnly ?? []) === 52, 'GET /admin/tracker/items?type=bug filters to the 52 seeded bugs (2 original + 50 archived, migration 008)', "status=$status count=" . count($bugsOnly ?? []));
@@ -349,7 +349,7 @@ check($status === 403, 'DELETE /admin/tracker/items/:code without CSRF token is 
 check($status === 200, 'DELETE /admin/tracker/items/:code succeeds with CSRF token', "status=$status");
 
 [$status, $backToBaseline] = request('GET', "$base/admin/tracker/items");
-check($status === 200 && count($backToBaseline ?? []) === 64, 'GET /admin/tracker/items is back to the 64 seeded rows after delete', "status=$status count=" . count($backToBaseline ?? []));
+check($status === 200 && count($backToBaseline ?? []) === 66, 'GET /admin/tracker/items is back to the 66 seeded rows after delete', "status=$status count=" . count($backToBaseline ?? []));
 
 // --- Multiselect status/type/priority filters (2026-09-10, AdminTrackerScreen.tsx filter rework) ---
 // Comma-separated is the wire format; a bare single value must still work

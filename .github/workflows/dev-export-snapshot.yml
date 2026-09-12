@@ -1,0 +1,87 @@
+name: Refresh tracker snapshot
+
+# Mahdi's ask (2026-09-12, fifty-fourth session): "how can AI developers, when
+# pulling the repo, also pull the problems from the database?" — this is the
+# answer. It calls GET /dev-export (a read-only, shared-secret-gated endpoint,
+# same auth pattern as /migrate — see api/index.php and config.example.php's
+# dev_export_secret) and commits the result into this repo as
+# docs/TRACKER_SNAPSHOT.{json,md}. `git clone`/`git pull` on this repo then
+# carries a recent view of the live bugs/features/tech-debt/annotations
+# (annotations have lived inside tracker_items as type='annotation' since
+# migration 009) and the dev session log — no database credentials handed to
+# anyone, ever, and nothing beyond dev/ops metadata leaves the server (no
+# clients/cases/sites/users — see the endpoint's own comment for why that
+# boundary is what makes this safe to expose at all).
+#
+# One-time manual setup required (cannot be automated — see
+# config.example.php's own comment on why): set `dev_export_secret` in the
+# live server's config.php, and add the SAME value as this repo's
+# DEV_EXPORT_SECRET GitHub Actions secret (Settings -> Secrets and
+# variables -> Actions, on macerti/duration_calculator_source specifically —
+# not the deploy repo, since this workflow runs and pushes here).
+
+on:
+  schedule:
+    # Every 6 hours. A snapshot, not a live feed — good enough for "recent
+    # view when starting a session," not meant to replace GET /dev-export
+    # itself for anything that needs up-to-the-minute accuracy.
+    - cron: '0 */6 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+env:
+  PRODUCTION_API_URL: https://tools.macerti.com/duration_calculator/api
+
+jobs:
+  refresh-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Check secret is configured
+        id: check_secret
+        run: |
+          if [ -z "${{ secrets.DEV_EXPORT_SECRET }}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::DEV_EXPORT_SECRET repository secret is not set — skipping. See this workflow's own header comment for one-time setup steps."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fetch live tracker export
+        if: steps.check_secret.outputs.configured == 'true'
+        run: |
+          set -euo pipefail
+          http_code=$(curl -sS -o docs/TRACKER_SNAPSHOT.json -w "%{http_code}" \
+            -H "X-Dev-Export-Secret: ${{ secrets.DEV_EXPORT_SECRET }}" \
+            "$PRODUCTION_API_URL/dev-export")
+          if [ "$http_code" != "200" ]; then
+            echo "::error::GET /dev-export returned HTTP $http_code"
+            cat docs/TRACKER_SNAPSHOT.json || true
+            exit 1
+          fi
+
+      - name: Render Markdown snapshot
+        if: steps.check_secret.outputs.configured == 'true'
+        run: php scripts/generate-tracker-snapshot.php docs/TRACKER_SNAPSHOT.json > docs/TRACKER_SNAPSHOT.md
+
+      - name: Commit if changed
+        if: steps.check_secret.outputs.configured == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/TRACKER_SNAPSHOT.json docs/TRACKER_SNAPSHOT.md
+          if git diff --cached --quiet; then
+            echo "Tracker snapshot is already current."
+          else
+            git commit -m "chore: refresh tracker snapshot [skip ci]"
+            git push origin main
+          fi

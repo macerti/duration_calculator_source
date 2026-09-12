@@ -99,6 +99,7 @@ use function AuditEngine\createAnnotation;
 use function AuditEngine\updateAnnotationStatus;
 use function AuditEngine\deleteAnnotation;
 use function AuditEngine\listTrackerItems;
+use function AuditEngine\listTrackerUpdates;
 use function AuditEngine\getTrackerItemByCode;
 use function AuditEngine\createTrackerItem;
 use function AuditEngine\updateTrackerItem;
@@ -307,6 +308,57 @@ try {
                 ? $result['error']
                 : 'Migration failed. Check server error log for detail.',
         ], 500);
+    }
+
+    // GET /dev-export — read-only JSON snapshot of tracker_items,
+    // tracker_updates, and session_log (bugs/features/tech-debt/
+    // annotations — annotations live inside tracker_items as
+    // type='annotation' since migration 009 — plus the dev session
+    // history). Built so that a session-based AI developer pulling this
+    // repo's code can *also* get a recent view of the live "problems"
+    // state without needing standing database credentials: a scheduled
+    // GitHub Action (.github/workflows/dev-export-snapshot.yml) calls
+    // this endpoint and commits the result to docs/TRACKER_SNAPSHOT.md,
+    // so `git pull` alone carries both.
+    //
+    // Deliberately excludes clients/cases/sites/users — this is
+    // dev/ops metadata only, never client-confidential audit data, and
+    // that boundary is exactly why this can be exposed this way at all.
+    //
+    // Same shared-secret convention as /migrate above (custom header
+    // preferred over Authorization for the same shared-hosting-strips-it
+    // reason, ?secret= also accepted so a human can hit this from a
+    // plain browser URL too), same hash_equals + per-IP rate limit. GET
+    // only, no side effects, no apply-style write path at all — reading
+    // this can never mutate anything, unlike /migrate.
+    if ($method === 'GET' && $segments === ['dev-export']) {
+        $configuredSecret = (string)($config['dev_export_secret'] ?? '');
+        if ($configuredSecret === '') {
+            respond(['error' => 'Dev-export endpoint is not configured on this server.'], 501);
+        }
+
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        if (!rateLimitCheck('dev-export:' . $ip, 10, 600)) {
+            respond(['error' => 'Too many attempts. Try again later.'], 429);
+        }
+
+        $providedSecret = (string)($_SERVER['HTTP_X_DEV_EXPORT_SECRET'] ?? ($_GET['secret'] ?? ''));
+        if ($providedSecret === '' || !hash_equals($configuredSecret, $providedSecret)) {
+            respond(['error' => 'Unauthorized.'], 401);
+        }
+
+        $items = listTrackerItems(null, null, null, null);
+        $updatesByCode = [];
+        foreach ($items as $item) {
+            $updatesByCode[$item['code']] = listTrackerUpdates($item['code']);
+        }
+
+        respond([
+            'exportedAt' => gmdate('c'),
+            'trackerItems' => $items,
+            'trackerUpdatesByCode' => $updatesByCode,
+            'sessionLog' => listSessionLog(null),
+        ]);
     }
 
     if ($method === 'GET' && $segments === ['parameters']) {

@@ -39,6 +39,22 @@ code change that prompted them, and are always included inside the shipped
 deliverable (not just kept in a separate "notes" location) — see "Ship as one
 deliverable" below for why.
 
+**`docs/TRACKER_SNAPSHOT.md`** (auto-generated — do not edit by hand) — a
+recent, read-only view of the live `tracker_items`/`tracker_updates`/
+`session_log` tables (bugs, features, tech debt, and annotations, which have
+lived inside `tracker_items` as `type='annotation'` since migration 009),
+refreshed every 6 hours by `.github/workflows/dev-export-snapshot.yml` and
+committed straight into this repo. Built 2026-09-12 (fifty-fourth session)
+specifically so that pulling this repo — by a human or an AI dev session
+starting fresh, with no standing database access — also gets a recent read
+of the actual live "problems," not just the code. **Read this at the start
+of a session** alongside the five files above; it will usually be more
+current than anything transcribed by hand into `DEV_STATUS.md`/`BUGLOG.md`,
+since those depend on a session remembering to update them, and this
+doesn't. See `GET /dev-export` in `api/index.php` and `dev_export_secret` in
+`config.example.php` for how it's generated and the one-time setup that
+secret needs.
+
 ## Deployment target: PHP + MySQL/MariaDB, single self-contained folder
 
 This project deploys to DirectAdmin **shared hosting**: no Node.js runtime,
