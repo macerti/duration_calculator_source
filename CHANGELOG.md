@@ -2,6 +2,18 @@
 
 Same versioning convention as the other projects: **x** = overhaul, **y** = feature, **z** = bugfix.
 
+## 2026-09-11 (fifty-third session) — no version bump — FEAT-008 split into two slices; slice 1 (dossier reference codification, backend only) built and tested
+
+- **Trigger**: Mahdi's instruction to pull latest, read the logs, work bugs → features (by priority) → tech debt, keeping continuity via logged hand-offs — essentially identical trigger text to the fifty-second session's own. `BUG-051`/`052` confirmed still open but blocked on Mahdi, so this session moved to the top of the feature queue: `FEAT-008`.
+- **No version bump**: a new admin-only table/API with no frontend caller yet — same convention as the forty-eighth session's `session_log` work.
+- **Scoping**: `FEAT-008` ("Parameter Admin UI & Dossier Reference Codification") bundles two separable pieces. Built only the self-contained one this session — dossier reference auto-numbering — leaving the parameter-catalogue admin UI for a future session with real open architectural questions still to resolve first (see `docs/DEV_STATUS.md`'s fifty-third-session entry point 1 for what was learned while scoping: `parameter_sets` is already a versioned, DB-driven store, so that half's storage layer likely already exists).
+- **New**: migration `011_dossier_ref_codification.sql` (`dossier_ref_config` table, seeded **disabled by default** — fully backward compatible; new `manage_parameters` permission granted to `administrateur` only, deliberately separate from `manage_tracker`). `src/backend/db/dossierRefRepo.php` (config get/save + a transactional `generateNextDossierRef()` using `SELECT ... FOR UPDATE`, same pattern as `parameterSetRepo.php`'s `saveParameterSet()`). `GET`/`PUT /admin/dossier-ref-config` wired into `api/index.php`, and `POST /cases` now auto-generates `dossierRef` when left blank **and** the feature is enabled — otherwise unchanged for every existing manual-entry workflow.
+- **10 new HTTP tests** + one updated assertion (`admin/permissions` count `8` → `9`). **117/117** on a fresh DB (up from 107/107), `smoke_test.php` unchanged **24/24**, `migrate.php` **12/12** (includes migration `012_feat008_slice1_status.sql` updating the `FEAT-008` tracker row to `in_progress`), `scripts/check-repo-hygiene.sh` **4/4**.
+- **Not done**: parameter admin UI itself (slice 2) — fully unstarted. Slice 1's own settings-screen UI also not built — only reachable via direct API calls today. No frontend changes this session, so `tsc`/`expo export` were not re-run. `AdminSessionLogScreen` still doesn't exist. `BUG-051`/`052` still need Mahdi. `FEAT-001`/`FEAT-009` and `DEBT-001`/`002`/`003`/`004` all still untouched.
+- Full detail: `docs/DEV_STATUS.md`'s fifty-third-session entry.
+
+---
+
 ## 2026-09-11 (fifty-second session) — 5.5.0 — FEAT-007 built: in-app Guided Test Mode (all 73 `docs/TEST_CHECKLIST.md` scenarios) with Markdown/JSON report export
 
 - **Trigger**: Mahdi's instruction to pull latest, read the logs, work bugs → features (by priority) → tech debt in that order, keeping continuity via logged hand-offs. `BUG-051`/`052` confirmed still both open but blocked on Mahdi's own decision/clarification, not on more dev investigation — so this session moved straight to the top of the feature queue, `FEAT-007`, per the tracker's own stated priority order.

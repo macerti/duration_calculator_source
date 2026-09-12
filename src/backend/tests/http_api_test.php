@@ -209,7 +209,10 @@ check($status === 403, 'DELETE /admin/roles/:id without CSRF token is rejected',
 check($status === 200, 'DELETE /admin/roles/:id succeeds with CSRF token', "status=$status");
 
 [$status, $perms] = request('GET', "$base/admin/permissions");
-check($status === 200 && count($perms ?? []) === 8, 'GET /admin/permissions lists the 8 seeded permissions', "status=$status count=" . count($perms ?? []));
+// 9, not 8: migration 011 (FEAT-008 slice 1) added manage_parameters —
+// same one-line bump every prior permission-adding migration required
+// here (see this test's own history for manage_annotations/manage_tracker).
+check($status === 200 && count($perms ?? []) === 9, 'GET /admin/permissions lists the 9 seeded permissions', "status=$status count=" . count($perms ?? []));
 
 [$status, $users] = request('GET', "$base/admin/users");
 check($status === 200 && count($users ?? []) === 1, 'GET /admin/users lists the single CI user', "status=$status count=" . count($users ?? []));
@@ -439,6 +442,99 @@ check($status === 200 && count($listedLog ?? []) === 1 && ($listedLog[0]['id'] ?
 
 [$status, $limited] = request('GET', "$base/admin/session-log?limit=1");
 check($status === 200 && count($limited ?? []) === 1, 'GET /admin/session-log?limit= is honoured', "status=$status count=" . count($limited ?? []));
+
+// --- Dossier reference codification (FEAT-008 slice 1, migration 011) ---
+[$status] = request('GET', "$base/admin/dossier-ref-config", null, null, false);
+check($status === 401, 'GET /admin/dossier-ref-config with no session is rejected', "status=$status");
+
+[$status, $refConfig] = request('GET', "$base/admin/dossier-ref-config");
+check(
+    $status === 200 && $refConfig['enabled'] === false && $refConfig['prefix'] === 'DC-'
+        && $refConfig['dateFormat'] === 'Y' && $refConfig['counterDigits'] === 4 && $refConfig['resetPeriod'] === 'yearly',
+    'GET /admin/dossier-ref-config returns migration 011 defaults, disabled',
+    "status=$status " . json_encode($refConfig)
+);
+
+[$status] = request('PUT', "$base/admin/dossier-ref-config", ['enabled' => true, 'prefix' => 'CI-TEST-']);
+check($status === 403, 'PUT /admin/dossier-ref-config without CSRF token is rejected', "status=$status");
+
+[$status, $updatedRefConfig] = request('PUT', "$base/admin/dossier-ref-config", [
+    'enabled' => true,
+    'prefix' => 'CI-TEST-',
+    'suffix' => '',
+    'dateFormat' => 'Y',
+    'counterDigits' => 3,
+    'resetPeriod' => 'never',
+], $csrf);
+check(
+    $status === 200 && $updatedRefConfig['enabled'] === true && $updatedRefConfig['prefix'] === 'CI-TEST-' && $updatedRefConfig['counterDigits'] === 3,
+    'PUT /admin/dossier-ref-config applies a partial update',
+    "status=$status " . json_encode($updatedRefConfig)
+);
+check(
+    preg_match('/^CI-TEST-\d{4}-\d{3}$/', $updatedRefConfig['previewSample'] ?? '') === 1,
+    'previewSample matches prefix + date + zero-padded counter pattern, uses current counter without consuming it',
+    $updatedRefConfig['previewSample'] ?? ''
+);
+
+$refCasesToClean = [];
+$refCasePayload = [
+    'multiSite' => false,
+    'sites' => [[
+        'siteId' => 'site-ci-1', 'name' => 'Site principal', 'isHq' => true, 'naceCode' => '',
+        'personnel' => [
+            'siteId' => 'site-ci-1', 'declaredTotalHeadcount' => 0,
+            'shiftTeams' => [['label' => 'Equipe 1', 'headcount' => 0, 'pctRepetitiveOrSimilar' => 0]],
+            'nonShift' => ['headcount' => 0, 'pctRepetitiveOrSimilar' => 0],
+            'indirect' => ['headcount' => 0],
+        ],
+        'standards' => [[
+            'standard' => 'ISO9001', 'active' => true, 'stage' => 'Initial', 'riskLevel' => 'Moyen',
+            'stage1Selected' => true, 'stage2Selected' => true,
+            'factors' => ['standard' => 'ISO9001', 'ticked' => [], 'justificationText' => ''],
+            'sampledThisYear' => [1 => true, 2 => true, 3 => true], 'isExtensionSite' => false,
+        ]],
+    ]],
+];
+
+[$status, $caseNoRef1] = request('POST', "$base/cases", $refCasePayload + ['status' => 'draft']);
+check($status === 201, 'POST /cases with blank dossierRef auto-generates one when enabled', "status=$status");
+$refCasesToClean[] = (int)($caseNoRef1['id'] ?? 0);
+$generatedRef1 = $caseNoRef1['result']['dossierRef'] ?? null;
+check(
+    is_string($generatedRef1) && preg_match('/^CI-TEST-\d{4}-\d{3}$/', $generatedRef1) === 1,
+    'auto-generated dossierRef matches the configured pattern',
+    $generatedRef1 ?? 'null'
+);
+
+[$status, $caseNoRef2] = request('POST', "$base/cases", $refCasePayload + ['status' => 'draft']);
+$refCasesToClean[] = (int)($caseNoRef2['id'] ?? 0);
+$generatedRef2 = $caseNoRef2['result']['dossierRef'] ?? null;
+check(
+    is_string($generatedRef2) && $generatedRef2 !== $generatedRef1,
+    'a second auto-generated dossierRef advances the counter, never repeats',
+    ($generatedRef2 ?? 'null') . ' vs ' . ($generatedRef1 ?? 'null')
+);
+
+[$status, $caseWithRef] = request('POST', "$base/cases", $refCasePayload + ['status' => 'draft', 'dossierRef' => 'CI-MANUAL-REF']);
+$refCasesToClean[] = (int)($caseWithRef['id'] ?? 0);
+check(
+    $status === 201 && ($caseWithRef['result']['dossierRef'] ?? null) === 'CI-MANUAL-REF',
+    'an explicitly supplied dossierRef is never overridden by auto-generation',
+    json_encode($caseWithRef['result']['dossierRef'] ?? null)
+);
+
+foreach ($refCasesToClean as $refCaseId) {
+    if ($refCaseId > 0) request('DELETE', "$base/cases/$refCaseId");
+}
+
+// Restore the disabled default so this test file's own state never
+// outlives the run it created it in (same convention as deleting the
+// ci-role/annotation/tracker rows created above).
+[$status] = request('PUT', "$base/admin/dossier-ref-config", [
+    'enabled' => false, 'prefix' => 'DC-', 'suffix' => '', 'dateFormat' => 'Y', 'counterDigits' => 4, 'resetPeriod' => 'yearly',
+], $csrf);
+check($status === 200, 'dossier-ref-config restored to migration 011 defaults after the test', "status=$status");
 
 // --- Forgot / reset password ---
 [$status] = request('POST', "$base/auth/forgot-password", ['email' => $testEmail], null, false);

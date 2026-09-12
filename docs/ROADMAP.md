@@ -63,6 +63,7 @@ Do not use older roadmap priority wording as the active priority. This dated dec
 - **Status:** ELEVATED TO P1 (Top PO Value)
 - **Objective:** Web interface for administrators to inspect and edit IAF parameter tables (MD5, MD1, MD11) and factor catalogs from the browser instead of modifying PHP source code and reseeding.
 - **Dossier Codification:** Configurable automatic calculation reference numbering generator (`prefix + date components + incremental counter`) auto-populating `dossierRef`.
+- **UPDATE 2026-09-11 (fifty-third session)**: split into two slices; **Dossier Codification built and tested (backend only)** — migration `011_dossier_ref_codification.sql`, `db/dossierRefRepo.php`, `GET`/`PUT /admin/dossier-ref-config`, auto-generation wired into `POST /cases`, gated behind a new `manage_parameters` permission. 10 new HTTP tests, `117/117` total. No settings-screen UI yet — only reachable via direct API calls. **Parameter admin UI (the IAF/MD5/MD1/MD11 table editor) is still fully unstarted** — see `docs/DEV_STATUS.md`'s fifty-third-session entry for the open architectural questions (NAE formula editability in particular) a future session should resolve before starting it; note `parameter_sets` is already versioned/data-driven via `parameterSetRepo.php`, so the storage layer for that half may already be solved.
 
 #### 3. FEAT-001 — Synthèse Per-Site Tabs & Consolidated "Programme d'audit Client"
 - **Category:** Core Calculation UX

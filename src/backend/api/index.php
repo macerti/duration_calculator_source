@@ -21,6 +21,7 @@ require_once __DIR__ . '/../db/permissionRepo.php';
 require_once __DIR__ . '/../db/annotationRepo.php';
 require_once __DIR__ . '/../db/trackerRepo.php';
 require_once __DIR__ . '/../db/sessionLogRepo.php';
+require_once __DIR__ . '/../db/dossierRefRepo.php';
 require_once __DIR__ . '/../db/rateLimiter.php';
 require_once __DIR__ . '/../db/Migrations.php';
 require_once __DIR__ . '/../auth/OAuthSession.php';
@@ -107,6 +108,9 @@ use function AuditEngine\suggestNextTrackerCode;
 use function AuditEngine\createAnnotationTrackerItem;
 use function AuditEngine\listSessionLog;
 use function AuditEngine\createSessionLogEntry;
+use function AuditEngine\getDossierRefConfig;
+use function AuditEngine\saveDossierRefConfig;
+use function AuditEngine\generateNextDossierRef;
 use function AuditEngine\rateLimitCheck;
 use AuditEngine\Migrations;
 
@@ -388,6 +392,22 @@ try {
         $wizardState = $body['wizardState'] ?? null;
         $input = $body;
         unset($input['wizardState']);
+        // FEAT-008 slice 1: if the caller left dossierRef blank (the
+        // frontend still falls back to its own `DRAFT-<timestamp>` when
+        // the wizard field is empty, so this mainly covers direct API
+        // callers, and is the hook the wizard's own fallback will be
+        // switched to call once the settings-screen UI slice lands),
+        // auto-generate one — but only when an admin has actually turned
+        // the feature on (migration 011 seeds it disabled), so every
+        // existing manual-entry workflow is unaffected by default.
+        if (!isset($input['dossierRef']) || trim((string)$input['dossierRef']) === '') {
+            if ($dbAvailable) {
+                $dossierRefConfig = getDossierRefConfig();
+                if ($dossierRefConfig['enabled']) {
+                    $input['dossierRef'] = generateNextDossierRef();
+                }
+            }
+        }
         if (isset($input['dossierRef'])) {
             $input['dossierRef'] = requireNonEmptyString((string)$input['dossierRef'], 'dossierRef', 128);
         }
@@ -1108,6 +1128,42 @@ try {
             respond(['error' => $e->getMessage()], 400);
         }
         respond($entry, 201);
+    }
+
+    // =========================================================
+    // Dossier reference codification (FEAT-008 slice 1, migration 011).
+    // Gated by manage_parameters, not manage_tracker — see migration
+    // 011's header comment for why this is a separate permission from
+    // every other /admin/* block in this file. No settings-screen caller
+    // exists yet (see docs/DEV_STATUS.md fifty-third-session hand-off);
+    // these routes exist and are tested so that UI is a pure frontend
+    // slice next, with nothing left to design on the backend.
+    // =========================================================
+
+    // GET /admin/dossier-ref-config — current settings + a live preview
+    // sample (does not consume the counter — see mapDossierRefConfigRow()).
+    if ($method === 'GET' && $segments === ['admin', 'dossier-ref-config']) {
+        requireDb($dbAvailable);
+        requirePermission('manage_parameters');
+        respond(getDossierRefConfig());
+    }
+
+    // PUT /admin/dossier-ref-config — partial update of the pattern
+    // settings. Never accepts nextCounter/lastPeriodKey from the client
+    // (see saveDossierRefConfig()'s own comment) — those are exclusively
+    // managed by generateNextDossierRef() so an admin editing the prefix
+    // can never accidentally rewind or skip the sequence.
+    if ($method === 'PUT' && $segments === ['admin', 'dossier-ref-config']) {
+        requireDb($dbAvailable);
+        requirePermission('manage_parameters');
+        requireCsrf();
+        $body = jsonBody();
+        try {
+            $updated = saveDossierRefConfig($body);
+        } catch (\RuntimeException $e) {
+            respond(['error' => $e->getMessage()], 400);
+        }
+        respond($updated);
     }
 
     // POST /auth/logout — destroy session
