@@ -2397,3 +2397,33 @@ Adding these two rows via `INSERT` pushed the seeded `tracker_items` count from 
 3. **New, from this chunk**: `DEBT-005` needs a real decision on `BUGLOG.md`'s status before it can be closed, not more investigation — similar in shape to how `BUG-051`/`052` needed Mahdi's decision, not more code, for seven-plus sessions. Worth asking directly rather than letting it sit unresolved for that long again.
 
 **Push**: `api/index.php`, `config.example.php`, `scripts/generate-tracker-snapshot.php` (new), `.github/workflows/dev-export-snapshot.yml` (new), `docs/ORIENTATIONS.md`, `src/backend/db/migrations/014_dev_export_and_docs_debt.sql` (new), `tests/http_api_test.php` (count-assertion fix), `CHANGELOG.md`, and this entry.
+
+## 2026-09-12 (fifty-fifth session) — no version bump — fresh local verification (PHP+MariaDB set up from scratch), one new bug found and flagged, not fixed
+
+Set up `src/backend` locally from scratch (PHP 8.3, MariaDB 10.11 — neither pre-existed in this sandbox) per this README's own Quick Start, to re-verify the fifty-fourth session's hand-off before touching anything. `db/migrate.php` 14/14, `seed.php` OK, `tests/smoke_test.php` 24/24, `tests/http_api_test.php` 117/117 on a fresh DB (a first pass showed spurious failures from running the HTTP suite twice against the same non-reset DB — not a real regression, just a reminder the suite assumes a fresh DB same as CI does). Confirms the fifty-fourth session's baseline exactly: no regressions, 0 open `BUG-*` items.
+
+Also confirmed `FEAT-012` (dev-export snapshot) is now live end-to-end in production, not just sandbox-tested: `docs/TRACKER_SNAPSHOT.md`/`.json` in this checkout were generated ~20 minutes before this session started, by a real `.github/workflows/dev-export-snapshot.yml` run hitting `https://tools.macerti.com/duration_calculator/api/dev-export` — meaning Mahdi has completed both one-time manual steps (`dev_export_secret` in the live `config.php` + the `DEV_EXPORT_SECRET` repo secret) that the prior session's hand-off was still waiting on. Not yet formally moved to `verified` in `tracker_items` — that update itself wasn't made this session (see below), just noting the evidence here for whoever does.
+
+### New bug found — NOT fixed this session, flagged only
+
+Running `scripts/check-repo-hygiene.sh` locally (part of the standard pre-push verification, same as CI's own first step) surfaced a real, currently-live problem: **check 4 (stale pre-restructure path references) now FAILS on `docs/TRACKER_SNAPSHOT.json`**. That file is new (introduced by `FEAT-012`, same fifty-fourth session) and its `KNOWN_EXCEPTIONS` list in `check-repo-hygiene.sh` was never updated for it — the file legitimately contains old path names (`audit-app`, `audit-mobile`, `duration-calculator-php`, `audit-engine`) inside archived bug-history text (mirrored from `tracker_items`, itself populated by migration `008`'s BUGLOG.md transcription), exactly the same "explaining history, not treating it as current" situation the script's own header already carves out an exception for re: `008_extract_buglog_history.sql`. `docs/TRACKER_SNAPSHOT.json` just wasn't added alongside it.
+
+**Impact**: `check-repo-hygiene.sh` is `build-test-publish.yml`'s first step — this will fail the next push to `main` and block the entire build/deploy pipeline until fixed.
+
+**Fix scope (not attempted this session — flagged per explicit instruction to document only, not touch code or the DB tracker this pass)**: add `docs/TRACKER_SNAPSHOT.json` to `KNOWN_EXCEPTIONS` in `scripts/check-repo-hygiene.sh`, same one-line pattern as the existing `008_extract_buglog_history.sql` entry. Should be mechanical and low-risk, same shape as that prior fix (`64a8d42`).
+
+**Not yet logged in `tracker_items`** (deliberately, this session) — candidate code is **`BUG-053`** (next free code confirmed against the local DB; 66 tracker items exist as of this session). Whoever picks this up should insert it there with `status='open'`, `priority` at least `p1` given it blocks CI/deploy, then fix and move it through `fixed_unverified` → `verified` the normal way.
+
+### NOT DONE
+
+- `BUG-053` fix itself (see above) — one-line, low-risk, ready to pick up.
+- Everything from the fifty-fourth session's hand-off queue (`DEBT-004` mechanical half, `FEAT-008` slice 2, `FEAT-001`, `FEAT-009`, rest of `DEBT-002`/`003`) — untouched this session, not a regression, just not this session's focus.
+- Moving `FEAT-012` to `verified` in `tracker_items` despite the production evidence noted above — needs an actual DB write, not done this session.
+
+### Hand-off for the next developer
+
+1. **Fix `BUG-053` first** — it blocks the next `main` push's CI. Add the exception, confirm `check-repo-hygiene.sh` passes locally, then push and confirm CI green before anything else.
+2. Log `BUG-053` in `tracker_items` (open → fixed_unverified once the fix above lands and is pushed), and consider moving `FEAT-012` to `verified` given the production evidence above.
+3. Then resume the fifty-fourth session's queue: `DEBT-004` mechanical half → `FEAT-008` slice 2 → `FEAT-001` → `FEAT-009` → rest of `DEBT-002`/`003`.
+
+**Push**: `docs/DEV_STATUS.md` only (this entry). No code changed this session.
