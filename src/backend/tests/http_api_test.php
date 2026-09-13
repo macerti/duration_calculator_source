@@ -415,8 +415,8 @@ check($status === 200, 'cleanup: DELETE the pinned test item', "status=$status")
 [$status] = request('GET', "$base/admin/session-log", null, null, false);
 check($status === 401, 'GET /admin/session-log with no session is rejected', "status=$status");
 
-[$status, $emptyLog] = request('GET', "$base/admin/session-log");
-check($status === 200 && $emptyLog === [], 'GET /admin/session-log starts empty', "status=$status " . json_encode($emptyLog));
+[$status, $seededLog] = request('GET', "$base/admin/session-log");
+check($status === 200 && count($seededLog ?? []) === 1, 'GET /admin/session-log starts with the one seeded entry (migration 016)', "status=$status " . json_encode($seededLog));
 
 [$status] = request('POST', "$base/admin/session-log", ['sessionLabel' => 'ci test', 'summary' => 'ci test entry']);
 check($status === 403, 'POST /admin/session-log without CSRF token is rejected', "status=$status");
@@ -438,7 +438,7 @@ check($status === 400, 'POST /admin/session-log rejects a non-hex commit hash', 
 check($status === 201 && ($newEntry['sessionLabel'] ?? '') === 'ci test session' && ($newEntry['commitHash'] ?? '') === 'abc1234' && array_key_exists('notDone', $newEntry ?? []) && $newEntry['notDone'] === null, 'POST /admin/session-log creates an entry', "status=$status " . json_encode($newEntry));
 
 [$status, $listedLog] = request('GET', "$base/admin/session-log");
-check($status === 200 && count($listedLog ?? []) === 1 && ($listedLog[0]['id'] ?? null) === ($newEntry['id'] ?? null), 'GET /admin/session-log lists the created entry', "status=$status count=" . count($listedLog ?? []));
+check($status === 200 && count($listedLog ?? []) === 2 && ($listedLog[0]['id'] ?? null) === ($newEntry['id'] ?? null), 'GET /admin/session-log lists the created entry alongside the seeded one, newest first', "status=$status count=" . count($listedLog ?? []));
 
 [$status, $limited] = request('GET', "$base/admin/session-log?limit=1");
 check($status === 200 && count($limited ?? []) === 1, 'GET /admin/session-log?limit= is honoured', "status=$status count=" . count($limited ?? []));
