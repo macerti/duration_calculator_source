@@ -69,7 +69,7 @@ STALE_PATTERN='audit-app|audit-mobile|duration-calculator-php|audit-engine'
 # are exempted too — they necessarily name these old paths in comments/docs
 # to describe what they check for, which is the same "explaining history,
 # not treating it as current" situation the header describes for Markdown.
-KNOWN_EXCEPTIONS="src/backend/data/parameters.php scripts/check-repo-hygiene.sh scripts/check-deploy-artifact.sh src/backend/db/migrations/008_extract_buglog_history.sql docs/TRACKER_SNAPSHOT.json"
+KNOWN_EXCEPTIONS="src/backend/data/parameters.php scripts/check-repo-hygiene.sh scripts/check-deploy-artifact.sh src/backend/db/migrations/008_extract_buglog_history.sql docs/TRACKER_SNAPSHOT.json src/backend/db/migrations/015_bug053_and_feat012_verified.sql"
 # 008_extract_buglog_history.sql (migration, 2026-09-09 forty-eighth
 # session): a mechanical, verbatim transcription of docs/BUGLOG.md's 50
 # already-exempted bug entries into tracker_items rows — same "explaining
@@ -86,6 +86,18 @@ KNOWN_EXCEPTIONS="src/backend/data/parameters.php scripts/check-repo-hygiene.sh 
 # The sibling docs/TRACKER_SNAPSHOT.md is already exempt via the blanket
 # *.md skip a few lines below; this is the .json counterpart, which is
 # not markdown and was missed when FEAT-012 was first built.
+# 015_bug053_and_feat012_verified.sql (BUG-053's OWN real root cause,
+# 2026-09-12 fifty-sixth session): this migration's technical_description
+# for BUG-053 explains what this very check looks for by spelling out
+# the four old path names verbatim -- self-triggering the check it was
+# describing. Passed locally when first written because the file was
+# still untracked (git ls-files, which this check relies on, doesn't see
+# an unstaged file) -- committing it made it visible to the same check on
+# the next run, which is what CI correctly caught and this sandbox's own
+# earlier verification missed. Same "explaining the mechanism, not
+# treating it as current" exception as every other entry in this list;
+# fixed by exempting rather than editing an already-applied migration's
+# text after the fact, consistent with 008's own precedent above.
 
 STALE_HITS=""
 while IFS= read -r f; do
