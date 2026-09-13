@@ -37,7 +37,23 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Repository hygiene checks (Work Package G)
-        run: scripts/check-repo-hygiene.sh
+        id: hygiene
+        run: |
+          set +e
+          scripts/check-repo-hygiene.sh > /tmp/hygiene_out.txt 2>&1
+          STATUS=$?
+          cat /tmp/hygiene_out.txt
+          exit $STATUS
+
+      - name: TEMP DEBUG (BUG-053 investigation, fifty-sixth session) -- post hygiene output as a commit comment, remove after diagnosis
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.DURATION_CALCULATOR_TOKEN }}
+        run: |
+          BODY=$(python3 -c "import json; print(json.dumps(open('/tmp/hygiene_out.txt').read()))")
+          curl -s -X POST -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/comments" \
+            -d "{\"body\": $BODY}"
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
