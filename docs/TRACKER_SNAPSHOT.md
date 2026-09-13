@@ -1,6 +1,6 @@
 # Tracker snapshot (auto-generated)
 
-> Generated 2026-09-13T15:09:18+00:00 by `.github/workflows/dev-export-snapshot.yml` calling `GET /dev-export`. Do not edit by hand — changes are overwritten on the next scheduled run. Source of truth is the live `tracker_items`/`tracker_updates`/`session_log` tables; this file exists so pulling this repo also gets you a recent read of them, without needing live database access.
+> Generated 2026-09-13T19:55:50+00:00 by `.github/workflows/dev-export-snapshot.yml` calling `GET /dev-export`. Do not edit by hand — changes are overwritten on the next scheduled run. Source of truth is the live `tracker_items`/`tracker_updates`/`session_log` tables; this file exists so pulling this repo also gets you a recent read of them, without needing live database access.
 
 ## Open (10)
 
