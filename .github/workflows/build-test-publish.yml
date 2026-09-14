@@ -90,8 +90,7 @@ jobs:
           php seed.php
 
       - name: Run PHP engine smoke tests
-        working-directory: src/backend
-        run: php tests/smoke_test.php
+        run: php tests/backend/smoke_test.php
 
       - name: Start PHP API
         working-directory: src/backend/api
@@ -106,8 +105,7 @@ jobs:
           grep -q '"dbConnected":true' /tmp/health.json
 
       - name: Run HTTP API regression tests
-        working-directory: src/backend
-        run: php tests/http_api_test.php http://127.0.0.1:8080
+        run: php tests/backend/http_api_test.php http://127.0.0.1:8080
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -141,7 +139,7 @@ jobs:
           cp -R src/backend/data/. _deploy/data/
           cp -R src/backend/db/. _deploy/db/
           cp -R src/backend/engine/. _deploy/engine/
-          cp -R src/backend/tests/. _deploy/tests/
+          cp -R tests/backend/. _deploy/tests/
           cp -R src/backend/auth/. _deploy/auth/
           cp src/backend/.htaccess _deploy/.htaccess
           cp src/backend/config.example.php _deploy/config.example.php

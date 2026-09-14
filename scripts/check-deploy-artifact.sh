@@ -83,14 +83,22 @@ fi
 # Structural completeness: every require/include of the form
 # `__DIR__ . '/relative/path.php'` (this codebase's consistent style — see
 # any file under src/backend/) must resolve to a real file INSIDE the
-# artifact. This is the generalized version of the exact bug that motivated
-# adding this check: a new src/backend/auth/ module was require_once'd from
-# api/index.php but the assembly step wasn't updated to copy it, so the
-# live artifact fatal-errored on every single request. Presence checks for
+# artifact — not just a real file somewhere. This is the generalized
+# version of two different real bugs this check has now caught: (1) a new
+# src/backend/auth/ module was require_once'd from api/index.php but the
+# assembly step wasn't updated to copy it, so the live artifact
+# fatal-errored on every single request (the original reason for this
+# check); (2) DEBT-004's tests/ relocation (fifty-fourth session) briefly
+# gave tests/backend/smoke_test.php a path that escaped the artifact
+# entirely and resolved to the source tree instead — undetectable by a
+# plain file-exists check run from inside a full checkout, where that
+# source tree happens to still be sitting right there. Presence checks for
 # individual files (in Makefile/CI) only catch modules someone remembered
-# to list; this catches ANY missing require, present or future, without
-# needing to know its name in advance.
+# to list; this catches ANY missing OR artifact-escaping require, present
+# or future, without needing to know its name in advance.
 MISSING_REQUIRES=""
+ESCAPING_REQUIRES=""
+DEPLOY_DIR_REAL="$(realpath "$DEPLOY_DIR")"
 while IFS= read -r match; do
   file="${match%%:*}"
   rest="${match#*:}"        # lineno:relpath
@@ -100,14 +108,42 @@ while IFS= read -r match; do
   if [ ! -f "$resolved" ]; then
     MISSING_REQUIRES="${MISSING_REQUIRES}
   $file requires '$relpath' -> resolves to $resolved (missing)"
+  elif [[ "$resolved" != "$DEPLOY_DIR_REAL"/* ]]; then
+    # Caught 2026-09-12 (fifty-fourth session, DEBT-004): the file-exists
+    # check above passes for a require that climbs OUTSIDE the artifact
+    # entirely, as long as *something* happens to exist at the resolved
+    # path — which is exactly what this checked-out-repo environment gives
+    # a false pass for (the source tree sitting right next to _deploy/
+    # here, absent on a real isolated deployment). Confirmed by copying
+    # _deploy/ out to a location with nothing else around it and re-running
+    # from there — that reproduces what a real deployment actually sees.
+    ESCAPING_REQUIRES="${ESCAPING_REQUIRES}
+  $file requires '$relpath' -> resolves to $resolved (exists, but OUTSIDE the artifact — would not exist on a real isolated deployment)"
   fi
 done < <(grep -rnoP "require(_once)?\s*\(?\s*__DIR__\s*\.\s*'\K[^']+" "$DEPLOY_DIR" --include="*.php")
 
-if [ -n "$MISSING_REQUIRES" ]; then
-  fail "PHP require/require_once path(s) in the artifact point at files that don't exist:$MISSING_REQUIRES"
+if [ -n "$MISSING_REQUIRES" ] || [ -n "$ESCAPING_REQUIRES" ]; then
+  fail "PHP require/require_once path(s) in the artifact are broken:${MISSING_REQUIRES}${ESCAPING_REQUIRES}"
 else
-  pass "every __DIR__-relative require/require_once in the artifact resolves to a real file"
+  pass "every __DIR__-relative require/require_once in the artifact resolves to a real file inside the artifact"
 fi
+
+# Known blind spot, documented rather than silent: tests/smoke_test.php
+# (fifty-fourth session, DEBT-004) resolves its requires through a runtime
+# $backendRoot variable, not a literal __DIR__ . '...' string, because the
+# same file needs a genuinely different relative depth depending on
+# whether it's running from the repo (tests/backend/) or from this
+# artifact (tests/) — a static grep can't evaluate that branch, so this
+# check does not verify that file's requires at all, in either direction.
+# Deliberately not worked around by making the grep pattern (or the PHP)
+# more clever — that trades a real, simple, provably-correct manual check
+# for a fragile one. Verified a different way instead: this session copied
+# _deploy/ to a location with nothing else around it and ran
+# `php tests/smoke_test.php` from there directly (24/24), which is a
+# stronger check than this script performs anyway (it actually executes
+# the code, rather than only proving a path resolves to *some* file).
+# Re-run that manual check if smoke_test.php's resolution logic ever
+# changes again.
 
 echo
 if [ "$FAIL" -eq 0 ]; then

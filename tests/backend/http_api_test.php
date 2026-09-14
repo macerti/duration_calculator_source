@@ -278,7 +278,7 @@ check($status === 200 && $afterDelete === [], 'GET /admin/annotations is empty a
 check($status === 401, 'GET /admin/tracker/items with no session is rejected', "status=$status");
 
 [$status, $trackerList] = request('GET', "$base/admin/tracker/items");
-check($status === 200 && count($trackerList ?? []) === 67, 'GET /admin/tracker/items lists the 67 seeded items (14 original + 50 archived from BUGLOG.md, migration 008 + 2 from migration 014 + 1 from migration 015 - BUG-053)', "status=$status count=" . count($trackerList ?? []));
+check($status === 200 && count($trackerList ?? []) === 69, 'GET /admin/tracker/items lists the 69 seeded items (14 original + 50 archived from BUGLOG.md, migration 008 + 2 from migration 014 + 1 from migration 015 - BUG-053 + 2 from migration 017 - DEBT-006/FEAT-013)', "status=$status count=" . count($trackerList ?? []));
 
 [$status, $bugsOnly] = request('GET', "$base/admin/tracker/items?type=bug");
 check($status === 200 && count($bugsOnly ?? []) === 53, 'GET /admin/tracker/items?type=bug filters to the 53 seeded bugs (2 original + 50 archived, migration 008 + 1 from migration 015 - BUG-053)', "status=$status count=" . count($bugsOnly ?? []));
@@ -287,9 +287,17 @@ check($status === 200 && count($bugsOnly ?? []) === 53, 'GET /admin/tracker/item
 check($status === 400, 'GET /admin/tracker/items rejects an invalid status filter', "status=$status");
 
 // ?search= — free-text match across code/title/user_description/
-// technical_description/comments (case-insensitive substring).
+// technical_description/comments (case-insensitive substring). Expects >=1
+// match including BUG-051 itself, not exactly 1 — other items' own text
+// legitimately cross-references bug codes (e.g. FEAT-012's comments
+// mention "BUG-051/052/DEBT-001 closed"), and a search across free-text
+// fields correctly finding those mentions too is the feature working
+// as designed, not a regression. Asserting an exact global count here
+// would keep breaking every time the tracker's own accumulated text
+// cross-references something, which is normal and expected as it grows.
 [$status, $searchByCode] = request('GET', "$base/admin/tracker/items?search=BUG-051");
-check($status === 200 && count($searchByCode ?? []) === 1 && ($searchByCode[0]['code'] ?? '') === 'BUG-051', 'GET /admin/tracker/items?search= matches by code', "status=$status count=" . count($searchByCode ?? []));
+$codesFound = array_map(fn($i) => $i['code'] ?? '', $searchByCode ?? []);
+check($status === 200 && count($searchByCode ?? []) >= 1 && in_array('BUG-051', $codesFound, true), 'GET /admin/tracker/items?search= matches by code', "status=$status count=" . count($searchByCode ?? []) . " codes=" . implode(',', $codesFound));
 
 [$status, $searchByTitleWord] = request('GET', "$base/admin/tracker/items?" . http_build_query(['search' => 'annotation']));
 check($status === 200 && count($searchByTitleWord ?? []) >= 1 && in_array('FEAT-006', array_column($searchByTitleWord ?? [], 'code'), true), 'GET /admin/tracker/items?search= matches by title substring', "status=$status count=" . count($searchByTitleWord ?? []));
@@ -349,7 +357,7 @@ check($status === 403, 'DELETE /admin/tracker/items/:code without CSRF token is 
 check($status === 200, 'DELETE /admin/tracker/items/:code succeeds with CSRF token', "status=$status");
 
 [$status, $backToBaseline] = request('GET', "$base/admin/tracker/items");
-check($status === 200 && count($backToBaseline ?? []) === 67, 'GET /admin/tracker/items is back to the 67 seeded rows after delete', "status=$status count=" . count($backToBaseline ?? []));
+check($status === 200 && count($backToBaseline ?? []) === 69, 'GET /admin/tracker/items is back to the 69 seeded rows after delete', "status=$status count=" . count($backToBaseline ?? []));
 
 // --- Multiselect status/type/priority filters (2026-09-10, AdminTrackerScreen.tsx filter rework) ---
 // Comma-separated is the wire format; a bare single value must still work
