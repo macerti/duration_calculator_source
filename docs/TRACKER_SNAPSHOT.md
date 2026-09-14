@@ -1,8 +1,8 @@
 # Tracker snapshot (auto-generated)
 
-> Generated 2026-09-14T01:55:37+00:00 by `.github/workflows/dev-export-snapshot.yml` calling `GET /dev-export`. Do not edit by hand — changes are overwritten on the next scheduled run. Source of truth is the live `tracker_items`/`tracker_updates`/`session_log` tables; this file exists so pulling this repo also gets you a recent read of them, without needing live database access.
+> Generated 2026-09-14T11:03:37+00:00 by `.github/workflows/dev-export-snapshot.yml` calling `GET /dev-export`. Do not edit by hand — changes are overwritten on the next scheduled run. Source of truth is the live `tracker_items`/`tracker_updates`/`session_log` tables; this file exists so pulling this repo also gets you a recent read of them, without needing live database access.
 
-## Open (10)
+## Open (8)
 
 ### [DEBT-002] (techdebt, P1) AdminRoles - flat permissions list + narrow desktop width, needs redesign
 
@@ -13,15 +13,6 @@
 - **Comments**: Part (1) (maxWidth bump) is safe to do immediately. Part (2) (real redesign) needs a decision on tabs-per-role vs matrix/grid before starting.
 - **History**:
   - _2026-09-08 05:04:27_ — Root cause confirmed during BUG-050 (thirty-eighth session, live annotation from Mahdi). Logged as ROADMAP item 11 at the time. Not attempted - needs a design pass, not a quick fix. (next: At minimum, do the low-risk maxWidth bump. Then decide tabs-per-role vs matrix/grid for the real redesign and implement.)
-
-### [DEBT-004] (techdebt, P1) Top-level tests/ relocation + missing frontend unit tests
-
-- **Technical**: src/backend/tests/ should move to top-level tests/backend/ per REPOSITORY_ARCHITECTURE.md's intended layout. Separately, there are no automated Jest/Vitest unit tests for frontend wizard calculation state/hooks - validation of that logic is currently purely manual. Flagged and carried over, untouched, across at least four consecutive sessions (thirty-sixth through thirty-ninth) despite Mahdi's repeated standing instruction that technical debt must not become permanent.
-- **Tests to do**: After the move - confirm CI's test-invocation paths still resolve and the full backend suite still runs (24/24 smoke, current HTTP count). After frontend units exist - run them in CI alongside tsc/expo export.
-- **Touches**: src/backend/tests/, Makefile, CI workflow paths referencing tests/
-- **Comments**: Both halves untouched. Needs its own session: move + fix any path references first (low risk), then scope the frontend unit-test framework choice (Jest vs Vitest) and an initial test target (wizard calculation state) separately.
-- **History**:
-  - _2026-09-08 05:04:27_ — Repeatedly identified and explicitly carried over, untouched, across the thirty-sixth through thirty-ninth sessions - each one correctly prioritized live P0/P1 work ahead of it, but Mahdi has flagged more than once that this must not become permanent. (next: Give this its own session: relocate tests/ first (mechanical, low-risk), then scope frontend unit tests as a separate follow-up.)
 
 ### [FEAT-001] (feature, P1) Synthese per-site tabs & consolidated Programme d'audit Client
 
@@ -70,13 +61,15 @@
 - **History**:
   - _2026-09-08 05:04:27_ — Scoped in detail in ROADMAP.md, deliberately deprioritized to P2 (For Later) per the project's own priority framework. (next: Revisit once the P1 queue (FEAT-001/006/007/008/009 and DEBT-001/002/004) is clear.)
 
-### [ANN-006] (annotation, ) the layout here is trash roles and permisisons should be layouted diffrenlty not a big list, use tabs or something come on dude also why in desktop you dont exploit the width of the screen making t...
+### [FEAT-013] (feature, P2) Annotation capture: show more context about the pointed-at element, not just x/y
 
-- **Reported as**: the layout here is trash roles and permisisons should be layouted diffrenlty not a big list, use tabs or something come on dude also why in desktop you dont exploit the width of the screen making the whole app fit in a tight vertical phonelike space ?
-
-### [ANN-008] (annotation, ) for each annotation you show the x and y positin its good it would also be good if you give more details regarding the element the user poited at like itrs name its container or technical designation
-
-- **Reported as**: for each annotation you show the x and y positin its good it would also be good if you give more details regarding the element the user poited at like itrs name its container or technical designation
+- **Reported as**: for each annotation you show the x and y position its good it would also be good if you give more details regarding the element the user pointed at like its name its container or technical designation (ANN-008)
+- **Technical**: AnnotationCapture.tsx's resolveWebElementRef() currently walks the DOM/component tree looking for a testID, storing only that (as elementRef) plus raw x/y -- see DEBT-003, whose own finding is that testID coverage is near-zero app-wide, so elementRef comes back null for the large majority of real annotations today. This request is for a lower-effort fallback that does not depend on DEBT-003's full testID rollout: when no testID is found, still capture and display whatever is cheaply available without new instrumentation -- the DOM tag name, any aria-label/accessible name, and the nearest ancestor with a recognizable role or heading text as a stand-in for "container". Purely additive to the annotation's stored/displayed metadata; does not change x/y capture, the pin UI, or anything about how annotations are created or resolved into tracker_items today.
+- **Tests to do**: Once built: capture an annotation on an untagged element, confirm the fallback fields (tag/aria-label/container) show up and read as genuinely useful, not just noisy DOM internals. Live click-through, same standing sandbox limitation as every other frontend feature in this project.
+- **Touches**: AnnotationCapture.tsx (resolveWebElementRef), AdminTrackerScreen.tsx (annotation detail display)
+- **Comments**: Logged fifty-seventh session (2026-09-13), triaged from ANN-008. Not started -- P2, behind the P1 queue (DEBT-002, FEAT-001, FEAT-008 slice 2, FEAT-009).
+- **History**:
+  - _2026-09-14 07:58:54_ — Logged and scoped from ANN-008 -- a lower-effort fallback that does not require DEBT-003's full testID rollout first. (next: Build the fallback in AnnotationCapture.tsx's resolveWebElementRef(), behind the existing P1 queue.)
 
 ### [DEBT-005] (techdebt, P3) ORIENTATIONS.md's "five standing files" logging section is stale
 
@@ -84,6 +77,18 @@
 - **Tests to do**: Read ORIENTATIONS.md's logging section fresh, decide whether BUGLOG.md should be (a) formally marked archived/historical with a pointer to tracker_items, or (b) kept as a slower-moving narrative complement -- then rewrite the section to match whichever is decided, adding DEV_STATUS.md to the list either way.
 - **Touches**: docs/ORIENTATIONS.md, docs/BUGLOG.md
 - **Comments**: Low priority (P3) -- purely a documentation-accuracy issue, no functional impact. Flagged rather than silently left, per the standing instruction that technical debt found along the way should be logged even when there is no time to fix it in the same session.
+
+## In progress (1)
+
+### [DEBT-004] (techdebt, P1) Top-level tests/ relocation + missing frontend unit tests
+
+- **Technical**: src/backend/tests/ should move to top-level tests/backend/ per REPOSITORY_ARCHITECTURE.md's intended layout. Separately, there are no automated Jest/Vitest unit tests for frontend wizard calculation state/hooks - validation of that logic is currently purely manual. Flagged and carried over, untouched, across at least four consecutive sessions (thirty-sixth through thirty-ninth) despite Mahdi's repeated standing instruction that technical debt must not become permanent. -- RELOCATION HALF DONE 2026-09-14 (fifty-seventh session): moved to tests/backend/ via git mv, Makefile/CI/hygiene-script paths updated. smoke_test.php (the only file with any relative-require coupling) resolves via a runtime $backendRoot check rather than a single hardcoded path, since the correct relative depth genuinely differs between the repo and the deploy artifact -- verified working in both by copying the built artifact to a location with nothing else around it and running it there directly (24/24), not just trusting check-deploy-artifact.sh's static check, which was hardened this same session after it gave a false pass on the first attempt (see DEBT-006, logged this session, for the checker gap itself). Frontend unit-test half (Jest/Vitest for wizard calculation state) still fully open.
+- **Tests to do**: Relocation half: DONE and verified (migrate.php 14/14, smoke_test.php 24/24, http_api_test.php 117/117, check-repo-hygiene.sh 4/4, make build-deploy + check-deploy-artifact.sh 4/4, PLUS a true-isolation run of the deploy artifact's own smoke_test.php copy -- 24/24). Frontend unit-test half: not started -- choose Jest vs Vitest, scope an initial test target (wizard calculation state/hooks), then build out coverage incrementally.
+- **Touches**: src/backend/tests/, Makefile, CI workflow paths referencing tests/
+- **Comments**: Relocation half closed out fifty-seventh session (2026-09-13) -- properly, including a bug introduced and caught within the same session (see DEBT-006). Frontend unit tests remain as their own, separately-scoped piece of this item.
+- **History**:
+  - _2026-09-08 05:04:27_ — Repeatedly identified and explicitly carried over, untouched, across the thirty-sixth through thirty-ninth sessions - each one correctly prioritized live P0/P1 work ahead of it, but Mahdi has flagged more than once that this must not become permanent. (next: Give this its own session: relocate tests/ first (mechanical, low-risk), then scope frontend unit tests as a separate follow-up.)
+  - _2026-09-14 07:58:54_ — Relocated src/backend/tests/ to top-level tests/backend/ (git mv, history preserved). Updated Makefile (test/test-http/build-deploy targets), .github/workflows/build-test-publish.yml (3 steps), check-repo-hygiene.sh (added the old path to the stale-reference pattern). Fixed smoke_test.php's 9 relative requires with a runtime-resolved $backendRoot instead of a single hardcoded depth, since the repo and deploy-artifact contexts genuinely need different relative depths -- verified both via a true-isolation run (artifact copied to a location with nothing else around it), not just the automated checker (which gave a false pass on the first attempt -- see DEBT-006). Full fresh verification: migrate.php 14/14, smoke_test.php 24/24, http_api_test.php 117/117, check-repo-hygiene.sh 4/4, make build-deploy + check-deploy-artifact.sh 4/4, plus the isolated artifact run (24/24). (next: Frontend unit-test half: choose Jest vs Vitest, scope an initial test target (wizard calculation state/hooks), build out from there.)
 
 ## Fixed, unverified (needs a live click-through) (2)
 
@@ -112,15 +117,16 @@
 
 - **Reported as**: Mahdi, live in chat: "how can we always allow AI developers when pulling the repo to obtain the problems in the db" -- after establishing that no AI sandbox can safely hold standing production DB credentials, and that this sandbox specifically cannot reach any external host on port 3306 or plain HTTPS to arbitrary domains at all.
 - **Technical**: New GET /dev-export endpoint (api/index.php) -- read-only, shared-secret-gated (dev_export_secret in config.php, hash_equals-compared, same convention as the existing /migrate endpoint), rate-limited per IP. Returns JSON of tracker_items + tracker_updates + session_log only -- deliberately never clients/cases/sites/users, which is what makes exposing this safe. New .github/workflows/dev-export-snapshot.yml runs every 6 hours (plus workflow_dispatch), calls the endpoint with a DEV_EXPORT_SECRET repo secret, renders it through the new scripts/generate-tracker-snapshot.php into docs/TRACKER_SNAPSHOT.md (and the raw .json alongside it), and commits both to main if changed. ORIENTATIONS.md updated to tell future sessions to read this file at the start of a session.
-- **Tests to do**: Endpoint fully tested locally this session (unauthorized/wrong-secret/correct-secret paths, real JSON output, piped through the formatter script -- verified readable Markdown output). NOT YET verified: an actual scheduled run against the real production server, which needs two one-time manual steps first -- (1) set dev_export_secret in the live server config.php, (2) add the same value as this repo's DEV_EXPORT_SECRET GitHub Actions secret. Until both are set, the workflow runs, logs a warning, and skips (does not fail CI).
+- **Tests to do**: DONE 2026-09-14 (fifty-seventh session): Mahdi completed the two one-time setup steps (dev_export_secret in live config.php, DEV_EXPORT_SECRET GitHub Actions secret). Manually dispatched the workflow via the GitHub API against the real production server -- run 34714140136, conclusion success -- pulled the resulting commit, confirmed docs/TRACKER_SNAPSHOT.md/.json contain real live production tracker data.
 - **Touches**: api/index.php, config.example.php, scripts/generate-tracker-snapshot.php, .github/workflows/dev-export-snapshot.yml, docs/ORIENTATIONS.md
-- **Comments**: Built fifty-fourth session (2026-09-12), fully working in this sandbox against a local DB. Needs Mahdi to complete the two one-time secret-setup steps above before the first real scheduled run will produce anything -- flagged to him directly in chat. -- VERIFIED 2026-09-12 (fifty-sixth session): independently re-confirmed the fifty-fifth session's evidence on a fresh git pull -- docs/TRACKER_SNAPSHOT.md/.json in this checkout carry a real, recent generated timestamp produced by .github/workflows/dev-export-snapshot.yml actually calling the live tools.macerti.com endpoint, not a local/sandbox run. Both one-time production setup steps (dev_export_secret in live config.php, DEV_EXPORT_SECRET repo secret) are confirmed done.
+- **Comments**: Built fifty-fourth session (2026-09-12), fully working in this sandbox against a local DB. Needs Mahdi to complete the two one-time secret-setup steps above before the first real scheduled run will produce anything -- flagged to him directly in chat. -- VERIFIED 2026-09-12 (fifty-sixth session): independently re-confirmed the fifty-fifth session's evidence on a fresh git pull -- docs/TRACKER_SNAPSHOT.md/.json in this checkout carry a real, recent generated timestamp produced by .github/workflows/dev-export-snapshot.yml actually calling the live tools.macerti.com endpoint, not a local/sandbox run. Both one-time production setup steps (dev_export_secret in live config.php, DEV_EXPORT_SECRET repo secret) are confirmed done. -- INDEPENDENTLY RE-CONFIRMED 2026-09-14 (fifty-seventh session, via a different path than migration 015's own re-confirmation above): manually dispatched .github/workflows/dev-export-snapshot.yml via the GitHub API directly (run 34714140136, conclusion success), pulled the resulting commit, and read Mahdi's own live tracker edits from it (BUG-051/052/DEBT-001 closed, ANN-006/ANN-008 added) -- which is exactly what this system was built to do.
 - **History**:
   - _2026-09-13 04:54:52_ — Independently re-confirmed (fifty-sixth session) the fifty-fifth session's production evidence: a fresh git pull's docs/TRACKER_SNAPSHOT.md/.json carry a real, recent timestamp from an actual dev-export-snapshot.yml run against the live server, not a sandbox test. Moved from fixed_unverified to verified on that basis.
+  - _2026-09-14 07:58:54_ — Verified against the real production server via a manually-dispatched GitHub Actions run (34714140136, success) after Mahdi completed the two one-time secret-setup steps. Confirmed docs/TRACKER_SNAPSHOT.md contains real live data. (next: None -- closing the loop on this item.)
 
-## Closed (62)
+## Closed (65)
 
-DEBT-001, FEAT-006, FEAT-007, BUG-051, BUG-052, ANN-001, ANN-002, ANN-003, ANN-004, ANN-005, ANN-007, BUG-001, BUG-002, BUG-003, BUG-004, BUG-005, BUG-006, BUG-007, BUG-008, BUG-009, BUG-010, BUG-011, BUG-012, BUG-013, BUG-014, BUG-015, BUG-016, BUG-017, BUG-018, BUG-019, BUG-020, BUG-021, BUG-022, BUG-023, BUG-024, BUG-025, BUG-026, BUG-027, BUG-028, BUG-029, BUG-030, BUG-031, BUG-032, BUG-033, BUG-034, BUG-035, BUG-036, BUG-037, BUG-038, BUG-039, BUG-040, BUG-041, BUG-042, BUG-043, BUG-044, BUG-045, BUG-046, BUG-047, BUG-048, BUG-049, BUG-050, FEAT-002
+DEBT-001, FEAT-006, FEAT-007, BUG-051, BUG-052, DEBT-006, ANN-001, ANN-002, ANN-003, ANN-004, ANN-005, ANN-006, ANN-007, ANN-008, BUG-001, BUG-002, BUG-003, BUG-004, BUG-005, BUG-006, BUG-007, BUG-008, BUG-009, BUG-010, BUG-011, BUG-012, BUG-013, BUG-014, BUG-015, BUG-016, BUG-017, BUG-018, BUG-019, BUG-020, BUG-021, BUG-022, BUG-023, BUG-024, BUG-025, BUG-026, BUG-027, BUG-028, BUG-029, BUG-030, BUG-031, BUG-032, BUG-033, BUG-034, BUG-035, BUG-036, BUG-037, BUG-038, BUG-039, BUG-040, BUG-041, BUG-042, BUG-043, BUG-044, BUG-045, BUG-046, BUG-047, BUG-048, BUG-049, BUG-050, FEAT-002
 
 ## Recent session log (1 total, most recent 15 shown)
 
