@@ -416,7 +416,10 @@ check($status === 200, 'cleanup: DELETE the pinned test item', "status=$status")
 check($status === 401, 'GET /admin/session-log with no session is rejected', "status=$status");
 
 [$status, $seededLog] = request('GET', "$base/admin/session-log");
-check($status === 200 && count($seededLog ?? []) === 1, 'GET /admin/session-log starts with the one seeded entry (migration 016)', "status=$status " . json_encode($seededLog));
+// 65, not 1: migrations 017/019 (fifty-seventh session) archived DEV_STATUS.md's
+// 62 sections + the stray SESSION_LOG_2026_09_03_21.md + BUGLOG.md's preamble
+// as session_log rows, on top of migration 016's original single seed.
+check($status === 200 && count($seededLog ?? []) === 65, 'GET /admin/session-log starts with the 65 seeded entries (migrations 016/017/019)', "status=$status count=" . count($seededLog ?? []));
 
 [$status] = request('POST', "$base/admin/session-log", ['sessionLabel' => 'ci test', 'summary' => 'ci test entry']);
 check($status === 403, 'POST /admin/session-log without CSRF token is rejected', "status=$status");
@@ -438,7 +441,7 @@ check($status === 400, 'POST /admin/session-log rejects a non-hex commit hash', 
 check($status === 201 && ($newEntry['sessionLabel'] ?? '') === 'ci test session' && ($newEntry['commitHash'] ?? '') === 'abc1234' && array_key_exists('notDone', $newEntry ?? []) && $newEntry['notDone'] === null, 'POST /admin/session-log creates an entry', "status=$status " . json_encode($newEntry));
 
 [$status, $listedLog] = request('GET', "$base/admin/session-log");
-check($status === 200 && count($listedLog ?? []) === 2 && ($listedLog[0]['id'] ?? null) === ($newEntry['id'] ?? null), 'GET /admin/session-log lists the created entry alongside the seeded one, newest first', "status=$status count=" . count($listedLog ?? []));
+check($status === 200 && count($listedLog ?? []) === 66 && ($listedLog[0]['id'] ?? null) === ($newEntry['id'] ?? null), 'GET /admin/session-log lists the created entry alongside the 65 seeded ones, newest first', "status=$status count=" . count($listedLog ?? []));
 
 [$status, $limited] = request('GET', "$base/admin/session-log?limit=1");
 check($status === 200 && count($limited ?? []) === 1, 'GET /admin/session-log?limit= is honoured', "status=$status count=" . count($limited ?? []));

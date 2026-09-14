@@ -33,8 +33,11 @@ deployed API instead — see the root `docs/DEPLOY.md`.
 This folder still keeps its own `CHANGELOG.md`, `ROADMAP.md`, `BUGLOG.md`
 from before the repository architecture consolidation (`audit-mobile/` →
 `src/frontend/`). They predate, and are not the same numbering sequence as,
-the canonical `docs/BUGLOG.md`/`docs/ROADMAP.md`/`docs/DEV_STATUS.md` at the
-repo root — see the warning headers in this folder's `BUGLOG.md`/`ROADMAP.md`
-and `docs/DEV_STATUS.md`'s sixth-session entry. Read `docs/DEV_STATUS.md`
-first for current, authoritative status; treat this folder's own logs as
-historical until a future session merges/renumbers them.
+the canonical bug/feature records — see the warning headers in this folder's
+`BUGLOG.md`/`ROADMAP.md`. As of 2026-09-13 (fifty-seventh session), current,
+authoritative status lives in this repo's `tracker_items`/`session_log`
+database tables (query directly, or read the auto-generated
+`docs/TRACKER_SNAPSHOT.md`) — `docs/DEV_STATUS.md`/`docs/BUGLOG.md` at the
+repo root, which this note used to point to, have been archived into those
+tables and deleted. Treat this folder's own logs as historical until a
+future session merges/renumbers them.

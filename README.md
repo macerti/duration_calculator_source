@@ -103,16 +103,24 @@ See `docs/DEPLOY.md` for the actual DirectAdmin deployment steps.
 
 ## Project documentation
 
-The project's active living docs (`docs/BUGLOG.md`, `docs/DEV_STATUS.md`,
-`docs/ROADMAP.md`, `docs/ORIENTATIONS.md`, `docs/TEST_CHECKLIST.md`,
-`docs/DEPLOY.md`, plus `SECURITY.md` and `CHANGELOG.md` at the repo root)
-live in **this** source repo, since this is where the actual development
-work and hand-offs happen. **Open question, not resolved by this move**:
-an earlier version of this README claimed these docs lived in the
-**deploy** repo (`duration_calculator`) instead — that was not true of the
-files actually being maintained (they've always been committed here).
-Whether `duration_calculator` should also mirror a copy is a policy
-decision for the team, not something this structural move decided.
+The project's active living docs (`docs/ROADMAP.md`, `docs/ORIENTATIONS.md`,
+`docs/TEST_CHECKLIST.md`, `docs/DEPLOY.md`, plus `SECURITY.md` and
+`CHANGELOG.md` at the repo root) live in **this** source repo, since this is
+where the actual development work and hand-offs happen. Whether
+`duration_calculator` should also mirror a copy is a policy decision for the
+team, not something this structural move decided.
+
+**Bug/feature/tech-debt status and dev-session history are not markdown
+files** — as of 2026-09-13 (fifty-seventh session) they live in this
+database's `tracker_items`/`tracker_updates`/`session_log` tables, the
+single source of truth, replacing hand-maintained `docs/BUGLOG.md` and
+`docs/DEV_STATUS.md` (both archived into those tables via migrations
+`008`/`017`–`019` and deleted, per Mahdi's explicit instruction to stop
+keeping the same information in two places by hand). `docs/TRACKER_SNAPSHOT.md`
+is an auto-generated, read-only, periodically-refreshed mirror of those
+tables committed into this repo, so pulling it still gets you a recent read
+without live database access — see `docs/ORIENTATIONS.md`'s "Logging"
+section for the full mechanism.
 
 ## Credentials
 
@@ -138,7 +146,7 @@ The pipeline:
 
 The deployment repository's existing FTP workflow remains separate and must not be modified as part of source CI changes.
 
-Do not add another build workflow for the same purpose. Do not manually edit generated application files in `duration_calculator`. If CI fails, record the exact failing stage in `docs/BUGLOG.md` and `docs/DEV_STATUS.md` before changing the implementation.
+Do not add another build workflow for the same purpose. Do not manually edit generated application files in `duration_calculator`. If CI fails, record the exact failing stage in `tracker_items`/`session_log` (a new `BUG-NNN` row and a session-log entry, via a migration if no live API access is available) before changing the implementation.
 
 
 ## Repository naming and source/deployment boundary

@@ -44,7 +44,9 @@ make test-http    # full HTTP regression — needs config.php pointed at a
 
 ## Status
 
-See `docs/DEV_STATUS.md` (current state, what's open, hand-off notes),
-`docs/BUGLOG.md`, and `docs/ROADMAP.md` — this backend doesn't keep its own
-copies of those logs; `src/frontend/` still does for historical reasons (see
-that folder's own `BUGLOG.md`/`ROADMAP.md` headers).
+Current state, open items, and hand-off notes live in this database's
+`tracker_items`/`tracker_updates`/`session_log` tables (query them directly,
+or read `docs/TRACKER_SNAPSHOT.md` for a recent auto-generated mirror) and
+`docs/ROADMAP.md` — this backend doesn't keep its own copies; `src/frontend/`
+still keeps its own local `BUGLOG.md`/`ROADMAP.md`/`CHANGELOG.md` for
+historical reasons (see that folder's own README and file headers).

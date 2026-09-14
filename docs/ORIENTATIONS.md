@@ -6,23 +6,75 @@ about *how we build and ship*, and it should stay true regardless of which
 tool or feature we're working on. Read this before starting new work; update
 it when we settle a new convention or reverse an old one.
 
-## Logging — five standing files, at the project root
+## Logging — rewritten 2026-09-13 (fifty-seventh session), resolving DEBT-005
 
+**Bug/feature/tech-debt status and dev-session history are database tables,
+not hand-maintained markdown files.** This section used to describe a
+"five standing files" convention (below, kept for history) that had drifted
+badly out of sync with actual practice — `BUGLOG.md` said it was where
+"every bug gets its own entry" long after bugs had lived in `tracker_items`
+since migration `008` (2026-09-09), and the list never mentioned
+`DEV_STATUS.md` despite it being the single most-used file in this
+project's entire history. DEBT-005 flagged this drift; this rewrite
+resolves it per Mahdi's own direct instruction (2026-09-13) to stop
+maintaining the same information by hand in two places and "unify
+definitively."
+
+**What changed**: `docs/DEV_STATUS.md` (56 dated session narratives plus its
+own front-matter conventions) and `docs/BUGLOG.md` (50 closed-bug entries)
+were archived **verbatim, in full** into this database — every session
+section into `session_log.done_text` (migration `017`), `BUGLOG.md`'s
+preamble into one more `session_log` row (migration `019`), and 4 of
+`BUGLOG.md`'s 50 bug entries that had genuine post-`008` additions synced
+into their `tracker_items.technical_description` first (migration `018`,
+found by diffing the file against the live table entry-by-entry — 45 of the
+50 already matched migration `008`'s original transcription exactly). Both
+source files were then deleted (along with the stray root-level
+`SESSION_LOG_2026_09_03_21.md`, a single-session file superseded by, and
+already archived from within, `DEV_STATUS.md`). Nothing was lost: every
+byte survives in the database, and git history still has the original
+files at any commit before this one regardless.
+
+**What did NOT change**: `CHANGELOG.md`, `ROADMAP.md`, `SECURITY.md`, and
+`TEST_CHECKLIST.md` are kept, deliberately, not archived — see each below.
+Unlike `DEV_STATUS.md`/`BUGLOG.md`, none of these is a pure historical log
+with a live DB equivalent already superseding it: `CHANGELOG.md` is a
+standard semver artifact; `ROADMAP.md` holds substantial not-yet-built
+feature specs (full acceptance criteria etc.) with no equivalent depth
+anywhere in the database; `SECURITY.md` is this project's only audit trail
+of its kind (the DB has no security-findings table); `TEST_CHECKLIST.md` is
+the canonical scenario list `src/frontend/src/data/acceptanceTests.ts`
+snapshots from (FEAT-007) — deleting it would remove the source of truth
+that snapshot depends on. If a future session wants these unified into the
+database too, that's a real, separate design decision (new tables for
+security findings and test scenarios, at minimum) — flag it to Mahdi rather
+than assuming this rewrite already covers it.
+
+- **The database** (`tracker_items`/`tracker_updates`/`session_log`,
+  migrations `004`/`007`) — single source of truth for bugs, features, tech
+  debt, annotations (`type='annotation'` since migration `009`), and
+  dev-session hand-off history. Query it directly when you have local DB
+  access (`GET /admin/tracker/items`, `GET /admin/session-log`).
+- **`docs/TRACKER_SNAPSHOT.md`** (auto-generated — do not edit by hand) — a
+  recent, read-only view of those same tables, refreshed every 6 hours by
+  `.github/workflows/dev-export-snapshot.yml` and committed straight into
+  this repo. Built 2026-09-12 (fifty-fourth session) specifically so that
+  pulling this repo — by a human or an AI dev session starting fresh, with
+  no standing database access — also gets a recent read of the actual live
+  "problems," not just the code. **Read this at the start of a session.**
+  See `GET /dev-export` in `api/index.php` and `dev_export_secret` in
+  `config.example.php` for how it's generated and the one-time setup that
+  secret needs.
 - **`CHANGELOG.md`** — one entry per version. Versioning is `x.y.z`:
   - **x** = overhaul: new concept, architecture change, or a big/visible new
     capability.
   - **y** = a feature request landed (one bump per requested feature, roughly).
-  - **z** = a bug was found and fixed (one bump per bug — cross-reference the
-    `BUGLOG.md` entry).
+  - **z** = a bug was found and fixed (one bump per bug — cross-reference its
+    `tracker_items` code).
 - **`ROADMAP.md`** — backlog of requested-but-not-built features, plus parked
   ideas, plus a running list of decisions already made (so future sessions
   don't re-litigate settled questions). Shipped items get struck through, not
   deleted — keep the history.
-- **`BUGLOG.md`** — every bug gets its own entry: how it was detected, root
-  cause, the fix, and what (if anything) we're changing about process because
-  of it. Own mistakes plainly here, including ones caught by someone/something
-  other than the original build — that's a feature of the log, not something
-  to omit.
 - **`SECURITY.md`** — audit findings and their status (done / in-progress /
   todo), not a wishlist. Every entry names the concrete risk, what it affects
   (confidentiality/integrity/availability), and either the fix applied or
@@ -34,26 +86,8 @@ it when we settle a new convention or reverse an old one.
   rather than testing whatever comes to mind. Includes a test-history log so
   results are recorded per version over time, not just the latest pass.
 
-These five files always exist, always get updated in the same pass as the
-code change that prompted them, and are always included inside the shipped
-deliverable (not just kept in a separate "notes" location) — see "Ship as one
-deliverable" below for why.
-
-**`docs/TRACKER_SNAPSHOT.md`** (auto-generated — do not edit by hand) — a
-recent, read-only view of the live `tracker_items`/`tracker_updates`/
-`session_log` tables (bugs, features, tech debt, and annotations, which have
-lived inside `tracker_items` as `type='annotation'` since migration 009),
-refreshed every 6 hours by `.github/workflows/dev-export-snapshot.yml` and
-committed straight into this repo. Built 2026-09-12 (fifty-fourth session)
-specifically so that pulling this repo — by a human or an AI dev session
-starting fresh, with no standing database access — also gets a recent read
-of the actual live "problems," not just the code. **Read this at the start
-of a session** alongside the five files above; it will usually be more
-current than anything transcribed by hand into `DEV_STATUS.md`/`BUGLOG.md`,
-since those depend on a session remembering to update them, and this
-doesn't. See `GET /dev-export` in `api/index.php` and `dev_export_secret` in
-`config.example.php` for how it's generated and the one-time setup that
-secret needs.
+These four files always exist and always get updated in the same pass as
+the code change that prompted them.
 
 ## Deployment target: PHP + MySQL/MariaDB, single self-contained folder
 

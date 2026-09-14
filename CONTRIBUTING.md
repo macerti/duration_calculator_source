@@ -7,16 +7,26 @@ duplicating them — duplicated status docs are exactly what
 
 ## Before you touch anything
 
-Read **`docs/DEV_STATUS.md`** first, in full, especially its most recent
-dated entry. It is the mandatory hand-off log between sessions/developers:
-what's done, what's half-done, what was tried and rejected and why. Skipping
-it is how duplicate work and re-litigated decisions happen.
+Read **`docs/TRACKER_SNAPSHOT.md`** first — an auto-generated, read-only
+mirror of the live `tracker_items`/`tracker_updates`/`session_log` database
+tables (bugs, features, tech debt, annotations, and recent session history),
+refreshed every 6 hours and committed to this repo, so pulling it gets you a
+recent read of the actual live state with no database access needed. This is
+the mandatory hand-off mechanism between sessions/developers as of
+2026-09-13 (fifty-seventh session) — it replaced hand-maintained
+`docs/DEV_STATUS.md` (dev-session narratives) and `docs/BUGLOG.md` (closed
+bug history), both of which were fully archived into the database
+(`session_log`/`tracker_items`, see migrations `017`–`019`) and deleted, per
+Mahdi's own explicit instruction to stop maintaining the same information by
+hand in two places. If it's stale or the two-manual-secret setup described
+in `docs/ORIENTATIONS.md`'s "Logging" section hasn't been done yet, query
+`GET /admin/tracker/items` and `GET /admin/session-log` directly against a
+local DB instead.
 
 Then, in priority order, check whether your task is already covered by:
-`docs/BUGLOG.md` (known bugs, their status, and evidence already gathered),
 `docs/ROADMAP.md` (planned features, explicitly ranked), `docs/ORIENTATIONS.md`
 (the standing rules — priority order, versioning, testing standard, the
-source/deployment separation rule, security principles). All four are kept
+source/deployment separation rule, security principles). Both are kept
 current, not archived; if something you're about to write already lives in
 one of them, update it there instead of creating a new file.
 
@@ -43,12 +53,13 @@ make dev-frontend
    see `docs/CALCULATION_RULES.md` for the list and where each one lives),
    verify your change against the worked examples in `src/backend/tests/`,
    not just against your own reasoning about the formula.
-4. Update the relevant standing doc(s) as part of the same change — a bug
-   you found or fixed goes in `docs/BUGLOG.md`, a structural decision goes
-   in `docs/DEV_STATUS.md`'s dated log, a version-worthy change goes in
-   `CHANGELOG.md` (see `docs/ORIENTATIONS.md` for what counts as
-   version-worthy — plenty of doc-only/reorg work correctly logs "no
-   version change").
+4. Update the relevant standing record(s) as part of the same change — a bug
+   you found or fixed, or a structural decision, goes in the live
+   `tracker_items`/`session_log` tables (via a migration if no live API
+   access is available, same pattern as migrations `008`/`017`), a
+   version-worthy change goes in `CHANGELOG.md` (see `docs/ORIENTATIONS.md`
+   for what counts as version-worthy — plenty of doc-only/reorg work
+   correctly logs "no version change").
 5. Commit with a message that states what changed and why, not just what
    file moved. Push to `main` — this repository has no PR gate; the CI
    workflow (build, test, publish to `duration_calculator`) runs directly
@@ -57,9 +68,9 @@ make dev-frontend
 ## What not to do
 
 - Don't fix application behavior by hand-editing the deployment repository.
-- Don't invent a new status/log file for something one of the four standing
-  docs above already covers.
+- Don't invent a new status/log file for something the tracker database or
+  one of the standing docs above already covers.
 - Don't defer the same known-large task indefinitely by re-describing it as
   "too big for one session" without doing the next concrete chunk of it —
-  see `docs/DEV_STATUS.md`'s ninth-session entry for why this matters in
-  practice, not just in principle.
+  query `session_log`'s ninth-session entry (archived by migration `017`)
+  for why this matters in practice, not just in principle.

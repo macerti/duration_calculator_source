@@ -1,0 +1,2843 @@
+-- Audit Duration Engine -- archive docs/DEV_STATUS.md (56 dated session
+-- entries + front-matter conventions) and the stray root-level
+-- SESSION_LOG_2026_09_03_21.md into session_log (migration 007's table),
+-- verbatim, so both files can be safely deleted with zero content loss.
+-- Migration: 017_archive_devstatus_into_session_log
+-- Created: 2026-09-13
+-- Author: Claude (dev session, 2026-09-13, fifty-seventh session)
+--
+-- Mechanically generated from docs/DEV_STATUS.md by a one-off script
+-- (scripts_tmp/archive_md_logs.php, not committed -- same convention as
+-- migration 008's own BUGLOG.md extraction). Split on every top-level
+-- "## " header (not just dated session headers -- DEV_STATUS.md's own
+-- front matter mixes standing-convention sections in among the dated
+-- session log with no reliable machine-distinguishable difference, so
+-- every section is archived the same way rather than risking a
+-- judgment-call split that silently drops something). Each row's
+-- done_text is the ENTIRE verbatim original section body -- same
+-- "mechanical body-capture, not a per-field structured re-parse"
+-- reasoning as migration 008, and for the same reason: this file's own
+-- internal structure (Trigger/Environment/Baseline/Done/NOT DONE/
+-- Hand-off subsections) drifted across 56 sessions written over many
+-- months, so forcing it into session_log's trigger_text/not_done_text/
+-- handoff_text columns would require a per-entry judgment call this
+-- script cannot make safely at scale. trigger_text/not_done_text/
+-- handoff_text/commit_hash/ci_status are left NULL for every archived
+-- row for the same reason -- nothing is lost, it is simply all in
+-- done_text as one block, clearly labelled as an archival import.
+--
+-- Companion migration: docs/BUGLOG.md needed NO equivalent migration --
+-- verified separately (scripts_tmp/archive_md_logs.php's own output)
+-- that all 50 of its entries are already character-for-character
+-- present in tracker_items via migration 008, so docs/BUGLOG.md is
+-- deleted in this same commit with no new migration needed for it.
+--
+-- Why delete the source files at all, rather than archive-and-keep:
+-- explicit instruction from Mahdi this session ("unify definitively
+-- the logs and deleting the previous useless methods") -- see this
+-- session's own docs/ORIENTATIONS.md rewrite for the resulting
+-- convention going forward: session_log + tracker_items are the single
+-- source of truth, docs/TRACKER_SNAPSHOT.md (FEAT-012, fifty-fourth
+-- session) is the auto-generated read-only cold-start mirror, and
+-- CHANGELOG.md/ROADMAP.md/TEST_CHECKLIST.md are kept (not "obsolete
+-- logs" -- distinct standing roles, see that rewrite for the reasoning
+-- on each). Nothing is actually lost even for the deleted files --
+-- full git history still has every byte, and this migration's own
+-- session_log rows now hold DEV_STATUS.md's complete text too.
+
+INSERT INTO session_log (session_label, summary, trigger_text, done_text, not_done_text, handoff_text, commit_hash, ci_status) VALUES
+  ('DEV_STATUS.md — DEV_STATUS.md preamble (file title, before first section)', 'DEV_STATUS.md preamble (file title, before first section)', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "DEV_STATUS.md preamble (file title, before first section)".]
+
+# CURRENT DELIVERY PRIORITY — 2026-09-01
+', NULL, NULL, NULL, NULL),
+  ('DEV_STATUS.md — Mandatory pipeline', 'Mandatory pipeline', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "Mandatory pipeline".]
+
+## Mandatory pipeline
+
+1. FEAT-003 — Versioning and update timestamp: IMMEDIATE. **DONE** (source-complete, deploy-verified — see dated entries).
+2. Repository architecture consolidation: immediately after FEAT-003. Follow REPOSITORY_ARCHITECTURE.md; identify the source of truth before moving/deleting anything and preserve all formulas/business rules. **DONE 2026-09-02 (ninth session).** `audit-mobile/` → `src/frontend/` and `duration-calculator-php/` → `src/backend/{api,engine,data,db}` (both via `git mv`, history preserved), every CI/import/doc path reference updated, root `Makefile`/`CONTRIBUTING.md`/`RELEASES.md`/`docs/CALCULATION_RULES.md` added, `docs/DEPLOY.md` rewritten (it had gone stale, describing a two-service topology that isn\'t what\'s actually deployed). Full regression re-run against the moved tree — see the dated entry below for the complete evidence trail (24/24 engine, 16/16 HTTP-through-DB, frontend typecheck clean, full Expo web export succeeds, `make build-deploy`\'s output tree diffed identical to the real published artifact). Two definition-of-done items intentionally deferred, not silently skipped: PHP `tests/` kept co-located under `src/backend/` rather than moved to a fully top-level `tests/` (relative-`require` coupling made this the lower-risk call per the spec\'s own "where practical" wording), and the CI/repository-hygiene automated-checks work package (G) untouched. **Work package G — DONE 2026-09-02 (tenth session).** `scripts/check-repo-hygiene.sh` + `scripts/check-deploy-artifact.sh` added, wired into both `Makefile` (`make check-hygiene`, and into `build-deploy` itself) and CI. All ten `REPOSITORY_ARCHITECTURE.md` "Definition of done" evidence items are now satisfied except item 1\'s own explicitly-deferred `tests/` placement, which was a deliberate call, not an oversight — see the dated entry below for what the new checks caught and fixed on their first real run.
+3. **BUG-030 (router SCRIPT_NAME bug) — FIXED 2026-09-02 (seventh session), fixed in 5.1.1. CLOSED 2026-09-02 (eighth session).** Reconciled the fourth/sixth session contradiction (root cause: `php -S` behaves differently depending on whether the router-script argument includes a directory component — CI\'s invocation happened not to trigger the bug) and replaced the `SCRIPT_NAME`-based routing with an explicit `basePath` config value. 16/16 HTTP regression now passes regardless of dev-server invocation style. **Real Apache + `.htaccess` topology test — DONE 2026-09-02 (eighth session):** 13/13 checks passed under a real Apache/mod_rewrite/mod_php stand-up with the production `basePath` prefix actually present. **New action item surfaced by that test, not yet closeable from this sandbox: confirm the real DirectAdmin/cPanel host for `tools.macerti.com` actually grants `AllowOverride All` (or equivalent) for the deployed path — with it off, the API 404s entirely and `db/schema.sql`/NACE CSVs become publicly downloadable, with no error either way.** See BUG-030 in `docs/BUGLOG.md` for full detail. **UPDATE 2026-09-02 (ninth session) — this predicted failure mode was very likely just confirmed live in production; see BUG-031 in `docs/BUGLOG.md`, now the top-priority open bug.** Evidence narrows the cause toward `config.php`\'s `basePath` not being set on the live server specifically, not `AllowOverride` — see BUG-031 for the full reasoning; the `AllowOverride` question itself is still open too. **UPDATE 2026-09-02 (tenth session):** no new investigation this session (still cannot be reproduced or fixed from any sandbox — needs real `tools.macerti.com` host access). The exact 3-step fix from BUG-031 was relayed directly to Mahdi in-conversation this session, not just left in this file, since it is fast (minutes) and blocks the acceptance gate. Do not re-diagnose BUG-031 from scratch next session — check with Mahdi first whether the live `config.php` has already been corrected.
+4. USER FEEDBACK / ACCEPTANCE GATE. After the items above, pause normal feature development and perform real browser/mobile/user testing. Feed the results back into the logs to definitively close, reopen, or change the relevant bugs/features. **UPDATE 2026-09-03 (seventeenth session) — BUG-038\'s root cause is now CONFIRMED, not just diagnosed: Mahdi\'s retry banner named it exactly — Microsoft\'s AADSTS9002325 (`Proof Key for Code Exchange is required for cross-origin authorization code redemption`). This is a well-documented Azure Portal configuration mismatch (redirect URI registered under "Single-page application" instead of "Web"), not a code bug — see BUG-038 in `docs/BUGLOG.md` for the exact Azure Portal fix steps and the evidence trail. This also fully resolves BUG-037 (its two candidates are ruled out by this evidence). **UPDATE 2026-09-03 (eighteenth session) — Mahdi applied the BUG-038 Azure Portal fix; the AADSTS9002325 error is gone, but a NEW error appeared: `callback_failed`. This is our own code\'s catch-all for a failed token exchange (see BUG-039 in `docs/BUGLOG.md`) — it was discarding the real exception detail the exact same way BUG-038\'s provider-error branch used to. Fixed the same way: the detail is now forwarded to the banner via `auth_error_description`. The actual reason the token exchange fails is still unknown — leading unconfirmed hypothesis (carried over from BUG-037\'s original writeup, never ruled out) is a wrong Azure client secret (Secret ID pasted instead of Secret Value). Do not guess-fix this — wait for the next retry\'s `auth_error_description` text.** **UPDATE 2026-09-03 (nineteenth session) — Mahdi\'s retry delivered the requested evidence: `Microsoft Graph did not return required user fields: {"error":{"code":"Authorization_RequestDenied",...}}`. Root cause CONFIRMED: the token exchange succeeds (ruling out the wrong-secret hypothesis for good), but the `/authorize` request\'s scope (`openid profile email`) never requested Microsoft Graph\'s `User.Read` permission, so the resulting access token had no rights to call `/me`. Fixed: scope is now `openid profile email User.Read`, verified present in the built authorization URL.** **UPDATE 2026-09-03 (twentieth session) — CLOSED. Mahdi confirmed end-to-end: "The Microsoft SSO works perfectly." The BUG-036→037→038→039 SSO saga is now fully resolved — see the dated entry below and `docs/BUGLOG.md` BUG-039 for the closure record. The acceptance gate for Microsoft SSO specifically is now passed.**
+5. **UPDATE 2026-09-03 (twentieth session) — Google SSO button REMOVED from the login screen** (`LoginScreen.tsx`/`App.tsx`), per Mahdi\'s explicit instruction ("Google is a piece of shit for now, so we remove the button"). Backend Google OAuth code (`GoogleOAuth.php`, `useAuth.ts`\'s `loginWithGoogle`, the `/auth/google` route) is intentionally left in place, untouched and simply unlinked from the UI — not deleted — so re-enabling it later is a small, low-risk change if Google\'s side improves. BUILD-VERIFIED: `tsc --noEmit` clean, `expo export --platform web` succeeds, and the built JS bundle was grepped to confirm the "Continuer avec Google" string is actually gone (not just believed removed from source). Version 5.1.7 → **5.1.8**.
+6. **NEW STANDING PRIORITY ORDER from Mahdi, 2026-09-03 (twentieth session), recorded verbatim per his instruction — not re-evaluated or re-ordered by this session**: (a) **FEAT-005 — automated database schema migration on push** is elevated to the top of the feature queue, ahead of any new auth work, specifically so that the next feature\'s table changes don\'t require manual DB updates. (b) After migrations are in place, the next priority is a **new, not-yet-numbered feature**: local email/password account creation — register, log in, "forgot password" flow — as a lower-maintenance alternative/complement to SSO now that Google is deprioritized. This is recorded as a parked request in `docs/ROADMAP.md`\'s Priority 1 queue (see the new item there); no design or feasibility work has been done on it yet, same "recorded verbatim, other devs will check it better" treatment FEAT-005 already got. Whoever picks up either of these should start with `docs/DEPLOY.md`, `db/schema.sql`, `docs/ORIENTATIONS.md`, and FEAT-002\'s existing "Account model / migration constraint" section (this local-account feature must share one user/authorization model with the existing SSO code, not become a second parallel auth system).
+7. Remaining bugs. Resume only after the acceptance gate.
+8. Remaining features. Resume after the acceptance gate, in the order set by item 6 above: migrations (FEAT-005) first, then local account creation, then the rest of the existing P1 queue in `docs/ROADMAP.md`.
+9. FEAT-002 Microsoft/Google SSO: Microsoft is now VERIFIED WORKING end-to-end (see item 4). Google remains explicitly deferred/unlinked (see item 5) — not deleted, just not prioritized.
+
+### Acceptance terminology
+- USER-ACCEPTED — user confirms the behavior is satisfactory.
+- REOPENED — user still observes the reported problem.
+- NEW BUG — new reproducible defect.
+- CHANGE REQUEST — implementation works but the desired UX/behavior changes.
+- VERIFIED — technically verified but awaiting user/product acceptance where applicable.
+
+Do not use older roadmap priority wording as the active priority. This dated decision is authoritative until explicitly replaced.
+
+# Development Status — audit-app
+
+> SINGLE SOURCE OF TRUTH FOR CONCURRENT DEVELOPMENT.
+>
+> Before changing code, read this file. Update it in the same commit as the work. This file records the latest verified state, what is open, what is blocked, and which work streams are independent or dependent.
+>
+> Status date: 2026-09-02 (ninth session — repository architecture consolidation completed; see dated entry)
+> Repository: macerti/duration_calculator_source
+> Active app: src/frontend/ (was audit-mobile/ — renamed 2026-09-02, ninth session)
+> Deployment/reference docs: docs/ (moved from audit-app/ on 2026-09-01, sixth session — see dated entry below)
+> Historical/reference-only code: none remaining as top-level trees — audit-engine and audit-app were both deleted 2026-09-01 (sixth session), with history notes at docs/archive/
+> Deployment artifact: separate macerti/duration_calculator repository
+', NULL, NULL, NULL, NULL),
+  ('DEV_STATUS.md — How to use this file', 'How to use this file', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "How to use this file".]
+
+## How to use this file
+
+For every work session, record four things:
+
+1. DONE / VERIFIED — exact files, behavior, commands/tests, and environment.
+2. DONE / NOT EMPIRICALLY VERIFIED — code is changed and statically reviewed/typechecked, but the reported runtime symptom was not reproduced or browser/device confirmation is missing.
+3. OPEN / NOT DONE — work has not been completed. Do not describe it as fixed.
+4. DEPENDENCIES — state whether a task can proceed independently or must first consume the latest result from another work stream.
+
+Do not turn an architectural hypothesis into a confirmed root cause. Record the evidence level explicitly.
+', NULL, NULL, NULL, NULL),
+  ('DEV_STATUS.md — Current status (P0 / P1 / P2 Framework — 2026-09-02)', 'Current status (P0 / P1 / P2 Framework — 2026-09-02)', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "Current status (P0 / P1 / P2 Framework — 2026-09-02)".]
+
+## Current status (P0 / P1 / P2 Framework — 2026-09-02)
+
+### Priority 0 (P0) — Critical Blockers & Errors: ALL CLEAR
+- **BUG-031 (Production API 404)**: **CLOSED & VERIFIED on live production (2026-09-02)** by Mahdi. Live server `config.php` has been corrected with `$config[\'basePath\'] = \'/duration_calculator/api\';`, and production API endpoints are operational.
+- **BUG-030 (Router SCRIPT_NAME bug)**: CLOSED & VERIFIED in 5.1.1 (16/16 PHP test, 13/13 Apache test).
+- **BUG-036 (deployment artifact missing `src/backend/auth/`, full API outage) — FIXED 2026-09-02 (fourteenth session), CONFIRMED live: Mahdi reports the Microsoft flow now reaches Microsoft\'s account picker (no more 500), so the outage fix is working.**
+- **BUG-037 (SSO callback returns to login with no visible error) — SUPERSEDED 2026-09-03 (seventeenth session), see BUG-038.** The frontend race condition fix from the fifteenth session stands (verified, real). Its two remaining candidates (session-persistence, wrong client-secret) are now ruled out by direct evidence — the real cause was an Azure Portal config mismatch, confirmed in BUG-038. **Not a P0** (doesn\'t affect the rest of the app, unlike BUG-036) but blocks FEAT-002 until Mahdi applies the Azure Portal fix. See `docs/BUGLOG.md` BUG-038 for the confirmed root cause and exact fix steps.
+- **BUG-038 (Microsoft SSO rejected with `invalid_request`) — RESOLVED 2026-09-03: root cause (AADSTS9002325, redirect URI registered as "Single-page application" instead of "Web" in Azure Portal) confirmed seventeenth session; Mahdi applied the Portal fix and that specific error is gone (confirmed by BUG-039\'s report — a different error appeared in its place, which only happens once `/authorize` succeeds).** See `docs/BUGLOG.md` BUG-038 for the full evidence trail.
+- **BUG-039 (Microsoft SSO now fails post-consent with `callback_failed`) — ROOT CAUSE CONFIRMED AND FIXED, nineteenth session (2026-09-03). Confirmed cause: `microsoftBuildAuthUrl()`\'s scope (`openid profile email`) never requested Microsoft Graph\'s `User.Read` permission, so the token exchange succeeded but the `/me` profile fetch was always going to be denied (`Authorization_RequestDenied`).** Fixed: scope now includes `User.Read`, verified present in the built authorization URL. **Awaiting Mahdi\'s confirming retry** — this sandbox cannot complete a real OAuth round-trip. One flagged edge case (not a fix failure if seen): a tenant requiring admin consent for `User.Read` would show Microsoft\'s own admin-approval screen instead. Blocks FEAT-002 (SSO) only. See `docs/BUGLOG.md` BUG-039 for the full evidence trail.
+- **Active P0 bugs**: **0.** (BUG-037 is P1/feature-blocking, not P0 — see priority list below.)
+
+### Priority 1 (P1) — Active Tasks to Build Now
+1. **In-App Guided Acceptance Test Runner & Report Exporter (NEW)**: Embed test runner directly into the app (launch menu, step-by-step guidance prompts, questionnaire for visual aspects, standardized JSON/Markdown report export for human/AI developers).
+2. **Parameter Admin UI & Dossier Codification**: PO top priority improvement (web UI for IAF parameter tables + configurable calculation reference generator).
+3. **FEAT-001 (Synthèse multi-site tabs & Programme d\'audit Client)**: Individual site tabs + consolidated client programme combining durations without double-counting.
+4. **PDF Export of Calculation Report**: Downloadable audit duration report PDF generation.
+5. **Authentication & SSO**: Microsoft Entra ID & Google Account sign-in with PHP session backend. **BUG-036 (outage), BUG-038 (Azure Portal SPA-vs-Web), and BUG-039 (missing Graph `User.Read` scope) all diagnosed and fixed. BUG-039\'s fix is confirmed correct against the code and the exact reported error, but not yet confirmed by an actual successful sign-in — awaiting Mahdi\'s next retry. See `docs/BUGLOG.md` BUG-039.**
+6. **Technical Debt (Design Tokens)**: Migrate remaining 12 frontend screens/components to `src/theme/tokens.ts`.
+7. **Technical Debt (Testing Architecture)**: Move `src/backend/tests/` to top-level `tests/` and add automated frontend calculation unit tests.
+8. **FEAT-005 (NEW, requested 2026-09-03, unevaluated)**: Automated database schema migration on push — "database migration so that if there is update in tables its enough to push so that github action update the database structure if needed" (Mahdi\'s own words, recorded verbatim). Deliberately not designed or scoped by this session per explicit instruction. See `docs/ROADMAP.md` P1 #8 for the full note on where to start.
+
+### Priority 2 (P2) — For Later (Future Backlog)
+- Rate limiting & input bounds validation (`validationBounds`).
+- FEAT-004 / BUG-029: Production web presence, metadata, SEO, branded 404.
+- Global case list across all clients.
+- Extension-site toggle in UI.
+- Custom pull-to-refresh animation.
+', NULL, NULL, NULL, NULL),
+  ('DEV_STATUS.md — Concurrent work map', 'Concurrent work map', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "Concurrent work map".]
+
+## Concurrent work map
+
+| Work stream | Priority | Status | Required hand-off |
+|---|---|---|---|
+| **In-App Guided Acceptance Test Runner** | **P1 (Top Tooling)** | Planned / Ready to Build | Build in-app guided runner with step prompts, visual verification questions, and test report export |
+| **Parameter Admin UI & Dossier Codification** | **P1 (Top Feature)** | Planned / High PO Value | Build web UI for IAF parameter tables and automated reference scheme generator |
+| **FEAT-001 (Synthèse multi-site tabs)** | **P1 (Core Calc)** | Planned / Top Feature | Build site tabs + consolidated client programme tab; preserve multi-standard calculations |
+| **PDF Export of Calculation Report** | **P1 (Client Deliverable)** | Planned / Elevated to P1 | Implement report PDF generation target |
+| **Authentication & SSO (Microsoft/Google)** | **P1 (Security/Auth)** | Planned / P1 Priority | Implement standard OIDC sign-in + PHP session security model |
+| **Technical Debt: Design Token Migration** | **P1 (Tech Debt)** | In-Progress (Shared done) | Migrate remaining 12 frontend screens/components to `src/theme/tokens.ts` |
+| **Technical Debt: Top-Level `tests/` & Unit Tests** | **P1 (Tech Debt)** | Open (Deferred in WP-G) | Relocate `src/backend/tests/` to top-level `tests/` and add frontend logic tests |
+| **FEAT-005 (Automated DB schema migration on push)** | **P1 (NEW, unevaluated)** | Requested / Not designed | Read `docs/DEPLOY.md` + `db/schema.sql` + `docs/ORIENTATIONS.md` first, then propose an approach — deliberately not scoped by the seventeenth session |
+| **Rate Limiting & Bounds Validation** | **P2 (For Later)** | Backlog | Enforce `validationBounds` and IP rate limits per `SECURITY.md` §Todo #2 & #3 |
+| **FEAT-004 / BUG-029 (Production Quality/SEO)** | **P2 (For Later)** | Backlog | Remove framework defaults, add branded 404, robots.txt, canonical metadata |
+| **Global Case List & Extension-Site Toggle** | **P2 (For Later)** | Backlog | Secondary UI enhancements once core workflows are mature |
+', NULL, NULL, NULL, NULL),
+  ('DEV_STATUS.md — Standing test evidence', 'Standing test evidence', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "Standing test evidence".]
+
+## Standing test evidence
+
+Do not lose the distinction between these environments:
+
+- PHP built-in dev server: useful for local route/HTTP tests, but its request-path behavior can differ from Apache rewrite behavior.
+- Local MariaDB + PHP HTTP integration: already used successfully in prior rounds and is the preferred environment for DB-backed integration tests.
+- Real DirectAdmin host: not yet deployed/verified according to the current roadmap.
+- Real browser/device: required for visual/interaction confirmation that static typechecks and bundle tests cannot establish.
+
+### Evidence labels
+
+Use these exact meanings:
+
+- VERIFIED: observed in the relevant runtime/test environment.
+- STATICALLY VERIFIED: typecheck/build/source inspection passed, but the runtime symptom was not reproduced.
+- REPORTED: another developer/tester observed it; not independently reproduced in the current work.
+- HYPOTHESIS: plausible explanation, not established.
+- OPEN: not fixed or not classified.
+- BLOCKED: cannot currently be tested because of a stated tooling/environment limitation.
+', NULL, NULL, NULL, NULL),
+  ('DEV_STATUS.md — Update rule', 'Update rule', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "Update rule".]
+
+## Update rule
+
+Every developer changing behavior must update this file with: date; exact status; exact test performed; environment; result; remaining uncertainty; dependencies for the next developer.
+
+If a later developer disproves an earlier finding, append the new evidence rather than silently rewriting history. The latest status must be unambiguous.
+
+### 2026-08-31 work session — BUG-004 initial draft-save failure
+
+**DONE / CODE CHANGED**
+- Replaced the initial draft creation\'s silent `.catch(() => { ... })` behavior in `audit-mobile/src/screens/CalculationWizardScreen.tsx`.
+- Initial draft creation is now a named `createInitialDraft()` operation.
+- A failed initial POST no longer marks the wizard as hydrated. This prevents the autosave PUT path from pretending a persistent case exists when no case ID was received.
+- The failure is now surfaced in an explicit error box with the API error message and a deterministic **Réessayer l\'enregistrement** action.
+- The wizard remains usable after the failure; the explicit final **Enregistrer** action can still create the case when no ID exists.
+- No automatic POST retry was introduced because a response-loss retry can create duplicate cases unless the API has an idempotency mechanism. This is intentional.
+
+**TEST INFRASTRUCTURE ADDED**
+- Added `audit-app/backend/tests/http_api_test.php` covering MariaDB-backed HTTP lifecycle: health → POST draft → PUT update → GET persistence → NACE search → NACE code → DELETE cleanup.
+- Added `.github/workflows/backend-integration.yml` to run MariaDB 10.11 + PHP 8.2, the existing engine smoke suite, the HTTP API regression suite, and audit-mobile TypeScript checking on push/PR.
+
+**TEST STATUS — NOT YET VERIFIED IN RUNTIME**
+- The local execution environment available to this session has PHP 8.4 and Node 22, but no MariaDB/MySQL server and no network access to clone/install the repository dependencies. Therefore the required MariaDB + PHP HTTP integration suite could not be executed locally.
+- The GitHub workflow was pushed, but this session\'s GitHub integration currently reports no workflow run for the relevant commits, so no CI pass is being claimed.
+- The earlier verified fact remains unchanged: the exact minimal initial POST payload returned HTTP 201 when tested directly.
+
+**NOT DONE**
+- BUG-004 `PUT /cases/:id` has not yet been empirically verified against MariaDB.
+- Full wizard lifecycle has not yet been browser/device-tested.
+- The production trigger for the original first-call failure remains unknown.
+
+**DEPENDENCY / HAND-OFF**
+- Next developer must run the new MariaDB + PHP HTTP suite before declaring BUG-004 fixed.
+- If PUT fails, debug the exact HTTP response and database exception before changing frontend code.
+- Do not re-open the already verified minimal POST payload as the assumed root cause.
+', NULL, NULL, NULL, NULL),
+  ('DEV_STATUS.md — Mandatory source/deployment separation', 'Mandatory source/deployment separation', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "Mandatory source/deployment separation".]
+
+## Mandatory source/deployment separation
+
+**SOURCE REPOSITORY RULE:** this repository is the source of truth and is never the deployable artifact. Every application change must be made here first, tested here, then built/packaged and published to **macerti/duration_calculator**. For PHP, the deployable tree is produced from duration-calculator-php/ (no compilation). For audit-mobile, the deployable frontend is the generated Expo web export; source-only frontend changes are not deployed until the generated artifact is published to duration_calculator. Never fix application behavior only in the deployment repository. Every hand-off must record the source commit and deployment-artifact commit, or explicitly state that deployment is pending. A task is not deployed until the corresponding artifact exists in duration_calculator and its deployment workflow has been run/passed where applicable.
+
+
+### 2026-08-31 — Mandatory deployment-artifact workflow established
+
+**SOURCE REPOSITORY:** macerti/duration_calculator_backend remains authoritative for all application source.
+
+**DEPLOYMENT REPOSITORY:** macerti/duration_calculator is mandatory for deployable output. No developer may treat a source commit as deployed until the corresponding artifact has been published there.
+
+**DONE:**
+- Added the mandatory source/deployment separation policy across the source repository documentation.
+- Added the same policy across the deployment repository documentation.
+- Added macerti/duration_calculator/.github/workflows/build-from-source.yml. The workflow checks out source main, installs audit-mobile dependencies, runs Expo web export with the production API URL, copies the generated web artifact into the deployment repository, and commits it using github-actions[bot].
+- Synchronized the deploy repository\'s PHP tree from duration-calculator-php/. The backend deployment projection is now aligned with the source tree for the files synchronized in this session.
+
+**SOURCE COMMIT:** latest source behavior/documentation changes are on main; the frontend BUG-004 fix is in commit e15403d21dd7eb937688d66faa71f820f9c91279 and subsequent documentation commits.
+
+**DEPLOY ARTIFACT STATUS:** PHP deployment files were synchronized into macerti/duration_calculator. The generated Expo web artifact for the new frontend BUG-004 fix has NOT been built/published in this session because the available GitHub toolset cannot dispatch workflow_dispatch jobs and the local environment cannot install the Expo toolchain from the network.
+
+**IMPORTANT:** Do not claim the BUG-004 frontend fix is deployed. The deployment repository currently contains the previous generated web bundle until the Build deploy artifact from source workflow is run successfully.
+
+**NEXT REQUIRED HAND-OFF:** run the Build deploy artifact from source workflow in macerti/duration_calculator. Verify the generated _expo bundle changed, verify the deployment workflow passes, then record both the generated artifact commit and deployment run in this file. Only then can the frontend fix be called deployed.
+
+### 2026-08-31 — Source-owned build/test/publish pipeline
+
+**ARCHITECTURE DECISION — MANDATORY**
+- macerti/duration_calculator_backend is the only development/source repository.
+- macerti/duration_calculator is the generated deployment-artifact repository.
+- Developers edit only the source repository. They do not manually maintain the deploy repository.
+- The source repository now owns .github/workflows/build-test-publish.yml.
+- On push to main (and on manual dispatch), the workflow is intended to: run PHP + MariaDB tests against the actual duration-calculator-php/ deployment topology; run the frontend TypeScript check; build the Expo web artifact with the production API URL; assemble the deployable PHP tree; then publish the result to macerti/duration_calculator.
+- The existing macerti/duration_calculator/.github/workflows/deploy.yml is the user\'s pre-existing FTP deployment action. It is intentionally NOT modified by this source-build change. The source workflow only commits generated artifacts to that repository; the existing FTP action remains responsible for deployment.
+
+**AUTHENTICATION**
+- The source workflow expects repository secret DURATION_CALCULATOR_TOKEN.
+- The token must have only the minimum repository permission required to push to macerti/duration_calculator.
+- The token pasted into the conversation was NOT committed to source, workflow YAML, or deployment repository. The connected GitHub toolset does not expose an Actions-secret write operation, so the secret could not be installed automatically from this session.
+- The token was pasted in plaintext into the conversation; treat it as exposed and rotate/revoke it after installing a replacement secret. GitHub recommends storing credentials as Actions secrets rather than putting them in workflow files.
+
+**OBSOLETE WORK REMOVED**
+- Removed the previously added macerti/duration_calculator/.github/workflows/build-from-source.yml deployment-side build workflow.
+- This prevents two competing build mechanisms from existing.
+- No changes were made to the existing FTP deployment workflow.
+
+**CURRENT VERIFICATION STATUS**
+- Source-owned build workflow: committed, not yet executed successfully.
+- Deployment-side build workflow: removed.
+- PHP deployment projection: previously synchronized.
+- New deployment-topology HTTP regression suite: added at duration-calculator-php/tests/http_api_test.php.
+- The workflow\'s MariaDB service and PHP built-in server are configured to test the same bare /nace/... and /cases/... API topology used by the deployable api/index.php.
+- Full CI execution remains pending because the required Actions secret is not installed through the available tool interface.
+
+
+### 2026-08-31 — CI architecture correction and MariaDB failure investigation
+
+**CURRENT AUTHORITATIVE STATE**
+- There is exactly one source-owned CI workflow: `.github/workflows/build-test-publish.yml`.
+- The previously duplicated `.github/workflows/backend-integration.yml` has been deleted.
+- The deployment repository\'s pre-existing FTP workflow `macerti/duration_calculator/.github/workflows/deploy.yml` remains untouched and is the only deployment-to-FTP mechanism.
+- The deployment-side build workflow previously created during the first implementation, `macerti/duration_calculator/.github/workflows/build-from-source.yml`, was removed. It must not be recreated.
+- Therefore: source repo = edit/test/build/publish authority; deploy repo = generated artifact + existing FTP deployment only.
+
+**CI DATABASE MODEL**
+- CI does NOT require the user\'s production MariaDB credentials.
+- GitHub Actions creates a disposable MariaDB 10.11 service container with CI-only credentials:
+  - database: `audit_test`
+  - user: `audit`
+  - password: `audit`
+  - root password: `root`
+- The workflow verifies MariaDB with the MariaDB client, then creates a temporary CI `config.php` with the same values and verifies the PHP/PDO connection before schema/seed/tests.
+- No database secret should be added merely to make this CI database work. Production credentials belong only on the hosting server.
+
+**WHAT FAILED AND WHY**
+- Multiple early CI runs failed in `Configure test database` with: `Could not connect to the database. Check config.php.`
+- The first attempted correction only substituted values into `config.example.php`; this was insufficient because the template/default connection assumptions did not reliably match the GitHub service environment.
+- The workflow was therefore changed to generate the complete CI `config.php` explicitly instead of mutating the example file.
+- A direct MariaDB client check and a PHP/PDO check were added before seed/tests so future failures identify the layer precisely.
+- The Node.js 20 annotation from `actions/checkout@v4` was a warning, not the cause of the database failure. Checkout and setup-node were moved to v5.
+
+**CI EXECUTION STATUS**
+- Commit `65fae75a2450883152d43e844a1712d7635b3d1a` contains the current CI configuration.
+- A run for that commit was observed entering the queue/in-progress state; its final result must be checked in GitHub Actions before this pipeline is declared green.
+- Earlier runs `33447260355` and `33447244917` failed before the corrected PDO verification could run.
+- Do not infer success from the workflow starting. A green conclusion is required.
+
+**BUG-004 TEST BOUNDARY**
+- The exact minimal wizard initial POST payload was already verified independently: POST /cases returned HTTP 201.
+- The frontend silent initial-save failure/retry behavior was changed in source, but the complete lifecycle is still not runtime-verified.
+- The new HTTP regression suite is intended to test: health/DB → NACE search → NACE code → POST draft → PUT case → GET persisted state → DELETE cleanup.
+- BUG-004 must remain open until that suite passes and the real wizard lifecycle is tested.
+
+**HAND-OFF RULE**
+Before touching CI again, inspect the latest workflow run and its first failing step. Do not re-test or rewrite the already-established disposable MariaDB model unless the service/client/PDO diagnostic itself fails.
+
+### 2026-09-01 — CI root-caused and fixed by independent full-pipeline reproduction
+
+**CONTEXT**: after BUG-019\'s config-determinism fix and the `DURATION_CALCULATOR_TOKEN` rotation, CI was still reported non-functional. This session did not trust the workflow\'s own history of "should be fixed now" claims and instead reproduced every stage of `build-test-publish.yml` locally against real infrastructure (a real local MariaDB 10.11 instance, real PHP 8.3 with `pdo_mysql`/`mbstring`/`curl` to match the workflow\'s `setup-php` extensions, real `npm ci`/`tsc`/`expo export`).
+
+**ROOT CAUSES FOUND (two, independent, either one fatal on its own)**
+1. BUG-020 — `AuditEngine\\\\pingDb()` doubled namespace separator in the "Create CI database configuration" step is a PHP parse error, unconditionally, regardless of DB/secret/network state. This is the immediate reason the pipeline never gets past that step.
+2. BUG-021 — a literal `\\n` (not a real newline) on one line of `CalculationWizardScreen.tsx` (introduced by the BUG-004 fix commit `e15403d`) fails `npx tsc --noEmit` with `TS1127`. Would have failed the "Typecheck frontend" step even if BUG-020 were fixed first.
+
+**FIXES APPLIED**
+- `.github/workflows/build-test-publish.yml`: both `AuditEngine\\\\pingDb()` → `AuditEngine\\pingDb()`.
+- `audit-mobile/src/screens/CalculationWizardScreen.tsx` line 93: split into two real lines.
+
+**FULL LOCAL VERIFICATION (DONE / VERIFIED, real environment, not hypothesis)**
+- MariaDB service + PDO check, schema import, seed: pass.
+- `php tests/smoke_test.php`: 24/24 pass.
+- PHP built-in server routing for `/health`, `/nace/search`, `/nace/:code`: all 200, correct payloads. **BUG-017 (NACE 404) not reproduced** — appears already fixed by current router code; leaving it open in the log only pending one more confirmation on a real runner.
+- `php tests/http_api_test.php` full HTTP regression suite (health → NACE → POST draft → PUT update → GET persistence → DELETE): **16/16 pass**. This means **BUG-004\'s backend persistence path is verified working** against a real database — the previously-logged "NOT YET VERIFIED IN RUNTIME" status for the HTTP suite is now resolved. If a production first-save failure still occurs, the backend save/update logic itself is not the cause; look at frontend request construction, network/cold-start conditions, or something specific to the real DirectAdmin/Apache topology instead.
+- `npm ci`, `npx tsc --noEmit` (after fix): pass.
+- `npx expo export --platform web --clear` with `EXPO_PUBLIC_API_URL` set to the production API URL: succeeds, produces `dist/index.html` etc. as the assembly step expects.
+- Deployment tree assembly step (`_deploy/` construction + all `test -f`/`test ! -e` assertions): pass.
+- Cross-checked the publish step against the real `macerti/duration_calculator` repo: default branch is `main` (matches `git push origin main`); the repo\'s own top-level docs (CHANGELOG.md, ROADMAP.md, etc.) are untouched by the cleanup `rm` in the publish step; a bot push via a PAT to a *different* repo correctly triggers that repo\'s own `deploy.yml` FTP workflow (the `GITHUB_TOKEN` same-repo loop-prevention rule does not apply here).
+
+**NOT YET DONE**
+- An actual GitHub Actions run of the fixed workflow has not been observed by this session at write time (see below — about to trigger one). Local reproduction is thorough but is still not the hosted runner; confirm a real green run before calling CI solid.
+- Real DirectAdmin/Apache-topology test of the NACE routes (only PHP built-in server was tested here, matching prior sessions\' evidence boundary).
+
+**DEPENDENCY / HAND-OFF**: once a green Actions run is observed for the commit containing these two fixes, and the artifact appears in `macerti/duration_calculator` with the deploy repo\'s FTP workflow having run, update this file with the exact run URL/commit pair before calling deployment complete. Do not assume success from the workflow merely starting.
+
+### 2026-09-01 — CI confirmed green end-to-end on a real GitHub Actions run; one more bug found and fixed along the way (BUG-022)
+
+**WHAT HAPPENED**: the BUG-020/BUG-021 fixes were pushed, then a manual `workflow_dispatch` was used to actually observe a run (source commit `507095d`) rather than assuming the local reproduction generalized. It did not, fully: that run failed at a new step, "Verify MariaDB service", with exit code 127 (`mariadb`: command not found) — see BUG-022 in BUGLOG.md. The workflow never installed a MariaDB/MySQL client; it assumed the `mariadb` CLI was already on the runner\'s PATH, which is not true of the current `ubuntu-latest` image. This could not have been caught by local reproduction, since that reproduction necessarily ran on a machine where the client had already been installed manually.
+
+**FIX**: added an explicit `apt-get install -y mariadb-client` step before first use. Pushed as source commit `d16409e`.
+
+**CONFIRMED GREEN RUN**
+- Source commit: `d16409e`.
+- GitHub Actions run: `https://github.com/macerti/duration_calculator_backend/actions/runs/33449892835` (triggered by push) — **status: completed, conclusion: success, all 18 steps succeeded**, including MariaDB verify, DB config, schema/seed, PHP smoke tests, HTTP API regression suite, frontend typecheck, Expo web export, artifact assembly, and publish to the deploy repo.
+- Deployment artifact commit: `0f97d9e` in `macerti/duration_calculator`, authored by `github-actions[bot]`, message "build: publish artifact from duration_calculator_backend".
+- Deploy repo\'s own FTP workflow (`deploy.yml`) fired automatically on that commit and **also completed successfully**: `https://github.com/macerti/duration_calculator/actions` (run for commit `0f97d9e`, event `push`, conclusion `success`).
+
+**THEREFORE**: as of this commit, the full source → CI → build → publish → FTP-deploy chain is verified working end-to-end on real infrastructure, not merely locally reproduced. This is the first time this can be claimed with a real green run as evidence rather than a local approximation.
+
+**REMAINING OPEN ITEMS (unchanged by this work)**: authentication/rate limiting (SECURITY.md), input-bounds enforcement, browser/device visual confirmation of UI pieces, and a live health-check confirmation against the real DirectAdmin host (the FTP step\'s post-deploy health check is `continue-on-error: true` and informational only — its actual result for this deploy has not been separately confirmed here).
+
+**PROCESS LESSON FOR FUTURE CI CHANGES**: local reproduction (even a careful one against real MariaDB/PHP/Node) is necessary but not sufficient — it only found 2 of the 3 bugs that were blocking this pipeline. The third was only visible on the actual hosted runner. Always dispatch and observe at least one real run before declaring a CI fix complete.
+
+
+### 2026-09-01 — Deploy interaction test: BUG-025 UX findings
+
+**STATUS: REPORTED / CODE-INSPECTED — implementation and runtime verification pending.**
+
+The current deployment was tested interactively and exposed three frontend consistency/behavior findings. Do not treat these as fixed until the source changes are implemented, typechecked/built, and exercised in a real browser/device.
+
+#### A. Calculation report navigation
+- The final **Rapport de calcul complet** screen currently uses a separate navigation route from the wizard.
+- The current wizard opens it with navigation.navigate("CalculationReport", ...), while the report screen itself has no Breadcrumbs component.
+- The requested UX is that the report follows the same breadcrumb hierarchy as the rest of the application and does not introduce a separate, differently styled **Retour** mechanism.
+- Keep report content/calculation data unchanged while correcting navigation.
+
+#### B. Accueil breadcrumb/home representation
+- The home destination must remain a real home icon, not an emoji.
+- Current code is inconsistent: CalculationWizardScreen uses Ionicons home-outline, while the generic Breadcrumbs component renders breadcrumb items as text only.
+- Normalize this into one consistent breadcrumb/home treatment across screens. Do not reintroduce emoji-based home labels.
+
+#### C. Multi-standard Synthèse tab does not switch the programme
+- Reported deploy behavior: for a site with multiple standards, the Synthèse standard tabs are visible, but tapping the second standard does not change the displayed audit programme.
+- Source inspection shows a shared activeStandardTab state, stdTab derivation, and a stdResult lookup by standard. This is the intended mechanism, but source inspection alone does not establish why the deployed interaction fails.
+- Required behavior: selecting a standard must switch all standard-specific Synthèse content for that site, including stage/visit duration, report-writing duration, rounding controls, and related details.
+- Validate the state scope with both one multi-standard site and multiple sites containing multiple standards. A selection for one site must not leak to another site.
+- Do not classify this as an engine/calculation defect unless the result payload itself is proven wrong. Current evidence points to the Synthèse UI selection/rendering path.
+
+#### Verification sequence for next developer
+1. Implement report navigation using the existing breadcrumb model; remove the separate report-specific back convention.
+2. Normalize Accueil to the icon system across breadcrumb/navigation instances.
+3. Reproduce the second-standard Synthèse failure and instrument activeStandardTab, derived stdTab, per-site siteStdTab, and selected stdResult if necessary.
+4. Test one site with two standards, then two sites with two standards each.
+5. Run npx tsc --noEmit and the production Expo web build with --clear.
+6. Perform the exact interaction test in a real browser/device before changing the evidence level to VERIFIED.
+
+**Deployment boundary:** this status entry records findings only. No source UX fix is claimed as implemented or deployed by BUG-025.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-01 (second session)', 'BUG-025/026/027 source fixes: STATICALLY VERIFIED + BUILD-VERIFIED, not yet browser/device VERIFIED', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-01 (second session) — BUG-025/026/027 source fixes: STATICALLY VERIFIED + BUILD-VERIFIED, not yet browser/device VERIFIED".]
+
+## 2026-09-01 (second session) — BUG-025/026/027 source fixes: STATICALLY VERIFIED + BUILD-VERIFIED, not yet browser/device VERIFIED
+
+**Environment**: no PHP, no MariaDB, no browser/device available. `node`/`npm`/`npx` with npm-registry network access were available. This caps the evidence level for everything below — see "Evidence labels" above; nothing here is promoted past STATICALLY VERIFIED or BUILD-VERIFIED (a new label, defined below, for "the real `expo export --platform web` build step CI runs before publish succeeded against this code").
+
+**FIXED (source changed, typecheck + real production build both pass)**
+- BUG-025 #1 — report screen now uses `Breadcrumbs` + `headerShown:false` instead of the native header back arrow; `clientId` added to the `CalculationReport` route params to support it.
+- BUG-025 #2 — "Accueil" is now one consistent icon-crumb (`Breadcrumbs.tsx` extended with an `icon` field) across the wizard, ClientsList, ClientDetail, and the report screen.
+- BUG-025 #3 — **root cause confirmed**: Synthèse\'s per-site standard tab was reading Facteurs-step-scoped state (`activeStandardTab`/`stdTab`, tied to `activeSite`), not a value scoped to the site being rendered in the Synthèse loop — this explains both "tapping the second tab does nothing" and the multi-site leak risk. Replaced with `syntheseStandardTabBySite`, keyed by `siteResult.siteId`.
+- BUG-027 #4 — removed the redundant Synthèse bottom "Retour" button; confirmed `StepTabs` (top on desktop, fixed bottom bar on mobile) already covers step-back navigation regardless of `currentStep`.
+- BUG-026 — root cause confirmed: Siège name/address used the shared `NumberField` (hardcoded `keyboardType="numeric"`). Added a new `TextField` component and swapped it in for exactly those two fields; no other field\'s validation was touched.
+
+**PARTIALLY FIXED — do not close**
+- BUG-027 #3 — the +/- controls now use `step={0.01}` (previously defaulted to `0.25`) at all 5 Synthèse `RoundingStepper` call sites, and the existing `Math.round(x*100)/100` nudge math is confirmed float-drift-safe. **However**, re-reading `RoundingStepper.tsx` shows the displayed value is a non-editable `<Text>`, not a `TextInput` — "the user can manually type a value directly into the field" is simply not built yet, in this or any prior session. This is a real gap, not a verification gap; treat BUG-027 #3 as open until typing is added.
+
+**NEW EVIDENCE LABEL USED THIS SESSION**
+- BUILD-VERIFIED: `npx expo export --platform web --clear` (the same command `build-test-publish.yml` runs before assembling the deploy artifact) completed successfully against the changed tree with a placeholder `EXPO_PUBLIC_API_URL`, producing `dist/index.html` and a single web bundle. Stronger than STATICALLY VERIFIED (typecheck only) but still not a substitute for an actual interaction test.
+
+**VERIFICATION PERFORMED (real commands, real output)**
+- `npm ci` in `audit-mobile/` — clean, 515 packages, 0 errors.
+- `npx tsc --noEmit` — 0 errors against the entire changed tree.
+- `npx expo export --platform web --clear` — succeeded, produced the expected `dist/` output.
+
+**NOT DONE**
+- No real browser/device pass on any of BUG-025/026/027 — required before any of these move to VERIFIED. Use BUG-025\'s existing "Incremental implementation / verification order" (steps 3-6) as the checklist.
+- BUG-027 #1 (Facteurs multi-site sequencing/initial-Siège-selection) and BUG-027 #2 (Synthèse annual/per-standard totals) — untouched, fully open.
+- BUG-027 #3\'s manual-typing requirement — not implemented; needs `RoundingStepper.tsx` converted to an editable numeric `TextInput` with comma/period and non-numeric-character handling.
+- Backend (`duration-calculator-php/`) untouched this session; BUG-004\'s prior VERIFIED backend-persistence status is unaffected.
+- **Not deployed**: per the mandatory source/deployment separation rule, this is a source-only commit. `build-test-publish.yml` has not been observed running against it, and nothing has been published to `macerti/duration_calculator`.
+
+**DEPENDENCY / HAND-OFF**: the next developer with real device/browser access should (1) click through BUG-025 #1/#2/#3 and BUG-026 to confirm the fixes actually resolve the reported symptoms, especially BUG-025 #3 with 2+ sites × 2+ standards each; (2) add manual-typing support to `RoundingStepper.tsx` to finish BUG-027 #3; (3) start BUG-027 #1/#2 from scratch. None of this should be treated as deployed until a green `build-test-publish.yml` run is observed and an artifact commit exists in `macerti/duration_calculator`.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-01 (third session)', 'BUG-027 #1/#2/#3 all addressed: source-complete, still STATICALLY/BUILD-VERIFIED only', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-01 (third session) — BUG-027 #1/#2/#3 all addressed: source-complete, still STATICALLY/BUILD-VERIFIED only".]
+
+## 2026-09-01 (third session) — BUG-027 #1/#2/#3 all addressed: source-complete, still STATICALLY/BUILD-VERIFIED only
+
+**Environment**: identical constraint to the second session — no PHP, no MariaDB, no browser/device; `node`/`npm`/`npx` with npm-registry access only.
+
+**FIXED (source changed, typecheck + real production build both pass)**
+- BUG-027 #3 — closed. Added the missing manual-typing half: `RoundingStepper.tsx`\'s value is now a controlled `TextInput` (comma/period decimal handling, non-numeric stripped while typing, commits via the same 2-decimal rounding as `nudge()` on blur/submit, reverts to last valid value on empty/invalid input). Combined with the second session\'s `step={0.01}` fix, both halves of BUG-027 #3 are now done.
+- BUG-027 #1 — fixed. Root cause: `activeSiteIndex` is shared between Effectif and Facteurs, so whichever site tab was last active in Effectif stayed active when Facteurs opened. Added a `prevStepRef`-guarded effect that resets `activeSiteIndex` to `0` exactly on entry into the `"factors"` step (any trigger — button or step-tab), without interfering with in-step navigation. Replaced the fixed Retour/Calculer footer with sequential Précédent/Site-suivant buttons that step through sites in order; "Calculer" now only appears on the last site, matching the bug\'s "do not expose Calculer as the only immediate action while sites remain" requirement. Single-site cases are unaffected (index bound is `0 < 0`, unchanged behavior).
+- BUG-027 #2 — fixed. Added a per-site "Récapitulatif annuel" to Synthèse: for each year found across a site\'s standards, shows that year\'s total (all standards summed) plus a per-standard line when more than one standard is active. Computed from the exact same `getRounded`/`roundKey` values already driving the steppers and the pre-existing grand total — a presentation addition, not a new calculation path. The pre-existing single grand total was kept (still legitimately useful for overall quoting); the bug asked for added detail, not its removal.
+
+**EVIDENCE LEVEL — unchanged from second session, still capped**
+- STATICALLY VERIFIED: `npx tsc --noEmit` — 0 errors against the full changed tree, both after the RoundingStepper change and again after the wizard-screen changes.
+- BUILD-VERIFIED: `npx expo export --platform web --clear` succeeded twice (once per round of edits) with a placeholder `EXPO_PUBLIC_API_URL`. This session additionally grepped the built, minified bundle for the new UI strings ("Site suivant", "Précédent (", "Récapitulatif annuel") and confirmed all three are present on the shipped code path — stronger confirmation than a successful build alone, but still not an interaction test.
+
+**NOT DONE**
+- No real browser/device pass on BUG-027 #1/#2/#3 (or on any still-open item from prior sessions) — this remains the single biggest gap across the whole BUG-025/026/027 cluster. In particular, untested interactively: the decimal-keyboard/comma-period typing UX in a real browser vs. native app; whether the sequential Facteurs flow feels natural with 3+ sites; whether the annual-breakdown layout is readable on a real multi-year, multi-standard case.
+- Backend (`duration-calculator-php/`) untouched this session; no PHP/MariaDB available in this sandbox, same as every prior session.
+- **Not deployed**: source-only commit, per the mandatory source/deployment separation rule.
+
+**OPEN PRODUCT QUESTIONS for the next developer (not blocking, but worth resolving before calling BUG-027 fully closed)**
+1. Is "Site suivant" without entering any factors an acceptable implementation of "explicitly skip that site\'s factors," or does product want a visually distinct "Passer" affordance?
+2. Should the new annual breakdown be its own always-visible section per site, or is per-standard-tab-scoped placement (current implementation) sufficient?
+
+**DEPENDENCY / HAND-OFF**: BUG-027 is now source-complete (#1/#2/#3/#4). Next developer with real device/browser access should run the full BUG-025/026/027 click-through in one pass (Siège + 2 sites × 2+ standards each, cycleYears ≥ 3) before any of it is promoted to VERIFIED or considered for deployment.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-01 (fourth session)', 'Independent fresh-sandbox backend re-verification; no code changes; docs reconciled', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-01 (fourth session) — Independent fresh-sandbox backend re-verification; no code changes; docs reconciled".]
+
+## 2026-09-01 (fourth session) — Independent fresh-sandbox backend re-verification; no code changes; docs reconciled
+
+**Purpose of this session**: was asked to "start fixing the bugs." Before writing any code, read this file, `audit-mobile/BUGLOG.md`, `docs/BUGLOG.md`, and the latest commit (`3d22b7f`, FEAT-003) to establish what was actually still open, since prior sessions\' "Current status" header and their own chronological history had drifted out of sync (header still said BUG-004 PUT was "Not tested" and NACE was "OPEN", while a chronological entry further down already reported both passing via CI). Prioritized closing that gap with fresh, independent evidence over starting new feature work, per this file\'s own instruction not to duplicate investigation.
+
+**Environment**: sandboxed container, no prior state from any earlier session (fresh clone). Unlike every prior session\'s stated environment, this one *did* have outbound access to `archive.ubuntu.com`/`security.ubuntu.com`, so `apt-get install php8.3-cli php-mysql php-mbstring php-curl default-mysql-server` succeeded — this is the first session able to run the real PHP/DB regression suite outside of GitHub Actions itself.
+
+**DONE / VERIFIED (real commands, real output, this session)**
+- `duration-calculator-php/` (the actual deployed backend — not the legacy `audit-app/backend` copy) against a from-scratch MySQL 8.0.46 instance (`default-mysql-server` on Ubuntu 24.04 — a client-compatible stand-in for CI\'s MariaDB 10.11, not identical; see caveat below):
+  - `config.php` written matching the CI workflow\'s exact CI config block; `AuditEngine\\pingDb()` → OK.
+  - `db/schema.sql` imported; `php seed.php` → seeded `default-v1`.
+  - `php tests/smoke_test.php` → **24/24 passed**.
+  - `php -S 127.0.0.1:8080 api/index.php`; `/health` → `{"status":"ok","dbConnected":true,...}`.
+  - `php tests/http_api_test.php http://127.0.0.1:8080` → **16/16 passed**: health, NACE search, NACE code lookup, POST /cases, PUT /cases/:id (with recalculation), GET /cases/:id (input/status/rounding overrides all preserved), DELETE /cases/:id.
+- `audit-mobile/`: `npm ci` (319 packages, clean) then `npx tsc --noEmit` → **0 errors**, confirming the third session\'s BUG-027 #1/#2/#3/#4 source changes still typecheck cleanly and nothing has regressed since.
+- Did **not** re-run `npx expo export` this session (time/turn-budget tradeoff — `tsc` clean was judged sufficient re-confirmation given the third session already got a successful export against this same code).
+
+**RECONCILED IN THIS FILE (see "Current status" section above for the actual updated text)**
+- BUG-004 PUT/Enregistrer backend path: moved from ambiguous/"Not tested" to VERIFIED, with today\'s evidence cited independently of the CI run.
+- NACE 404 finding: moved from OPEN to NOT REPRODUCED, so a future session doesn\'t re-open the SCRIPT_NAME/REQUEST_URI investigation from scratch on a stale premise.
+- Concurrent work map table updated to match.
+
+**NOT DONE / caveats — do not over-claim from this session**
+- MySQL 8.0 was used, not MariaDB 10.11. Every tested path matched CI\'s MariaDB-based results, but this is not a bit-for-bit identical engine; if a MariaDB-specific dialect issue exists, this session would not have caught it.
+- No real DirectAdmin/Apache-topology test (still PHP built-in dev server only, same boundary as every prior session).
+- No real browser/device test of the wizard UI — still the single biggest remaining gap across BUG-004 and BUG-025/026/027, unchanged by this session.
+- **No feature/bug code was changed this session.** This was a verification-and-documentation session, not an implementation session — see the update rule at the top of this file for why that\'s still worth logging: it prevents the next developer from re-doing the same MariaDB/PHP stand-up and HTTP regression run under the mistaken belief that PUT/NACE were still unverified.
+- FEAT-003 (version/last-update footer, marked IMMEDIATE in the latest commit `3d22b7f`) was read and is noted in the concurrent work map above, but not started — it needs product/implementation decisions (where the update-timestamp metadata is generated/sourced from) that deserve a dedicated session rather than a rushed partial implementation under a tight turn budget.
+
+**DEPENDENCY / HAND-OFF for the next developer**
+1. Do not re-run the MariaDB/PHP stand-up + smoke/HTTP suite from scratch just to "double check" — it is now independently confirmed three times (two CI runs + this session). Spend that time on FEAT-003 or the real browser/device gap instead.
+2. FEAT-003 is the top of the backlog per the repo\'s own most recent commit — read `docs/ROADMAP.md`\'s "IMMEDIATE REQUEST — FEAT-003" section in full before starting it. It touches both `audit-mobile/` (footer UI) and needs a decision on where "last update" metadata is sourced from (git commit timestamp at build time is the most likely fit, but this session did not decide that — it\'s a real open design question, not a coding detail).
+3. BUG-004\'s frontend items (#1 and #3 in the NOT DONE list above) still need a source-code check, not just a docs check — confirm `CalculationWizardScreen.tsx`\'s current error-surfacing behavior matches what `audit-mobile/BUGLOG.md`\'s 2026-08-31 entry claims was implemented, since that file wasn\'t independently re-read line-by-line this session.
+
+### 2026-09-01 (fifth session) — FEAT-003 implemented (version/last-update footer)
+
+**Purpose of this session**: pulled latest before starting, per this file\'s own instruction, and found the repo\'s own most recent authoritative priority order (`cbdcb36`, top of this file) names FEAT-003 as the immediate top-of-backlog item, not yet started by anyone. Implemented it rather than re-touching already-VERIFIED work (BUG-004/NACE) or starting lower-priority backlog items out of order.
+
+**Design decisions made (previously flagged as open by the fourth session)**:
+- Version source of truth: `audit-mobile/package.json` `"version"` field (existing value `5.0.0`, kept — not reset to `1.0.0`, since the spec\'s versioning *rules* are what\'s authoritative, not a specific starting number). Bumped to `5.1.0` for this change itself (new user-visible feature → Y+1, Z resets, per the spec\'s own rule).
+- Update-timestamp source of truth: the committer timestamp of the most recent git commit touching `audit-mobile/` (`git log -1 --format=%cI -- .` run from that directory) — not build-machine clock, not end-user browser clock, satisfying the explicit ROADMAP.md requirement.
+
+**Implementation**:
+- `audit-mobile/scripts/generate-version.js` — new. Reads `package.json` version + git commit timestamp, writes `src/generated/versionInfo.ts` (gitignored — regenerated every install/dev/build, never a stale committed copy per the "derive automatically, don\'t hard-code" requirement).
+- Wired into `package.json`\'s `postinstall` script, so both `npm ci` (CI) and local `npm install` regenerate it automatically — **no CI workflow YAML changes were needed**, since the existing "Install frontend dependencies" step already runs `npm ci`.
+- `audit-mobile/src/components/VersionFooter.tsx` — new. Renders `Version X.Y.Z · Updated on D Mon YYYY at HHhMM`, matching the spec\'s exact example format. Uses existing `theme/tokens.ts` design tokens (no new raw colors/hex), per `ORIENTATIONS.md`\'s UI Visual System principle.
+- `App.tsx` — footer added as a sibling of `NavigationContainer` inside a flex-column wrapper, so it appears identically on every screen (Home, ClientsList, ClientDetail, CalculationWizard, CalculationReport) without touching each screen file individually — single place it can drift out of sync, per the spec\'s "one authoritative location" requirement.
+- Checked for competing hardcoded version strings elsewhere in `audit-mobile/src` — none found.
+
+**Verification this session (BUILD-VERIFIED, not yet interaction-VERIFIED — same evidence-level caveat as prior frontend sessions, no browser/device tooling available)**:
+- Clean `npm ci` from scratch → confirmed `postinstall` correctly generates `src/generated/versionInfo.ts` with real version/timestamp values (not placeholders).
+- `npx tsc --noEmit` — 0 errors.
+- `npx expo export --platform web --clear` — succeeds; grepped the built bundle directly and confirmed both `"5.1.0"` and the literal string `"Updated on"` are present in the shipped JS, i.e. this isn\'t a dead code path.
+
+**Not done / open**:
+- Not yet run through CI or deployed (source/deployment separation — next step is push + let `build-test-publish.yml` do its job, same as prior fixes this project has used).
+- Not interaction-VERIFIED in an actual browser/mobile viewport (layout/wrapping/overlap with existing screen content not visually confirmed — flag for the acceptance gate in `cbdcb36`\'s priority order, step 3).
+- Per that same priority order, **repository architecture consolidation (`REPOSITORY_ARCHITECTURE.md`) is next**, not more bug/feature work — do not start BUG/FEAT backlog items before that consolidation without a reason to deviate from the recorded priority order.
+
+**FEAT-003 confirmed green on real CI** (not just local reproduction): source commit `955abc7` → Actions run `33505208296`, all 18 steps passed, artifact republished. FEAT-003 is now DEPLOY-VERIFIED, not just source-complete.
+
+### 2026-09-01 (fifth session, continued) — Repository architecture consolidation, step 1: archived `audit-engine/`
+
+Per the priority order, moved to the consolidation item next. Given the size/risk of the full `REPOSITORY_ARCHITECTURE.md` reorganization and this session\'s limited remaining runway, took the lowest-risk, fully-verifiable first slice rather than attempting the whole thing at once (per that doc\'s own "do not combine reorganization with an uncontrolled rewrite" rule) — moved `audit-engine/` (the abandoned original Node/TS engine) to `docs/archive/audit-engine-abandoned-node-engine/`.
+
+**Verified safe before moving**: grepped the entire repo for "audit-engine" — only hits outside that folder itself are two source comments (`duration-calculator-php/data/parameters.php`, `audit-mobile/src/config/api.ts`) noting historical lineage, not live imports/requires. Confirmed `.github/workflows/build-test-publish.yml` never references `audit-engine/` at all — it only ever touches `duration-calculator-php/` and `audit-mobile/`. `git mv` preserves file history.
+
+**Not done in this pass** (flagged explicitly in the new folder\'s `ARCHIVE_NOTE.md` for the next session): `audit-app/` is NOT moved yet. It\'s larger and, confusingly, is where the project\'s actual active hand-off ledgers (this file, `BUGLOG.md`, `ROADMAP.md`, `SECURITY.md`, `ORIENTATIONS.md`, `TEST_CHECKLIST.md`) currently live, despite `audit-app/`\'s own PHP+Expo code being historical. Moving/renaming those active docs to a root-level location (as `REPOSITORY_ARCHITECTURE.md` recommends: root should hold only `README.md`/`CONTRIBUTING.md`/`SECURITY.md`/`CHANGELOG.md`/`REPOSITORY_ARCHITECTURE.md`, detailed docs under `docs/`) is a bigger, higher-risk change — every session\'s own instructions currently say "read DEV_STATUS.md" assuming its current path, so this needs a deliberate single session with enough runway to update every cross-reference and verify nothing broke, not a rushed partial move. Also not yet done: renaming `audit-mobile/` → something like `src/` per the target layout, and restructuring its internals into the `src/components|screens|services|...` shape described in `REPOSITORY_ARCHITECTURE.md` — same reasoning, bigger blast radius than remaining session time allows to verify properly (would need full typecheck + build + HTTP regression + deploy-artifact re-verification against every moved import path).
+
+**Verification this step**: `git status` confirms only the `audit-engine/` → `docs/archive/...` rename plus the new `ARCHIVE_NOTE.md`; no other files touched. Since nothing in the active app or CI references the moved paths, no typecheck/build/test re-run was needed to prove behavior is unchanged for this specific slice — this is intentionally the safest possible starting move, not a claim that consolidation is complete.
+', NULL, NULL, NULL, NULL),
+  ('DEV_STATUS.md — FEAT-004 / BUG-029 hand-off', 'FEAT-004 / BUG-029 hand-off', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "FEAT-004 / BUG-029 hand-off".]
+
+## FEAT-004 / BUG-029 hand-off
+
+A production-quality web/SEO/routing review is logged. It is intentionally deferred until after versioning, repository architecture, and the user acceptance gate. Developers must classify each item before implementing it. The critical architecture decision is to distinguish public/indexable content from the private/stateful calculation wizard; do not add URLs to every wizard phase solely for SEO.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-01 (sixth session)', 'Repository architecture consolidation step 2 (docs relocated, legacy apps archived); BUG-030 found and root-caused', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-01 (sixth session) — Repository architecture consolidation step 2 (docs relocated, legacy apps archived); BUG-030 found and root-caused".]
+
+## 2026-09-01 (sixth session) — Repository architecture consolidation step 2 (docs relocated, legacy apps archived); BUG-030 found and root-caused
+
+**Purpose of this session**: continue the mandatory pipeline\'s item 2 (repository architecture consolidation), picking up where the fifth session\'s step 1 (archiving `audit-engine/`) left off, per instruction to remove duplicate/legacy application code while preserving all formulas/business rules and unifying the docs.
+
+**Environment**: sandboxed container with outbound access to `archive.ubuntu.com`/`security.ubuntu.com`/npm registry — `apt-get install php8.3-cli php-mysql php-mbstring php-curl default-mysql-server` and `npm` both worked, so this session (like the fourth) could run real PHP/MariaDB verification, not just static/build checks.
+
+### PART 1 — Repository architecture consolidation, step 2 (DONE)
+
+**Moved (git mv, history preserved)**:
+- `audit-app/{BUGLOG,DEV_STATUS,ROADMAP,ORIENTATIONS,TEST_CHECKLIST,DEPLOY}.md` to `docs/`.
+- `audit-app/{SECURITY,CHANGELOG}.md` to repo root, per `REPOSITORY_ARCHITECTURE.md`\'s explicit root-file list.
+- Every cross-reference to the old `audit-app/BUGLOG.md`/`DEV_STATUS.md`/`ROADMAP.md` paths updated repo-wide (`README.md`, `audit-mobile/BUGLOG.md`, this file) — verified zero remaining stale references via `grep -rl`.
+
+**Archived (git mv into `docs/archive/`, not deleted)**:
+- `audit-app/backend/` plus `audit-app/frontend/` plus `audit-app/README.md` to `docs/archive/audit-app-legacy-two-folder-implementation/`, with a full `ARCHIVE_NOTE.md` documenting the verification performed before archiving (see below). `audit-app/` itself no longer exists (was empty after the move).
+- `audit-mobile/CHANGELOG.md` (superseded, pre-PHP-port version history) to `docs/archive/audit-mobile-legacy-logs/CHANGELOG.md`, and its full content merged into the end of the canonical root `CHANGELOG.md` (confirmed as the exact chronological predecessor of that file\'s `[1.0.0]` entry — same 2026-08-19 date, `[1.0.0]`\'s own text describes copying this exact frontend in).
+- Retroactively created `docs/archive/audit-engine-abandoned-node-engine/ARCHIVE_NOTE.md` — the fifth session\'s log said this note existed but it was never actually written.
+
+**Verified nothing was lost before archiving `audit-app/backend`+`frontend` (see the archive\'s own `ARCHIVE_NOTE.md` for full detail)**:
+- `.github/workflows/build-test-publish.yml` never referenced `audit-app/backend` or `audit-app/frontend` — confirmed by direct read, only ever touches `duration-calculator-php/` and `audit-mobile/`.
+- Diffed every engine file, `data/parameters.php`, all four `data/raw/*.csv` parameter files, `db/schema.sql`, and `db/*Repo.php` files against the canonical `duration-calculator-php/`: canonical is strictly ahead everywhere they differ (NACE accent-folding + multi-field search, the BUG-023 two-statement FK fix, `wizard_state_json` persistence, a `debug` config flag) — no unique formula, parameter, or business rule exists only in the archived copy.
+- Frontend: archived copy has 24 files under `src/` vs `audit-mobile/src/`\'s 30, missing `hooks/`/`theme/`/`utils/` entirely — an earlier, smaller iteration; no calculation logic lives in the frontend layer in either version.
+
+**Root README.md**: merged in the still-valid unique content from the now-archived `audit-app/README.md` (GS0106/IAF project description, "why PHP" rationale, quick-start commands), updated to reference canonical paths (`duration-calculator-php/`, `audit-mobile/`) instead of the archived ones. Also corrected a previously-stale claim that the project\'s living docs "live in the deploy repo" — they don\'t and never did; flagged this explicitly rather than silently rewriting project policy.
+
+**Found but NOT reconciled this session — a real bug-ID numbering collision**: `audit-mobile/BUGLOG.md` has its own independent `BUG-001` through `BUG-004`/`BUG-019` numbering that is not the same sequence as `docs/BUGLOG.md`\'s `BUG-001` through `BUG-030`. They reuse identical numbers for different bugs — most importantly, `audit-mobile/BUGLOG.md`\'s `BUG-004` ("wizard save is broken") is the one this file\'s own "Current status" section tracks as the BUG-004; it has nothing to do with `docs/BUGLOG.md`\'s own unrelated `BUG-004` ("`mb_strtolower` undefined"). `BUG-019` is the one case deliberately kept in sync as the same bug in both files. Added prominent warning headers to both `audit-mobile/BUGLOG.md` and `docs/BUGLOG.md` rather than attempting a renumbering pass — renumbering would touch every cross-reference across this file, `ROADMAP.md`, `CHANGELOG.md`, and past commit messages, which is exactly the "uncontrolled rewrite" `REPOSITORY_ARCHITECTURE.md` warns against attempting without dedicated runway. Recommended follow-up for a future session with enough time to verify every cross-reference: renumber `audit-mobile/BUGLOG.md`\'s entries into the `docs/BUGLOG.md` sequence, or formally merge the two logs.
+
+Also flagged, not reconciled: `audit-mobile/ROADMAP.md` is stale — several "not yet built" items (NACE search, case history/detail screens) already exist. Left in place with a warning header rather than guessed-at and edited, since verifying each checklist item against current source would need more time than this session had left after the BUG-030 investigation below.
+
+**Verification that the moves didn\'t break anything**: `grep -rn "audit-app"` across `duration-calculator-php/`, `audit-mobile/src/`, `audit-mobile/*.{ts,tsx,json}`, and `.github/` returned zero hits. The moves were documentation/archival only; no application code was touched.
+
+### PART 2 — BUG-030 found: router bug reopens the NACE-404 finding and puts BUG-004 PUT\'s VERIFIED status in question
+
+While re-running the standard HTTP regression suite as a routine post-reorg sanity check (not expecting to find anything — this was meant to be a quick confirmation), `php tests/http_api_test.php` returned 5 passed, 11 failed, not the 16/16 the fourth session reported for the identical stated command (`php -S 127.0.0.1:8080 api/index.php` — this session used port 8099, otherwise identical). `smoke_test.php` (24/24) was unaffected — this is purely an HTTP routing issue, not a calculation-engine issue.
+
+**Root cause, empirically confirmed via a temporary debug script (written, tested, then deleted — not left in the repo)**: under PHP\'s built-in server in router-script mode, `$_SERVER[\'SCRIPT_NAME\']` reflects the requested path for any path that isn\'t a real file, not the router script\'s own path. `api/index.php` (line 107) uses `dirname($_SERVER[\'SCRIPT_NAME\'])` to strip a deployment-subdirectory prefix, which works by accident for single-segment paths (`/health`, bare `/cases`) but incorrectly strips the first segment off any multi-segment path (`/nace/search` routed as just `search`; `/cases/5` routed as just `5`), causing a 404. Full write-up with the exact debug output: `docs/BUGLOG.md`, BUG-030.
+
+**This directly reopens two things this project has been treating as settled**:
+1. The NACE-404 finding, previously marked "NOT REPRODUCED" by the fourth session — now REOPENED with a concrete mechanism.
+2. BUG-004\'s PUT/Enregistrer "VERIFIED, 16/16" status — the same router bug breaks `PUT/GET/DELETE /cases/:id` too. Not asserting BUG-004\'s actual save/update logic is broken (it very likely isn\'t — this looks like a pure routing-layer issue, and the underlying repo/engine code wasn\'t touched), but the HTTP-contract evidence that was used to call it VERIFIED does not currently reproduce, so that status should be treated as UNCERTAIN, not simply re-asserted or reverted, until reconciled.
+
+**Unresolved and explicitly flagged as unresolved, not guessed at**: why did the fourth session\'s identical-looking command apparently not hit this? Possible explanations logged in BUG-030 (PHP point-version difference, an environment/invocation detail not captured in either write-up, or one of the two sessions\' results simply being wrong) — none confirmed. Do not trust either session\'s result over the other without a fresh, controlled re-run. This is the single most important thing for the next session to resolve before anything else, including before proceeding further with the acceptance gate — see the updated priority order at the top of this file.
+
+**Also newly elevated in priority by this finding**: real Apache/DirectAdmin/`.htaccess` topology testing. Every session to date, including this one, has only ever tested against PHP\'s built-in dev server. If this router bug is present under real Apache mod_rewrite too (untested, unknown either way), production\'s `/cases/:id` and `/nace/*` endpoints may be entirely unreachable — a materially bigger problem than anything currently logged, and one no amount of further built-in-server testing can rule in or out.
+
+**NOT DONE**:
+- The reconciliation re-run (item 1 in BUG-030\'s "NOT DONE" list).
+- Real Apache/.htaccess topology test.
+- Any actual fix to the router — this session only root-caused and documented; per `ORIENTATIONS.md`\'s router/topology dependency rule, a routing fix needs the full HTTP regression suite plus a dedicated NACE-specific and cases-specific pass before being trusted, which didn\'t fit in this session\'s remaining time after the investigation itself.
+- `audit-mobile/` to `src/` rename and internal restructure (remainder of repository architecture consolidation) — not attempted; bigger blast radius than this session\'s remaining runway, same reasoning the fifth session gave for deferring it.
+
+**DEPENDENCY / HAND-OFF for the next developer**: read BUG-030 in `docs/BUGLOG.md` in full before touching `api/index.php`\'s routing, BUG-004, or the NACE routes. Do not re-run the MariaDB/PHP stand-up "to double-check" without a specific reason tied to reconciling the contradiction above — the setup itself (schema import, seed, smoke test) is not in question, only the HTTP routing layer. Do not mark BUG-004 PUT or NACE search/lookup as either fixed or broken without new evidence from item 1 of BUG-030\'s "NOT DONE" list.
+
+### Addendum — merged with a concurrent external architecture review (same session, before push)
+
+While Part 1/2 above were in progress, four commits landed on `origin/main` from an external architecture review (repo renamed `duration_calculator_backend` → `duration_calculator_source`; `REPOSITORY_ARCHITECTURE.md` rewritten with a much larger target structure — `src/frontend/`, `src/backend/{api,engine,data,db}`, `tests/`, a root `Makefile`/`justfile`, `CONTRIBUTING.md`, `RELEASES.md`, `docs/CALCULATION_RULES.md` — and a new `ARCHITECTURE_CORRECTION.md`). Merged cleanly (`git merge origin/main`, one clean auto-merge in `README.md`).
+
+**Reconciled with this session\'s already-committed work**:
+- The new policy explicitly says "do not use `archive/` as a dumping ground... delete, don\'t archive." This session\'s Part 1 had already moved (not deleted) `audit-app/backend`+`frontend` and `audit-mobile/CHANGELOG.md` into `docs/archive/`. Went back and deleted the actual code/duplicate content, keeping only the concise notes (now flat files: `docs/archive/AUDIT_APP_LEGACY.md`, `docs/archive/AUDIT_ENGINE_LEGACY.md` — the latter for the fifth session\'s audit-engine archive, also cleaned up under the same policy). Git history still has every deleted file if ever needed.
+- `ARCHITECTURE_CORRECTION.md` turned out to be a byte-identical duplicate of the new content prepended to `REPOSITORY_ARCHITECTURE.md` — itself an instance of the "multiple competing architecture documents" problem the brief warns against. Collapsed to a one-paragraph pointer file rather than deleted outright, since README already referenced it by name.
+- Fixed a copy-paste bug in the rename commit\'s README wording ("renamed from `duration_calculator_source` to `duration_calculator_source`" — should read `duration_calculator_backend` → `duration_calculator_source`, and now does).
+
+**NOT attempted this session — the larger `src/frontend/`+`src/backend/` restructure**: moving `audit-mobile/` → `src/frontend/` and `duration-calculator-php/` → `src/backend/`, updating every CI/import/deploy-artifact path, and adding `Makefile`/`CONTRIBUTING.md`/`RELEASES.md`/`docs/CALCULATION_RULES.md`. This is explicitly required by the new `REPOSITORY_ARCHITECTURE.md` but is a much bigger, higher-blast-radius change than anything done so far in this consolidation (renames CI-referenced paths, not just docs) — attempting it in the same session as an already-found, unresolved, possibly-production-breaking router bug (BUG-030) risked compounding an unverified state. Left for a dedicated future session with full runway to update every cross-reference and re-run the complete regression suite per file moved, consistent with how the fifth session deferred the `audit-mobile/`→`src/` rename for the same reason. **This is now the top item in "Repository architecture consolidation" for the next session**, ahead of further BUG-030 work if there\'s a choice — though BUG-030\'s production-topology question (item 2 in its "NOT DONE" list) arguably matters more urgently since it may affect whether the live app works at all.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-02 (seventh session)', 'BUG-030 fixed and verified; PUT/NACE routing contradiction reconciled', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-02 (seventh session) — BUG-030 fixed and verified; PUT/NACE routing contradiction reconciled".]
+
+## 2026-09-02 (seventh session) — BUG-030 fixed and verified; PUT/NACE routing contradiction reconciled
+
+**Purpose of this session**: asked to read the logs first, then fix bugs/build features by priority. Per the mandatory pipeline at the top of this file, BUG-030 (router bug, possibly production-breaking) was the top actionable item — ahead of the larger repository-architecture restructure, which the sixth session had already deferred as too large for a single sitting.
+
+**Environment**: sandboxed container, fresh clone, no prior state. `apt-get install php8.3-cli php-mysql php-mbstring php-curl default-mysql-server` succeeded (same `archive.ubuntu.com`/`security.ubuntu.com` access the fourth/sixth sessions had). PHP 8.3.6, MySQL 8.0.46 (client-compatible MariaDB 10.11 stand-in — same caveat as every prior session; no bit-for-bit MariaDB reproduction has been done in any session to date).
+
+**DONE / VERIFIED (real commands, real output, this session)**:
+- Reproduced BUG-030 exactly first: fresh DB stand-up, `php -S 127.0.0.1:8099 api/index.php` from `duration-calculator-php/` → `php tests/http_api_test.php` → **5 passed, 11 failed**, matching the sixth session\'s report precisely.
+- Reconciled the open contradiction (BUG-030 NOT DONE item 1): confirmed via a temporary `_debug.php` (written, tested, deleted) that `$_SERVER[\'SCRIPT_NAME\']` differs depending on whether the `php -S` router-script argument includes a directory component (`api/index.php` → `SCRIPT_NAME` becomes the requested path; bare `index.php` from inside `api/` → `SCRIPT_NAME` becomes `/index.php`). `.github/workflows/build-test-publish.yml` uses the latter form (`working-directory: duration-calculator-php/api`, `php -S 127.0.0.1:8080 index.php`) — this is almost certainly why CI and the fourth session\'s manual run both reported 16/16 while the sixth session\'s differently-invoked run reported 5/16. Full write-up: BUG-030 in `docs/BUGLOG.md`.
+- **Fix**: `duration-calculator-php/api/index.php` routing no longer derives a base path from `dirname($_SERVER[\'SCRIPT_NAME\'])`. Replaced with an explicit `basePath` config key (`config.example.php`, default `\'\'`), documented inline. Removes all dependence on dev-server invocation quirks.
+- Re-ran the full suite after the fix: `smoke_test.php` 24/24 (unaffected, as expected). `http_api_test.php` **16/16**, confirmed under *both* previously-divergent invocation styles (parent-dir `api/index.php` and inside-`api/` `index.php`) — the invocation no longer matters.
+- Simulated the real production URL shape (`basePath = \'/duration_calculator/api\'`) against a scratch config and confirmed `GET .../health`, `.../nace/search`, `.../cases/1` all route correctly with the prefix present.
+- Version bumped `audit-mobile/package.json` 5.1.0 → **5.1.1** (bugfix, per this repo\'s own versioning rule) and cross-referenced in `CHANGELOG.md`.
+
+**NOT DONE / still open**:
+- Real Apache + `.htaccess` topology test — never performed in any session, including this one. Lower risk now than before (routing no longer depends on `SCRIPT_NAME`), but the `.htaccess` deny rules (`.sql`/`.csv`/`.bak` blocking) and the `RewriteRule ^ index.php` dispatch itself remain unverified against a real Apache instance.
+- `audit-mobile/`→`src/frontend/` and `duration-calculator-php/`→`src/backend/` restructure (repository architecture consolidation, remaining scope) — not attempted this session; this is now the top item for the next session per the priority order, since BUG-030 no longer blocks it.
+- No frontend/mobile code was touched this session — this was a backend routing fix only.
+- Not deployed: source-only commit, per the mandatory source/deployment separation rule — CI will build/publish on push.
+
+**DEPENDENCY / HAND-OFF for the next developer**: BUG-030 is closed; do not re-investigate the PUT/NACE contradiction from scratch. Next per the priority order is the repository architecture restructure (`REPOSITORY_ARCHITECTURE.md`\'s "Required target" section) — budget a session with enough runway to update every CI/import/deploy-path reference and re-run the full regression suite per file moved, same reasoning the fifth/sixth sessions gave for deferring it. After that: the user-feedback/acceptance gate.
+
+### 2026-09-02 (eighth session) — Real Apache + `.htaccess` topology test (first time in this project); no application code changed
+
+**Purpose of this session**: asked to read the logs first, then fix bugs/build features by priority. The seventh session\'s own hand-off named the repository architecture restructure as next, but also explicitly carried forward "real Apache + `.htaccess` topology test — never performed in any session" as BUG-030\'s one remaining open item. Chose to close that first: it is small, fully verifiable, and — unlike the restructure — cannot silently break CI or deployment if something goes wrong, matching this project\'s own established practice of preferring the lowest-risk fully-verifiable slice over a large, hard-to-fully-verify change when both are available. The restructure itself was not attempted this session — see hand-off below for why, unchanged from prior sessions\' reasoning.
+
+**Environment**: sandboxed container, fresh clone. `apt-get install apache2 libapache2-mod-php php-cli php-mysql php-mbstring php-curl mariadb-server` succeeded. **New environment finding**: a backgrounded `mariadbd` does not survive past the end of a single tool-call/command invocation in this sandbox regardless of how it\'s started (`service` script, `mysqld_safe`+`nohup`, `start-stop-daemon --background` were all tried) — no crash, it is simply gone by the next invocation. `apache2` does not have this problem. Root cause not fully diagnosed; worked around by running DB stand-up + Apache config + all curl tests inside one single script invocation. Recording this so a future session doesn\'t re-diagnose it from scratch.
+
+**DONE / VERIFIED — full detail in `docs/BUGLOG.md` under BUG-030\'s "UPDATE 2026-09-02 (eighth session)"**:
+- Real Apache 2.4.58 + `mod_rewrite` + `mod_php` (prefork) + real MariaDB 10.11.14 (not the MySQL 8.0 stand-in prior sessions flagged as a caveat), with `duration-calculator-php/` deployed at `/var/www/html/duration_calculator/` and `basePath` set to the real production value `/duration_calculator/api` (not the empty local-dev value every prior session\'s `php -S` testing used).
+- 13/13 checks passed: all 7 routing/CORS checks (including every multi-segment path BUG-030 previously broke), and all 5 `.htaccess` deny-rule checks (`.sql`, `db/*.php`, `.csv`, plus two simulated accidental-leftover-file checks) plus security headers, tested as real HTTP responses from Apache, not reasoned about or simulated.
+- **Critical finding**: re-ran the deny-rule and routing checks with `AllowOverride None` (Apache\'s own shipped default) instead of `AllowOverride All` — `GET /api/health` went from 200 to 404 (API appears entirely dead) and `GET /db/schema.sql` went from 403 to 200 (raw schema file downloads). Confirms this app\'s routing *and* its data-exposure protection both depend entirely on the host granting `.htaccess` override permission, and this has never been confirmed against the real `tools.macerti.com` DirectAdmin host in any session to date.
+
+**NOT DONE / still open**:
+- **Confirming `AllowOverride` (or equivalent) is actually granted on the real production host** — cannot be done from this sandbox; needs either DirectAdmin panel access or a direct test against the live URL. This is now the single most actionable open item from this session — recommend checking it before or alongside the next repository-architecture session, since it\'s independent of that work and takes minutes to confirm on the real host but is otherwise a silent production risk either direction (dead API, or leaking `db/schema.sql` and the NACE/parameter CSVs).
+- Repository architecture restructure (`audit-mobile/`→`src/frontend/`, `duration-calculator-php/`→`src/backend/`, CI/import/deploy-path updates, root `Makefile`/`CONTRIBUTING.md`/`RELEASES.md`/`docs/CALCULATION_RULES.md`) — **still not attempted**, now genuinely the next item per the priority order with no more sub-items blocking it. This remains a large, high-blast-radius change (renames CI-referenced and `postinstall`-referenced paths, not just docs) that every session including this one has judged needs a dedicated session with full runway to update every cross-reference and re-run the complete regression suite per file moved, rather than a partial attempt under a tight turn/context budget.
+- Apache handler used here was `mod_php`; some hosts use PHP-FPM via `mod_proxy_fcgi` instead. `.htaccess`/`mod_rewrite` behavior happens before PHP is invoked either way, so this is not expected to change the findings above, but it is not a literal match to whatever the real host uses.
+- No frontend/browser/device testing this session (unchanged, long-standing gap).
+- No application/source code was changed this session — verification and documentation only, same category as the fourth session\'s entry.
+
+**DEPENDENCY / HAND-OFF for the next developer**: BUG-030 is now fully closed, including its Apache sub-item — do not re-run this specific verification from scratch without a new reason. Two independent next steps, neither blocking the other: (1) confirm real-host `AllowOverride` per the critical finding above — quick, needs host access this sandbox doesn\'t have; (2) the repository architecture restructure — large, needs a dedicated session with full runway, budget accordingly and re-read `REPOSITORY_ARCHITECTURE.md`\'s "Required target" section in full before starting.
+
+### 2026-09-02 (ninth session) — Repository architecture consolidation completed; BUG-031 opened from live production evidence
+
+**Purpose of this session**: explicitly instructed to read the logs first, then continue the repository architecture restructure specifically — four prior sessions in a row (fifth through eighth) had judged it too large and deferred it, with the explicit risk that it never gets done if every session keeps deferring it. Also supplied a phone screenshot of the live production app showing every `/api/...` request 404ing, with the instruction to log it as a bug to fix right after the restructure.
+
+**DONE / VERIFIED — the restructure itself**:
+- `git mv duration-calculator-php src/backend` and `git mv audit-mobile src/frontend` — both as clean renames (git detected them as such; full history preserved, confirmed via `git log --follow`-compatible rename status, not delete+re-add).
+- Updated every real path reference found via `grep -rl` across the repo (correcting an early mistake in that same grep: excluding `.git` with a pattern that also silently swallowed `.github` — caught before it caused missed files): `.github/workflows/build-test-publish.yml` (all `working-directory`/`cache-dependency-path`/artifact-assembly paths, plus a stale `git commit -m "...duration_calculator_backend"` string inside the publish step, missed by the 2026-09-01 repo-rename session — a real stale-reference bug, now fixed), `README.md`, `docs/ORIENTATIONS.md`, `docs/TEST_CHECKLIST.md`, `SECURITY.md`, `REPOSITORY_ARCHITECTURE.md` (added a status note rather than rewriting its spec sections, since they\'re still an accurate description of the now-achieved target), and this file. Historical dated log entries in this file, `docs/BUGLOG.md`, and `CHANGELOG.md` were deliberately left referencing the old paths where they describe what was true *at the time* — only forward-looking/current-state text was updated, to avoid rewriting history into something self-contradictory.
+- Added `Makefile` (`dev-backend`, `dev-frontend`, `test`, `test-http`, `build-deploy`, `clean` — calls the same real tooling CI uses, does not reimplement it), `CONTRIBUTING.md` (points to the four standing docs rather than duplicating them), `RELEASES.md` (source↔deployment-artifact traceability; seeded with real entries by cross-checking this repo\'s log against a fresh clone of `macerti/duration_calculator`\'s log side by side, not invented), `docs/CALCULATION_RULES.md` (index of which engine file implements which protected business rule, compiled only from comments that actually already existed in `src/backend/engine/*.php` plus standing docs — explicitly flags what it does *not* cover rather than implying more rigor than it has).
+- Rewrote `docs/DEPLOY.md`: it had gone stale in a way nobody had caught — it described a two-service topology (separate API subdomain + separate frontend folder) that contradicts the single-folder-on-a-subdomain topology `README.md`/`docs/ORIENTATIONS.md` both describe as current. Rewritten to match reality, with paths updated to `src/backend`/`src/frontend`, and the `basePath` config key documented for the first time (it existed in `config.example.php` since BUG-030\'s fix but `docs/DEPLOY.md` never mentioned it — a real documentation gap, now closed and directly relevant to BUG-031 below).
+- Separately, while verifying `db/schema.sql` firsthand (not just reading it): `docs/DEPLOY.md` said "3 new tables"; running the real schema produces 4 (`clients`, `parameter_sets`, `calculation_cases`, `parameter_change_log`) — fixed. Small, but exactly the kind of drift that only running things for real catches.
+- Two definition-of-done items explicitly deferred, not silently skipped: PHP `tests/` stayed under `src/backend/tests/` rather than moving to a fully top-level `tests/` — the test files\' relative `require`s made co-location the lower-risk choice, matching the spec\'s own "where practical" wording; and work package G (automated CI/repo-hygiene checks) was not attempted.
+
+**Environment**: same sandboxed container pattern as prior sessions. `apt-get install php-cli php-mysql php-curl php-mbstring mariadb-server make` all succeeded (network allowlist for this session included the npm/PyPI/apt domains that the fourth session\'s note said were blocked — that limitation is gone now, at least for this session). **Reconfirmed the eighth session\'s sandbox-tooling finding independently, the hard way**: split a DB-setup+test sequence across separate tool-call invocations and had `mariadbd` silently vanish between them exactly as documented — cost some time before re-reading the eighth session\'s note and switching to the documented workaround (one single chained command per DB-touching sequence). Flagging again, more strongly this time: **read that note before touching MariaDB in this sandbox, it will otherwise cost real time.**
+
+**DONE / VERIFIED — full regression against the moved tree, not just reasoning that it should still work**:
+- `php tests/smoke_test.php` from `src/backend/` → 24/24 (engine layer untouched by path changes, as expected, but verified rather than assumed).
+- Fresh local MariaDB (`audit_test` DB), `db/schema.sql` applied, `seed.php` run successfully against `src/backend/`\'s new location.
+- `php tests/http_api_test.php` against a real `php -S`-served `src/backend/api/index.php` → first run **8 passed, 8 failed**, all 8 failures on mutation routes (`POST /cases`, `PUT /cases/:id`, `GET /cases/:id`) with the server log showing `Call to undefined function mb_strlen()` — this sandbox was simply missing `php-mbstring` (an environment gap, not a code regression: `src/backend/api/index.php` line 77 calls `mb_strlen()` directly with no fallback, unlike `engine/nace.php`\'s deliberate mbstring-optional handling elsewhere in this same codebase — worth a future look at whether `index.php` should be equally defensive, but not chased further this session). After `apt-get install php-mbstring`: re-ran clean → **16/16 passed.**
+- Frontend: `npm ci` succeeded (515 packages, `postinstall`\'s `generate-version.js` ran without error from its new location), `npx tsc --noEmit` → clean, zero errors. `npx expo export --platform web --clear` → succeeded, correct `/duration_calculator` base path applied, produced `dist/` with the expected bundle/assets.
+- `make build-deploy` run end-to-end (not just read) → produces an artifact tree whose top-level file/folder names are identical to a fresh clone of the real `macerti/duration_calculator` deployment repo, confirmed with a direct `diff` of sorted listings (empty diff). Cross-cloning that deployment repo for this comparison was also how `RELEASES.md`\'s entries were sourced — its commit log was read directly, not guessed at.
+- All test-only artifacts (`src/backend/config.php`, `src/frontend/dist/`, `_deploy/`) removed from the working tree before committing — confirmed via `git status` that nothing test-only is staged.
+
+**BUG-031 opened — see `docs/BUGLOG.md` for full reasoning**: the supplied screenshot\'s exact error text (`Not found: GET /duration_calculator/api/clients`) matches `src/backend/api/index.php` line 262\'s own 404-handler string format precisely — meaning PHP executed and the app\'s own router made the 404 decision, not Apache silently refusing the request. This **narrows** BUG-030\'s still-open `AllowOverride` question rather than just restating it: the leading hypothesis is now that the live server\'s actual `config.php` (gitignored, manually maintained, untouched by the deploy pipeline) still has the default empty `basePath`, never updated after BUG-030\'s fix shipped code for it. Cross-referenced against a fresh clone of `macerti/duration_calculator`\'s commit log (timestamps line up with the screenshot\'s own page-footer timestamp almost exactly) to confirm the screenshot was very likely taken against the build that *does* contain the `basePath` mechanism — so this isn\'t stale code, it\'s a config value nobody had reason to know needed manual updating on the live server. Recommended fix is a direct `config.php` edit on the host (no redeploy needed), documented in BUG-031 with the exact verification steps.
+
+**NOT DONE / still open**:
+- BUG-031 itself is not fixed (no access to the live host from this sandbox — same limitation as BUG-030\'s `AllowOverride` item). This is now the single top-priority item for whoever has server access, ahead of the still-separately-open `AllowOverride` confirmation, since BUG-031\'s diagnosis suggests trying the simpler fix first.
+- Work package G (automated CI/repo-hygiene checks) from `REPOSITORY_ARCHITECTURE.md` — not attempted.
+- `src/frontend/ROADMAP.md` and `src/frontend/BUGLOG.md` (formerly `audit-mobile/ROADMAP.md`/`BUGLOG.md`) still carry their own separate, previously-flagged-as-messy numbering/content, now just relocated — not touched this session beyond the move itself; the merge/renumber this was already flagged as needing (see an earlier session\'s note) is still open.
+- No frontend/browser/device testing this session beyond the build succeeding (unchanged, long-standing gap across every session).
+- Did not attempt to independently verify whether `AllowOverride` is *also* wrong on the real host (BUG-030\'s still-open item) — BUG-031 recommends checking `config.php`\'s `basePath` first since it\'s the simpler, more specifically-evidenced fix, with `AllowOverride` as the fallback check if that alone doesn\'t resolve it.
+
+**DEPENDENCY / HAND-OFF for the next developer**: the repository architecture restructure this project deferred for four sessions is done — don\'t re-litigate the `src/frontend`/`src/backend` layout decision, it\'s verified working end to end. The mandatory-pipeline order now has the acceptance gate (item 4) next once BUG-031 and the `AllowOverride` question are resolved — but per the explicit instruction this session was given, **BUG-031 is the immediate next task**, and it needs someone with real access to `tools.macerti.com`\'s file system, which no sandboxed session has ever had. If you\'re that person: `docs/BUGLOG.md`\'s BUG-031 entry has the exact 3-step check. If BUG-031\'s fix alone doesn\'t resolve it, BUG-030\'s `AllowOverride` confirmation (same file, same host access requirement) is the fallback next step. Everything else in the mandatory pipeline is unblocked and ready to resume once those two are settled.
+
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-02 (tenth session)', 'Work Package G (repository hygiene checks) completed', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-02 (tenth session) — Work Package G (repository hygiene checks) completed".]
+
+## 2026-09-02 (tenth session) — Work Package G (repository hygiene checks) completed
+
+**Purpose of this session**: read the logs first, per standing instruction. The restructure itself (this file\'s own priority item 2) was already DONE as of the ninth session and confirmed CI-green (`772a453`, `447a725` both `completed`/`success` via the GitHub Actions API). The one explicitly-deferred piece of that work — work package G, `REPOSITORY_ARCHITECTURE.md` section G — was the only actionable, non-host-blocked item left in the mandatory pipeline (BUG-031 and BUG-030\'s `AllowOverride` question both require real `tools.macerti.com` access no sandboxed session has ever had; see item 3\'s update above). Chose this deliberately over re-touching already-CI-green work.
+
+**Environment**: sandboxed container, fresh clone via a PAT supplied directly in conversation (flagged to Mahdi to rotate it, since pasting a live token into chat isn\'t good practice even though it worked). `apt-get install php-cli` succeeded after an `apt-get update` (first attempt 404\'d on stale package lists — noting in case a future session hits the same transient issue). Node 22/npm already usable without extra setup.
+
+**DONE / VERIFIED**:
+- Added `scripts/check-repo-hygiene.sh` (source-tree checks: `config.example.php` presence, no tracked `config.php`/known secret-token patterns, README presence for `src/backend`+`src/frontend`, no stale pre-restructure path references in tracked code/config) and `scripts/check-deploy-artifact.sh` (assembled-artifact checks: top-level contents match an explicit allowlist, no forbidden files, no vendored `node_modules` dependency tree). Both wired into `Makefile` (`make check-hygiene`; `build-deploy` now runs the artifact check as its last step) and into `.github/workflows/build-test-publish.yml` (one step right after checkout, one right after artifact assembly, before publish). YAML validated with `python3 -c "import yaml; yaml.safe_load(...)"`.
+- **Negative-tested both scripts before trusting them**, not just run-once-and-assume-pass: built a disposable scratch git repo with a tracked `config.php`, missing READMEs, a fake `github_pat_...`-shaped string, and a literal `audit-mobile/...` path reference — all four were caught correctly. For the artifact script, the very first real run against a real `make build-deploy` output **did** catch something, but on inspection it was a false positive (Expo\'s web export legitimately mirrors static asset source paths under `assets/`, which for some fonts/icons happens to include a literal `node_modules` path segment — confirmed via `find ... -name package.json` returning zero hits, i.e. no actual vendored dependency code, just `.png`/`.ttf` files). Fixed the check to specifically look for a `package.json` manifest under any `node_modules`-named dir rather than banning the name outright, and confirmed it now passes on the real artifact and would still catch a genuine vendored-`node_modules` leak.
+- **The hygiene check itself caught four real, previously-unnoticed gaps on its first honest run against the tracked tree**, all fixed this session:
+  1. `src/backend/README.md` did not exist at all — added, describing the `api/`/`engine/`/`data/`/`db/`/`tests/` layout and pointing at `docs/CALCULATION_RULES.md` and the `make dev-backend`/`test`/`test-http` targets.
+  2. `src/frontend/README.md` was untouched since before the restructure: title still said "audit-mobile", described talking to an "`audit-engine` API", and its LAN-IP example used port 4000. Rewritten to reflect `src/backend`, correct terminology, and the note about this folder\'s own separate legacy `BUGLOG.md`/`ROADMAP.md`.
+  3. `src/frontend/src/config/api.ts`: comment said "Resolves the audit-engine API base URL" and `FALLBACK_DEV_URL` was `http://localhost:4000` — but `make dev-backend` (added in the ninth session) actually serves on port 8000. This is a real functional inconsistency for anyone relying on the undocumented fallback (not just wording) — fixed the comment and the port to `8000`, matching the Makefile. Low risk: production always sets `EXPO_PUBLIC_API_URL` explicitly, so this only affects local dev convenience.
+  4. `src/backend/tests/smoke_test.php` had a leftover `audit-mobile` name in an echo-string test label — cosmetic only (a print label, not logic), fixed for accuracy.
+  5. **Not caught by the check itself, but found while investigating why `git add -A` staged far more than expected**: `.gitignore` never listed `_deploy/` (the local build-artifact directory `make build-deploy` produces). A careless `git add -A` would have committed the entire deployment artifact tree into the source repo — a direct violation of this project\'s own "mandatory source/deployment separation" rule in `README.md`. Added `_deploy/` to `.gitignore`. (Caught this manually, not automatically — flagging as a possible future check-6 candidate for work package G, not added this session to keep the change reviewable.)
+- `src/frontend/package.json`\'s `"name"` field renamed from the leftover `"audit-mobile"` to `"duration-calculator-frontend"`. Regenerated `package-lock.json` (`npm install --package-lock-only`, confirmed both the top-level `name` and the `packages[""].name` entry updated), then **verified `npm ci` still succeeds cleanly from a clean `node_modules`** — a name/lockfile mismatch would otherwise make `npm ci` fail exactly the way CI runs it, so this was checked for real, not assumed.
+- Re-verified after all the above: `npx tsc --noEmit` clean (0 errors), `npx expo export --platform web --clear` succeeds, `php tests/smoke_test.php` 24/24 (installed `php-cli` fresh this session to run it directly rather than trusting the one-line label change by inspection alone), full `make build-deploy` end-to-end succeeds and its own new artifact-check step passes.
+- Confirmed via the GitHub Actions API (`api.github.com/repos/macerti/duration_calculator_source/actions/runs`) that the ninth session\'s commits are `completed`/`success` on real CI, not just locally reproduced — this session did not need to re-run the full MariaDB/HTTP regression stand-up to double-check settled work, consistent with this file\'s own repeated guidance against redundant re-verification.
+
+**NOT DONE / still open**:
+- BUG-031 and BUG-030\'s `AllowOverride` question — unchanged, still need real host access (see item 3\'s update above).
+- The `src/frontend/BUGLOG.md`/`ROADMAP.md` numbering-collision/staleness problem, flagged since the sixth session — still not touched. Deliberately not attempted this session to keep work package G reviewable as its own slice; recommend a dedicated session per the sixth session\'s own reasoning.
+- The `_deploy/` `.gitignore` gap found manually above suggests work package G\'s automated checks could be extended with a "no build-output directories are tracked/staged" check — not added this session (would need to enumerate build-output dirs deliberately rather than guess, and this session\'s scope was already the five items `REPOSITORY_ARCHITECTURE.md` explicitly lists). Flagging as a possible future addition, not a gap in what was asked for.
+- No frontend/browser/device testing this session (unchanged, long-standing gap across every session, orthogonal to this session\'s scope).
+- `RELEASES.md` was not updated this session — nothing was deployed (source-only commit; no frontend/backend behavior changed in a way that needs a new deploy for its own sake, per the mandatory source/deployment separation rule). The regular CI publish step will still run for this commit and refresh the deployment artifact\'s docs/config files, which is expected and fine.
+
+**DEPENDENCY / HAND-OFF for the next developer**: work package G is done — all five `REPOSITORY_ARCHITECTURE.md` section-G checks exist, are wired into both local (`make check-hygiene`, `make build-deploy`) and CI workflows, and were negative-tested, not just written and assumed correct. The repository architecture consolidation\'s `REPOSITORY_ARCHITECTURE.md` "Definition of done" list is now fully satisfied except the one deliberately-deferred `tests/`-location item. **Nothing in the mandatory pipeline is actionable from a sandbox right now** — the only two open items (BUG-031, BUG-030\'s `AllowOverride`) both need Mahdi or someone with real `tools.macerti.com` access. If picking this up with continued sandbox-only access: the `src/frontend/BUGLOG.md`/`ROADMAP.md` merge/renumber (flagged repeatedly since the sixth session) is the next unblocked, non-host-dependent piece of real work.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-02 (eleventh session)', 'Bug log collision resolution (BUG-032–035) & CalculationWizardScreen re-confirmation', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-02 (eleventh session) — Bug log collision resolution (BUG-032–035) & CalculationWizardScreen re-confirmation".]
+
+## 2026-09-02 (eleventh session) — Bug log collision resolution (BUG-032–035) & CalculationWizardScreen re-confirmation
+
+**Purpose of this session**: technical-debt pass addressing the long-standing numbering collision between `src/frontend/BUGLOG.md` and `docs/BUGLOG.md`.
+
+**DONE / VERIFIED**:
+- Merged `src/frontend/BUGLOG.md`\'s independent `BUG-001`..`BUG-004` into `docs/BUGLOG.md` as canonical `BUG-032`..`BUG-035`.
+- Re-confirmed `BUG-035` (`CalculationWizardScreen.tsx` wizard-save error handling/retry button) directly in source: `draftSaveError` state and retry button intact.
+- Reduced `src/frontend/BUGLOG.md` to a pointer file to eliminate duplicate maintenance.
+- Flagged stale 2026-08-31 active investigations in `docs/ROADMAP.md` as SUPERSEDED.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-02 (twelfth session)', 'Archive completed roadmap/bug history & establish Top 10 upcoming action queue', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-02 (twelfth session) — Archive completed roadmap/bug history & establish Top 10 upcoming action queue".]
+
+## 2026-09-02 (twelfth session) — Archive completed roadmap/bug history & establish Top 10 upcoming action queue
+
+**Purpose of this session**: user-directed pass to refresh repository status, review past test results, permanently archive completed features and closed bugs into an old history archive, eliminate deferred technical debt, and establish the Top 10 upcoming actions for team priority reorganization.
+
+**DONE / VERIFIED**:
+- **Repository status & hygiene check**:
+  - Ran `git pull` (clean, up to date with `origin/main`).
+  - Executed `scripts/check-repo-hygiene.sh`: all 4 checks passed cleanly (config.example.php, secret scan, source READMEs, no stale paths).
+- **Archived completed history**:
+  - Created `docs/archive/COMPLETED_HISTORY.md` archiving all completed features from v1.0.0 through v5.1.1 and all closed bugs (BUG-001 through BUG-024, BUG-028, BUG-030, BUG-032–034).
+  - Cleaned `docs/ROADMAP.md`: replaced the 30+ struck-through completed items with a direct pointer to `docs/archive/COMPLETED_HISTORY.md`. Marked `FEAT-003` as completed & archived.
+- **Refreshed `docs/DEV_STATUS.md`**:
+  - Replaced stale pre-5.1.0 "Current status" text with the true current status and updated concurrent work map.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-02 (thirteenth session)', 'BUG-031 confirmed resolved on live host & Built In-App Guided Acceptance Test Runner', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-02 (thirteenth session) — BUG-031 confirmed resolved on live host & Built In-App Guided Acceptance Test Runner".]
+
+## 2026-09-02 (thirteenth session) — BUG-031 confirmed resolved on live host & Built In-App Guided Acceptance Test Runner
+
+**Purpose of this session**: PO confirmation of BUG-031 resolution on production server (`tools.macerti.com`), adoption of the PO-defined 3-tier priority framework (P0 / P1 / P2), and implementation of the In-App Guided Acceptance Test Runner and Report Exporter to replace raw markdown checklists.
+
+**DONE / VERIFIED**:
+- **P0 Critical Blockers**: ALL CLEAR.
+  - **BUG-031 CLOSED & VERIFIED**: Confirmed resolved on the live host by Mahdi. Production API is responding normally.
+- **P0/P1/P2 Priority Realignment**:
+  - P0: Critical errors / app down (0 remaining).
+  - P1: Active core to build (Test Runner, Parameter Admin UI, FEAT-001 Synthèse tabs, PDF Export, SSO, Design tokens, Top-level tests).
+  - P2: Reserved for later (Rate limiting, FEAT-004 SEO, Global case list, Extension toggle, Pull-to-refresh).
+- **Component 1 (In-App Guided Acceptance Test Runner & Exporter) — SOURCE-COMPLETE**:
+  - `src/frontend/src/components/testing/testScenarios.ts`: 25+ structured test scenarios derived directly from `docs/TEST_CHECKLIST.md` across 12 functional domains (HOME, CLIENTS, CASES, SITE, NAE, FACTORS, SYNTHESE, REPORT, NAV, RESPONSIVE, SAVE, SECURITY).
+  - `src/frontend/src/components/testing/useTestRunnerState.ts`: LocalStorage-persisted testing state, auto-calculation of progress metrics, and one-click export to Markdown (`RAPPORT_TEST_ACCEPTANCE_YYYY-MM-DD.md`) and JSON (`acceptance_tests_report_YYYY-MM-DD.json`).
+  - `src/frontend/src/components/testing/TestRunnerModal.tsx`: Comprehensive guided testing modal with step instructions, expected outcomes, verification prompts (`✅ PASS`, `❌ FAIL`, `⏭️ SKIP`), observation notes, and floating minimized assistant mode.
+  - `src/frontend/src/components/testing/TestRunnerContext.tsx`: Global context and floating trigger pill accessible anywhere in the application.
+  - `src/frontend/src/screens/HomeScreen.tsx`: Prominent test launch card with live progress bar and direct modal trigger.
+  - `src/frontend/App.tsx`: Wrapped with `TestRunnerProvider`.
+  - Hygiene checks re-verified: `scripts/check-repo-hygiene.sh` (ALL CHECKS PASSED).
+
+**DEPENDENCY / HAND-OFF for the next developer**:
+- The embedded guided test runner is live in `src/frontend/`. Testers can launch it directly from the app, follow the steps, record results, and export standard reports.
+- **Next active P1 tasks**:
+  1. Parameter Admin UI & Dossier Codification (`ParameterAdminScreen.tsx` + API endpoints).
+  2. FEAT-001 (Synthèse per-site tabs & Programme d\'audit Client consolidated view).
+  3. PDF Export of Calculation Report.
+
+
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-02 (fourteenth session)', 'BUG-036: found and fixed a full production outage hiding behind a reported "SSO returns 500"', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-02 (fourteenth session) — BUG-036: found and fixed a full production outage hiding behind a reported "SSO returns 500"".]
+
+## 2026-09-02 (fourteenth session) — BUG-036: found and fixed a full production outage hiding behind a reported "SSO returns 500"
+
+**Purpose of this session**: Mahdi reported that after configuring Azure AD for Microsoft sign-in (redirect URI, client secret/ID in `config.php`, Enterprise App visibility enabled), clicking "Microsoft" returns HTTP 500. Asked for a thorough investigation and a fix.
+
+**What this turned out to be, and how that was established** (see `docs/BUGLOG.md` BUG-036 for full detail — this is a summary of the reasoning path, not a duplicate of the evidence):
+1. Read the reported symptom literally first — checked `src/backend/auth/MicrosoftOAuth.php`, `OAuthSession.php`, and the new `/auth/*` routes in `src/backend/api/index.php` (added in `3396425`, an SSO commit with no corresponding `docs/DEV_STATUS.md` entry from whoever built it — see "Process gap" in BUG-036). Nothing in the OAuth logic itself looked obviously broken on read-through.
+2. Noticed `index.php` now does `require_once __DIR__ . \'/../auth/OAuthSession.php\'` **unconditionally at the top of the file**, before routing. Checked whether the deployment build steps (`Makefile`\'s `build-deploy`, and CI\'s own separately-duplicated copy of the same logic) actually copy `src/backend/auth/` — **they don\'t.**
+3. Confirmed against ground truth, not just the source diff: queried the GitHub API for the actual live deployment repository (`macerti/duration_calculator`)\'s top-level contents — no `auth/` directory exists there. Fetched the deployed `api/index.php` directly and confirmed it\'s byte-identical to the version with the new unconditional require.
+4. Reproduced locally: built an exact replica of the live folder layout (every copy step the *old* Makefile actually runs, `auth/` excluded, matching what\'s really deployed) and ran the router. Got the exact fatal error, for **every route tested**, not just `/auth/microsoft` — `/clients` fatals identically, since the fatal require fires before any routing decision. This is a full API outage, not an SSO-specific bug.
+5. Checked why CI didn\'t catch it: CI\'s regression tests run against `src/backend/` source, never against the assembled `_deploy/` artifact, so a "source has the file, assembly forgot to copy it" bug is invisible to them structurally, not just this once by bad luck.
+
+**DONE / VERIFIED this session**:
+- `Makefile`\'s `build-deploy` and CI\'s "Assemble deployment artifact" step both now copy `src/backend/auth/` into `_deploy/auth/`; CI gained explicit `test -f` assertions for the three new PHP files.
+- `scripts/check-deploy-artifact.sh` (Work Package G, tenth session) extended with a new, deliberately generic check: parses every `__DIR__`-relative `require`/`require_once` in the artifact\'s PHP files and verifies each resolves to a real file inside it. Negative-tested (deleted `auth/` from a copy of a real built artifact, confirmed the check names exactly the three missing files; confirmed clean pass on the correctly-built artifact). This would catch this same class of mistake for any future new backend module, not just this one.
+- Rebuilt the real `_deploy/` end to end via the fixed `make build-deploy` (fresh `npm ci`, `expo export`, full backend copy) — all four artifact checks now pass.
+- Re-ran the exact repro against the fixed artifact: `/auth/microsoft` and `/health` both complete cleanly (no fatal), `/health` returns its normal JSON.
+- Confirmed nothing else regressed: `php tests/smoke_test.php` 24/24, `npx tsc --noEmit` clean, `scripts/check-repo-hygiene.sh` still clean.
+- Logged the full incident, evidence, and fix in `docs/BUGLOG.md` as BUG-036, reclassified P0 in the priority table above (it was being tracked/reported as if it were a narrow P1 SSO issue — it took the whole API down).
+
+**NOT DONE / open — read before assuming this is fully closed**:
+1. **The live host was never directly queried** — no network path from this sandbox to `tools.macerti.com`, and this session\'s web-fetch tool only permits URLs already established earlier via search/fetch (same wall BUG-031 hit). Everything above is inferred from the deployment repository\'s actual committed content plus a faithful local reproduction — about as strong as evidence gets without host access, but not literally "confirmed against the live site responding correctly." **Next step for whoever has host access or can reach the domain: confirm `GET https://tools.macerti.com/duration_calculator/api/health` returns its JSON payload once this session\'s push has gone through the publish pipeline, and do one real Microsoft login click-through end to end.**
+2. SSO\'s substantive correctness beyond "doesn\'t fatal-error" was not deeply verified — this session\'s focus was the outage, not a full SSO audit. Treat Microsoft/Google sign-in as UNVERIFIED, not confirmed working.
+3. Google\'s OAuth path (`GoogleOAuth.php`) was read but not exercised at all this session (Mahdi only reported the Microsoft button) — same "not obviously wrong on read-through, not independently verified" caveat applies.
+4. The process gap that let this ship without a DEV_STATUS entry or artifact-level testing (see BUG-036) is flagged, not fixed — no process/tooling change was made to *require* a session log before merging, since that\'s a workflow decision for whoever owns this project\'s conventions, not something to impose unilaterally.
+
+**Sandbox tooling note, not an app bug** — recorded so the next session doesn\'t re-lose time on it: `php -S` combined with a route that calls `session_start()`, when backgrounded from this sandbox\'s shell tool, intermittently hung indefinitely rather than erroring or responding, even with explicit `timeout` wrappers on the client side. Worked around by invoking the router script directly via CLI with `REQUEST_METHOD`/`REQUEST_URI` env vars instead of starting a real dev-server socket — gives a clean pass/fail on whether a route fatal-errors without needing a live connection.
+
+**DEPENDENCY / HAND-OFF**: the source-side fix is complete and pushed (see commit below). Do not re-diagnose this from scratch — the root cause, evidence, and fix are all in BUG-036. What\'s left is entirely host/browser-side confirmation (points 1–3 above), which needs either Mahdi or a session with real network/device access, not another sandbox investigation.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-02 (fifteenth session)', 'BUG-037: fixed a frontend bug that was masking SSO\'s real failure; root cause still not identified, needs one piece of live evidence', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-02 (fifteenth session) — BUG-037: fixed a frontend bug that was masking SSO\'s real failure; root cause still not identified, needs one piece of live evidence".]
+
+## 2026-09-02 (fifteenth session) — BUG-037: fixed a frontend bug that was masking SSO\'s real failure; root cause still not identified, needs one piece of live evidence
+
+**Purpose of this session**: Mahdi reported that after BUG-036\'s fix, clicking "Continue with Microsoft" now reaches Microsoft\'s account picker (confirming BUG-036\'s outage fix is working live) — but after selecting an account, he\'s bounced back to the login screen with no error shown.
+
+**Investigation path**:
+1. Read `src/backend/api/index.php`\'s `/auth/callback/microsoft` route, `OAuthSession.php`, `MicrosoftOAuth.php` in full.
+2. Confirmed the frontend (`useAuth.ts`) *does* already check for `?auth_error=` in the URL and *does* set an `error` state that `LoginScreen.tsx` *does* render in a banner — so the display mechanism exists. But traced the exact execution order and found `fetchMe()`\'s first line (`setError(null)`) runs synchronously in the same tick as the `setError(authError)` call right above it in the mount effect — React batches same-tick `setState` calls to one value into the last write, so the detected error was always being erased before a single paint. This is a definite bug, not a hypothesis, confirmed by reading the code and reasoning through React\'s batching semantics.
+3. Fixed it: `fetchMe()` now takes `{ preserveError, sawAuthOk }` options; the mount effect passes `preserveError: true` when it just found `auth_error`, and additionally now explicitly checks for `?auth=ok` (the callback\'s success redirect) so that a "looks like it worked server-side but `/auth/me` still says 401 right after" case — previously indistinguishable from a normal logged-out visit — now shows its own explicit message instead of silence.
+4. Went looking for other candidate root causes before concluding: checked `src/backend/api/.htaccess` for query-string-loss on the rewrite to `index.php` (`[QSA,L]` confirmed correct, and confirmed this file is actually present in the built `_deploy/api/` by rebuilding and checking directly, not just assuming from the Makefile); checked whether the reported symptom (reaching Microsoft\'s account picker) is consistent with a redirect-URI-registration mismatch (it isn\'t — Microsoft would show its own `AADSTS50011` error page before any sign-in UI if that were wrong, so reaching the picker rules this out); checked that `/auth/microsoft` and `/auth/callback/microsoft` compute the same `redirect_uri` from the same config value (they do, so no internal inconsistency there).
+
+**DONE / VERIFIED**:
+- `src/frontend/src/hooks/useAuth.ts` fixed (see BUG-037 in `docs/BUGLOG.md` for the full before/after). `npx tsc --noEmit` clean. Full `make build-deploy` end to end succeeds, all 4 artifact checks pass, `php tests/smoke_test.php` 24/24, `scripts/check-repo-hygiene.sh` clean.
+- Confirmed (not assumed) that `src/backend/api/.htaccess` is actually copied into the deployed artifact by rebuilding `_deploy/` fresh and listing `_deploy/api/.htaccess` directly.
+
+**NOT DONE / open**:
+- The actual reason the session doesn\'t stick after Microsoft\'s callback is **not identified**. Narrowed to two candidates in `docs/BUGLOG.md` BUG-037 (session-persistence on this shared host vs. a wrong Azure client-secret value), each of which would now show a *different, distinguishable* on-screen message thanks to this session\'s fix. **The next step is purely evidentiary, not investigative**: retry the sign-in once with this fix live and report back the exact banner text (or address-bar query string if there\'s no banner). Do not attempt to fix either candidate blind — that risks masking which one it actually was.
+- Google\'s flow (`GoogleOAuth.php`) still entirely unexercised — Mahdi has only tried Microsoft so far.
+
+**DEPENDENCY / HAND-OFF**: this session\'s fix is a real, standalone improvement (any future OAuth failure is now visible, not just this specific bug) — do not revert or "simplify" the `preserveError`/`sawAuthOk` logic without understanding why it\'s there (see BUG-037). The blocking next step needs Mahdi (or anyone who can see the actual browser/host) to report one specific piece of evidence — everything after that point should be fast. Do not re-read `MicrosoftOAuth.php`/`OAuthSession.php` from scratch next session; the two remaining candidates and exactly how to tell them apart are already fully written up in BUG-037.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-03 (sixteenth session)', 'BUG-038: the "invalid_request" banner was Microsoft\'s own error arriving correctly — fixed the real bug (we were discarding `error_description`, the only part that actually explains anything), root cause of the rejection itself still open', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-03 (sixteenth session) — BUG-038: the "invalid_request" banner was Microsoft\'s own error arriving correctly — fixed the real bug (we were discarding `error_description`, the only part that actually explains anything), root cause of the rejection itself still open".]
+
+## 2026-09-03 (sixteenth session) — BUG-038: the "invalid_request" banner was Microsoft\'s own error arriving correctly — fixed the real bug (we were discarding `error_description`, the only part that actually explains anything), root cause of the rejection itself still open
+
+**Purpose of this session**: Mahdi retried Microsoft sign-in with BUG-037\'s fix live and reported the result asked for: banner reads `⚠ invalid_request`.
+
+**Read first, before doing anything else**: this is genuinely fast to finish once the next report comes in — do not re-open the investigation from scratch. Everything needed to interpret the next retry is already written up in BUG-038 in `docs/BUGLOG.md`. The one-line summary: BUG-037\'s fix works (proven — the banner rendered, live, for the first time). What it displayed was Microsoft\'s own bare error code, because our callback route was silently throwing away `error_description` — the field with the actual explanation. That\'s now fixed. The *reason* Microsoft is rejecting the request is still unknown.
+
+**Investigation path**:
+1. Grepped the whole tree for the literal string `invalid_request` — zero matches in any of our own PHP/TS/TSX. Confirmed this could only be Microsoft\'s own `error` query param, forwarded verbatim by `src/backend/api/index.php`\'s callback route.
+2. Read that route\'s error branch: `$error = $_GET[\'error\'] ?? \'\'; if ($error) { ...forward $error only... }` — `$_GET[\'error_description\']` was never read anywhere in the file (confirmed by grep). This is the actual bug: not "SSO is broken" but "we can\'t see why SSO is broken."
+3. Researched why Microsoft would return `invalid_request` specifically *after* the account picker renders (ruling out the already-eliminated redirect-URI-mismatch explanation from BUG-037, which would show *before* the picker). Found two plausible, evidence-backed candidates (Azure app registration\'s redirect URI platform type — SPA vs. Web — being one) — written up in full in BUG-038, explicitly labeled as unconfirmed hypotheses, not a diagnosis. Did not act on either.
+4. Fixed the discard bug in both the Microsoft and Google callback branches (Google gets identical treatment for consistency and because Mahdi will eventually test it too).
+5. Before calling this done, traced the fix all the way through to the frontend rather than stopping at "the PHP side looks right" — this caught a second, independent bug: `useAuth.ts` was calling `decodeURIComponent()` on a value `URLSearchParams.get()` had already fully decoded. Harmless for the old two fixed-vocabulary error codes (never contain `%`), but a free-form `error_description` containing a literal `%` not followed by two hex digits would throw an uncaught `URIError`, crashing the effect instead of showing the banner it was just fixed to show. Fixed by removing the redundant decode rather than extending it to the new field.
+
+**DONE / VERIFIED**:
+- `src/backend/api/index.php`: both callback routes now capture, log (`error_log()`, same `[duration_calculator] ... OAuth error` prefix already established), and forward `error_description` as a new `auth_error_description` param.
+- `src/frontend/src/hooks/useAuth.ts`: banner now renders `<code>: <description>`; removed the latent double-decode bug described above.
+- Version bumped 5.1.3 → 5.1.4 (`src/frontend/package.json`; bugfix `z` bump per `CHANGELOG.md` convention).
+- `npx tsc --noEmit` clean. `php -l` clean on every touched PHP file. `php tests/smoke_test.php` 24/24 (unchanged — this session touched only the auth callback paths, not the engine). `scripts/check-repo-hygiene.sh` clean, including its secret-token-pattern scan (relevant this session given a GitHub PAT was pasted into the requesting chat — flagged to Mahdi directly, not something this scan would have caught anyway since the token was never written to a tracked file, but confirmed clean regardless). Full `make build-deploy` succeeds end-to-end, all 4 artifact checks pass; confirmed the fix is actually present in the assembled `_deploy/api/index.php` by grepping the built artifact directly, not assuming from the Makefile.
+- Runtime-verified the redirect/decode logic three independent ways (this sandbox\'s CLI can start the router directly but `headers_list()` returns nothing under CLI SAPI — see tooling note below, so header inspection needed a workaround):
+  1. Direct CLI invocation of the real `api/index.php` router against a simulated `?error=invalid_request&error_description=AADSTS9002326...` callback: confirmed the new `error_log()` line fires with the full code+description, and the process exits with response code 302 (redirect issued, no crash).
+  2. Isolated the six-line redirect-URL-building block into a standalone PHP snippet with the same inputs: confirmed the exact `Location:` string and its URL-encoding.
+  3. Fed that exact URL into a real Node.js `URLSearchParams` (not a PHP approximation of JS behavior): confirmed the frontend decodes it back losslessly, including a deliberately-injected literal `%` in the description (e.g. "...100% confirmed.") — this reproduces the crash under the *old* double-decode code and confirms it\'s gone under the fix.
+
+**NOT DONE / open — read before assuming this is fully closed**:
+1. **Why Microsoft is rejecting the request is still not identified.** This session made the reason visible for the first time; it did not yet see it, since no host/browser access exists from this sandbox (same wall as BUG-030/031/036/037).
+2. Google\'s callback got the identical fix but is still completely unexercised — Mahdi has only ever attempted Microsoft.
+3. Do not guess-fix the SPA-vs-Web platform-type hypothesis (or the other candidate in BUG-038) without the `error_description` text confirming it. This project\'s own established pattern (BUG-037) explicitly warns against exactly this.
+
+**Sandbox tooling note, not an app bug** — recorded so the next session doesn\'t re-lose time on it: `headers_list()` returns an empty array under PHP\'s CLI SAPI even right after real `header()` calls execute cleanly — there\'s no HTTP response transport for CLI to record against. Distinct from the already-documented `php -S`+`session_start()` hang (BUG-036\'s note): that\'s about starting a dev-server socket, this is about introspecting headers from a direct CLI `require` of the router. Don\'t expect `headers_list()` to show anything when direct-invoking the router this way; isolate the string-building logic instead (verification method 2 above) or check exit codes / `$_SERVER` state rather than headers.
+
+**DEPENDENCY / HAND-OFF**: fix is committed and pushed to `main` (source repository — see `CHANGELOG.md` 5.1.4 and the commit referenced there). Per the mandatory source/deployment separation rule, this is **not yet published** to `macerti/duration_calculator` — that happens via CI on push to `main`; confirm the publish workflow has actually completed (check `macerti/duration_calculator`\'s latest commit / Actions run) before asking Mahdi to retry, or he\'ll see the old bare-code banner and we\'ll have wasted his retry. The next step is purely evidentiary: retry Microsoft sign-in once the artifact is live, and report the full banner text verbatim (it will now include a real AADSTS explanation). Do not re-derive today\'s two candidate hypotheses from scratch — they\'re fully written up in BUG-038, ready to be confirmed or eliminated by that one piece of evidence.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-03 (seventeenth session)', 'BUG-038 root cause confirmed (AADSTS9002325, Azure Portal config, not code) & BUG-037 resolved by the same evidence; started Technical Debt #6 (design token migration) — 1 of 9 files done; logged new FEAT-005 request unevaluated per explicit instruction', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-03 (seventeenth session) — BUG-038 root cause confirmed (AADSTS9002325, Azure Portal config, not code) & BUG-037 resolved by the same evidence; started Technical Debt #6 (design token migration) — 1 of 9 files done; logged new FEAT-005 request unevaluated per explicit instruction".]
+
+## 2026-09-03 (seventeenth session) — BUG-038 root cause confirmed (AADSTS9002325, Azure Portal config, not code) & BUG-037 resolved by the same evidence; started Technical Debt #6 (design token migration) — 1 of 9 files done; logged new FEAT-005 request unevaluated per explicit instruction
+
+**Purpose of this session**: read the logs first, per standing instruction. Mahdi reported the exact retry banner text the sixteenth session was waiting on: `⚠ invalid_request: Proof Key for Code Exchange is required for cross-origin authorization code redemption.` Per the mandatory pipeline, this was the top-priority item — everything else in the pipeline was either already clear (P0) or explicitly waiting on this exact piece of evidence. After finishing that, moved to technical debt per explicit standing instruction not to keep deferring it. Mid-session, Mahdi asked for the production redirect URI (to apply the fix himself) and to log a new P1 feature request verbatim without evaluation, then push.
+
+**DONE / VERIFIED — BUG-038/BUG-037**:
+- Identified the banner text as Microsoft\'s own AADSTS9002325, cross-confirmed against multiple independent, unrelated real-world reports (Microsoft Q&A ×2, Microsoft Tech Community, Auth0 Community, a GitHub issue on an unrelated project, a langfuse discussion) — all converge on the same cause and fix, not a single anecdotal match.
+- Confirmed via `grep -rn "code_challenge|code_verifier|PKCE"` across `src/backend` and `src/frontend` — zero matches anywhere in this codebase, consistent with `MicrosoftOAuth.php`\'s `microsoftHandleCallback()` being a genuine confidential/server-side exchange (client_secret via `curl`, not a browser-initiated call).
+- Root cause: the redirect URI is registered in Azure Portal under **"Single-page application"** instead of **"Web"** — Entra ID enforces PKCE for any redirect URI registered as SPA regardless of how the code is actually redeemed. Documented in full, with the exact Azure Portal fix steps, in `docs/BUGLOG.md` BUG-038. This is a **Portal configuration fix, not a code fix** — cannot be applied from this sandbox.
+- Confirmed the exact production redirect URI value from `src/backend/api/index.php` line 303 (`$config[\'app_url\'] . \'/api/auth/callback/microsoft\'`) combined with `config.example.php`\'s documented `app_url` (`https://tools.macerti.com/duration_calculator`): **`https://tools.macerti.com/duration_calculator/api/auth/callback/microsoft`**. Relayed directly to Mahdi in-conversation (flagged that this assumes the live `config.php`\'s `app_url` still matches the documented value).
+- **This also resolves BUG-037**: its two remaining candidates (session-persistence, wrong client-secret) are both ruled out by this evidence — neither produces Microsoft\'s own `invalid_request` code (confirmed by grep in the sixteenth session that this string is never our own). Cross-referenced BUG-037 → BUG-038 in `docs/BUGLOG.md` rather than leaving it as a separate open mystery.
+- **Small source hardening added** (not required, but low-risk and directly useful): `src/frontend/src/hooks/useAuth.ts` now recognizes the literal string `AADSTS9002325` in `error_description` and appends a one-line pointer to the known cause/fix, so a future regression of the same config mistake (e.g. Google\'s app registration getting the same platform-type mistake later) is immediately actionable from the banner alone.
+- Version bumped 5.1.4 → 5.1.5 (`src/frontend/package.json`, lockfile regenerated via `npm install --package-lock-only`, re-verified with a clean `rm -rf node_modules && npm ci` that it still installs and typechecks cleanly). `CHANGELOG.md` updated.
+- Verified: `npx tsc --noEmit` clean, `php -l src/backend/api/index.php` clean, `php tests/smoke_test.php` 24/24 (unaffected — no engine code touched), `scripts/check-repo-hygiene.sh` clean.
+
+**DONE / VERIFIED — Technical Debt #6 (design token migration), started but not finished**:
+- Audited the actual current state rather than trusting this file\'s own prior "remaining 12" figure: `grep -rln "StyleSheet.create" | xargs grep -L "theme/tokens"` across all of `src/frontend/src` (components + screens) found **9 files**, not 12 — `AutreFactorList.tsx`, `Breadcrumbs.tsx`, `DualSectorPicker.tsx`, `FactorPicker.tsx`, `RoundingStepper.tsx`, `SegmentedPicker.tsx`, `StandardConfigPanel.tsx`, `StatusPill.tsx`, `StepTabs.tsx`, `SynergyPanel.tsx`, `Toast.tsx`, `VersionFooter.tsx`, `CalculationWizardScreen.tsx`, `HomeScreen.tsx`, and `LoginScreen.tsx` were already migrated by a prior session (this file\'s own "remaining 12" wording was stale, not wrong in spirit — flagging so the next session doesn\'t propagate the stale number further). **The true remaining list is 9 files**: `ErrorBoundary.tsx`, `ResponsiveContainer.tsx`, `PersonnelForm.tsx`, `NumberField.tsx`, `NaceSearchField.tsx`, `TextField.tsx`, `CalculationReportScreen.tsx`, `ClientDetailScreen.tsx`, `ClientsListScreen.tsx`.
+- Migrated **1 of 9**: `src/frontend/src/components/TextField.tsx`. Followed the exact substitution precedent already established by prior migrations (confirmed by grep before writing anything, not invented): `fontSize: 13, color: "#444"` → `typography.body, colors.contentSecondary` (same substitution used verbatim in `DualSectorPicker.tsx`/`RoundingStepper.tsx`/`SegmentedPicker.tsx`); `"#ddd"` border → `colors.borderDefault`; `borderRadius: 8` → `radius.md`; `"#999"` → `colors.contentQuaternary` (exact hex match); `12`/`4` spacing → `spacing.md`/`spacing.xs` (exact token matches); `10` padding → `spacing.sm + 2` (the established idiom in this codebase for values between adjacent tokens, e.g. `AutreFactorList.tsx`/`DualSectorPicker.tsx`); `fontSize: 15` → `typography.subtitle` (exact match). Verified `npx tsc --noEmit` clean after the change, in isolation and again in the final full-repo check.
+- **NOT DONE**: the other 8 files. `NumberField.tsx` is TextField\'s near-identical sibling (same exact style block, byte-for-byte in the parts that matter) — this session read it and confirmed the same substitutions apply directly, but ran out of turn budget before applying them; this should be the fastest possible next step for whoever picks this up, not a fresh investigation. The 3 screen files (`CalculationReportScreen.tsx` 321 lines, `ClientDetailScreen.tsx` 235 lines, `ClientsListScreen.tsx` 219 lines) are meaningfully larger and were not started at all — budget a dedicated pass for those rather than rushing them.
+- Updated `docs/ROADMAP.md` P1 #6\'s file list is still the old "remaining 12" wording — **not corrected this session** (out of scope creep for a session already juggling three concurrent asks; flagging here rather than silently leaving two docs disagreeing). Next session correcting either DEV_STATUS or ROADMAP\'s count should fix both together.
+
+**DONE — new feature request logged, deliberately unevaluated**:
+- Added **FEAT-005** (`docs/ROADMAP.md` P1 #8, cross-referenced in this file\'s P1 list and concurrent work map): "database migration so that if there is update in tables its enough to push so that github action update the database structure if needed" — Mahdi\'s own words, recorded verbatim per his explicit instruction not to evaluate or scope it this session. Pointed whoever picks it up at `docs/DEPLOY.md`, `db/schema.sql`, and `docs/ORIENTATIONS.md` as the required reading before proposing an approach, since this project has a strict mandatory source/deployment separation rule that any auto-migration design will need to reconcile with.
+
+**NOT DONE / open**:
+1. BUG-038\'s Azure Portal fix itself and the confirming retry — needs Mahdi, not this sandbox (see above).
+2. 8 of 9 design-token-migration files (see above).
+3. FEAT-005 — not designed at all, intentionally (see above).
+4. Google\'s OAuth flow — still completely unexercised, unchanged across every session.
+
+**DEPENDENCY / HAND-OFF for the next developer**: BUG-038/BUG-037 are both fully diagnosed and require no further sandbox investigation — only Mahdi\'s Portal action and a retry report. Do not re-open either. For technical debt #6, `NumberField.tsx` is the fastest next step (same fix as `TextField.tsx`, already read and confirmed identical), then the 3 larger screens as a separate, dedicated pass. For FEAT-005, start from `docs/DEPLOY.md`/`db/schema.sql`/`docs/ORIENTATIONS.md`, not from scratch.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-03 (eighteenth session)', 'BUG-039: `callback_failed` after the BUG-038 Azure Portal fix; fixed the same "diagnostic detail discarded" shape one layer deeper. Technical debt #6: NumberField.tsx done (2/9)', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-03 (eighteenth session) — BUG-039: `callback_failed` after the BUG-038 Azure Portal fix; fixed the same "diagnostic detail discarded" shape one layer deeper. Technical debt #6: NumberField.tsx done (2/9)".]
+
+## 2026-09-03 (eighteenth session) — BUG-039: `callback_failed` after the BUG-038 Azure Portal fix; fixed the same "diagnostic detail discarded" shape one layer deeper. Technical debt #6: NumberField.tsx done (2/9)
+
+**Purpose of this session**: Mahdi applied BUG-038\'s Azure Portal fix (redirect URI moved from "Single-page application" to "Web") and retried Microsoft sign-in. Reported: account selection and consent now complete (confirming BUG-038\'s diagnosis was correct), but the app then shows `⚠ callback_failed`. Asked to read the logs first, fix bugs by priority, and push with updated logs regardless of how much code changes — read `docs/DEV_STATUS.md` (this file) and `docs/BUGLOG.md`\'s BUG-036/037/038 chain in full before touching anything, per standing instruction not to re-derive already-settled reasoning.
+
+**Environment**: sandboxed container, fresh clone via a PAT supplied directly in the requesting chat (same as the tenth session\'s note — flagged again: pasting a live token into chat isn\'t good practice; recommend rotating it). `apt-get install php-cli php-mbstring php-curl` then, separately, `php-mysql` (the PDO MySQL driver — its absence caused an initial `could not find driver` false start, noting so a future session doesn\'t re-diagnose that as a config problem) all succeeded via `archive.ubuntu.com`/`security.ubuntu.com`. `default-mysql-server` (MySQL 8.0.46, the same MariaDB-10.11-compatible stand-in every session since the fourth has used, with the same caveat: not bit-for-bit identical to production MariaDB) also installed successfully.
+
+**Investigation path**:
+1. `grep -rn "callback_failed"` across the tree — confirmed this string is entirely our own (two hits in `api/index.php`, one comment in `useAuth.ts`), never a Microsoft/Google error code. This immediately ruled out "the Azure fix didn\'t fully take" as an explanation and pointed at our own `catch (\\Throwable $e)` blocks instead.
+2. Read `src/backend/api/index.php`\'s two OAuth callback routes and `MicrosoftOAuth.php`/`GoogleOAuth.php` in full. Found the catch blocks only ever did `error_log(...)` + a bare `?auth_error=callback_failed` redirect — the real `$e->getMessage()` (Microsoft\'s token-endpoint error body, or a curl transport error, per `_microsoftHttpPost()`/`_microsoftHttpGet()`) was never forwarded to the client. Structurally identical to BUG-038\'s own root cause, one call deeper in the same request.
+3. Checked whether this exact scenario had already been anticipated anywhere in the log history before treating it as a fresh finding: BUG-037\'s original (superseded) writeup already named this precisely as candidate 2 ("wrong client secret... would show as `?auth_error=callback_failed`"), never confirmed or ruled out, just shelved when BUG-038 turned out to be the more immediate blocker. Carried this forward as the leading unconfirmed hypothesis rather than re-deriving it or presenting it as new.
+
+**DONE / VERIFIED**:
+- `src/backend/auth/OAuthSession.php`: added `oauthClientSafeErrorDetail()` (400-char cap, ellipsis-truncated), documented inline against the same safety reasoning `SECURITY.md` already accepted for BUG-038.
+- `src/backend/api/index.php`: both callback catch blocks now forward `oauthClientSafeErrorDetail($e->getMessage())` as `auth_error_description` alongside the existing `auth_error=callback_failed`. Confirmed **no frontend change was needed** — `useAuth.ts`\'s banner logic (built for BUG-038) already renders `auth_error_description` generically for any `auth_error` value; re-read it this session to confirm rather than assume.
+- `php -l` clean on all four touched/adjacent PHP files.
+- Isolated the new redirect-URL-building logic in a standalone snippet (this sandbox\'s CLI SAPI can\'t introspect real headers — confirmed again this session, same as BUG-038\'s note) with a realistic `invalid_client`/AADSTS7000215 payload: confirmed correct `Location:` construction, lossless round-trip decode via `parse_str()`, and correct ellipsis-truncation at the cap (had to fix my own verification script\'s false-negative first — `substr($s,-1)` doesn\'t catch a 3-byte UTF-8 ellipsis; used `str_ends_with($s, "\\xe2\\x80\\xa6")` instead. Not a bug in the shipped code, a bug in my first verification attempt — noting so a future session doesn\'t repeat it.).
+- Full local regression: `php tests/smoke_test.php` **24/24**. `php tests/http_api_test.php` **16/16** against a real `php -S` instance — but only after rediscovering, the hard way, that this sandbox\'s backgrounded-process-doesn\'t-survive-between-tool-calls limitation (documented since the eighth/ninth sessions for `mariadbd`) applies to `php -S` too: a server started in one tool call is gone by the next one (`status=0`/connection-refused on every request), even though it answered a manual `curl` fine moments earlier in the *same* call. Fixed by running server-start + `sleep` + the full test suite in one single shell invocation, exactly the established workaround. **Recording this explicitly against `php -S`, not just `mariadbd`, for the next session.**
+- Direct CLI-invocation spot checks (`REQUEST_METHOD`/`REQUEST_URI` env vars) on `/health`, `/nace/01`, `/clients` (GET), `/auth/microsoft` — all correct, confirming the new `use function` import doesn\'t disturb anything else. **New caveat found and recorded for future sessions**: PHP\'s CLI SAPI does not populate `$_GET` from `REQUEST_URI` — a CLI-direct check of `/nace/search?q=...` will falsely report the query param missing (got `{"error":"query param \'q\' is required"}` even though the URI had it). This is a limitation of the CLI-direct verification method itself, not a route bug — confirmed by testing `/nace/01` (path-segment based, no `$_GET` dependency) successfully in the same batch. Use the live-server method for anything reading `$_GET`.
+- `scripts/check-repo-hygiene.sh`: all 4 checks pass.
+- Version bumped 5.1.5 → **5.1.6** (`src/frontend/package.json`, lockfile regenerated via `npm install --package-lock-only`, re-verified with a clean `rm -rf node_modules && npm ci` that it still installs and typechecks cleanly, matching the seventeenth session\'s own established re-check habit). `CHANGELOG.md` updated.
+- **Technical Debt #6, opportunistic**: `src/frontend/src/components/NumberField.tsx` migrated to `theme/tokens.ts` — identical substitutions to the already-migrated `TextField.tsx` sibling (confirmed line-for-line before applying, as the seventeenth session\'s hand-off recommended). `npx tsc --noEmit` clean, `npx expo export --platform web --clear` succeeds. Migration is now **2 of 9** files done; remaining: `ErrorBoundary.tsx`, `ResponsiveContainer.tsx`, `PersonnelForm.tsx`, `NaceSearchField.tsx`, and the three larger screens (`CalculationReportScreen.tsx`, `ClientDetailScreen.tsx`, `ClientsListScreen.tsx`) — the last three still need a dedicated pass, per every prior session\'s own sizing note.
+
+**NOT DONE / open — read before assuming this is closed**:
+1. **The actual reason Microsoft\'s token exchange is failing is still not identified.** This session made the reason visible; it did not see it. Same wall as every SSO bug before it — no host/browser access from this sandbox.
+2. Leading unconfirmed hypothesis (wrong client secret — Secret ID vs Secret Value) is carried forward from BUG-037, not newly derived, and is **not** confirmed. Do not act on it or any other candidate without the `auth_error_description` text.
+3. Google\'s callback got the identical fix for consistency but remains completely unexercised.
+4. `make build-deploy` / full artifact-check pass was **not** re-run this session after this specific fix (time budget) — backend regression, frontend build, and hygiene check were each verified independently instead, but the full assembled-artifact check (Work Package G\'s completeness check) was not re-executed against this exact commit locally. Low risk (no new files, no new `require` targets), but a real gap, not an oversight to hide — CI\'s own run of `build-test-publish.yml` will exercise it.
+5. 7 of 9 design-token-migration files remain (see above) — the 3 larger screens deserve their own dedicated pass, not a rushed attempt appended to this one.
+
+**DEPENDENCY / HAND-OFF for the next developer**: do not re-derive BUG-039\'s root-cause reasoning from scratch — it\'s fully written up in `docs/BUGLOG.md` BUG-039, ready to be confirmed or eliminated by one piece of evidence (the next retry\'s `auth_error_description` text or the matching PHP error-log line). The two sandbox-tooling notes above (`php -S` process survival, CLI SAPI not populating `$_GET`) are worth reading before the next round of backend verification — both cost real time this session. Confirm the CI publish to `macerti/duration_calculator` has completed before asking Mahdi to retry, same standing rule every SSO-fix session has followed since BUG-036.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-03 (nineteenth session)', 'BUG-039 root cause CONFIRMED and FIXED: Microsoft sign-in\'s OAuth scope never requested Graph\'s `User.Read` permission', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-03 (nineteenth session) — BUG-039 root cause CONFIRMED and FIXED: Microsoft sign-in\'s OAuth scope never requested Graph\'s `User.Read` permission".]
+
+## 2026-09-03 (nineteenth session) — BUG-039 root cause CONFIRMED and FIXED: Microsoft sign-in\'s OAuth scope never requested Graph\'s `User.Read` permission
+
+**Purpose of this session**: Mahdi retried Microsoft sign-in with the eighteenth session\'s diagnostic fix live, per that session\'s own hand-off instruction, and reported back the exact evidence asked for: `⚠ callback_failed: Microsoft Graph did not return required user fields: {"error":{"code":"Authorization_RequestDenied","message":"Insufficient privileges to complete the operation."...}}`. Asked (again, standing instruction) to read the logs first, fix bugs by priority, update logs regardless of code-change size, and push. Read this file\'s header, the BUG-039 entry in `docs/BUGLOG.md` in full, and both `MicrosoftOAuth.php`/`GoogleOAuth.php` before touching anything, per the eighteenth session\'s explicit hand-off not to re-derive settled reasoning.
+
+**Environment**: same sandboxed container/session as the eighteenth session (PHP 8.3, MySQL 8.0.46 stand-in, node/npm already set up from before) — `git fetch`/`git pull` confirmed no other dev session had pushed since the eighteenth session\'s `4999dcf`, so continued directly on the existing clone rather than re-cloning.
+
+**Investigation path**:
+1. Confirmed the reported error is exactly the shape predicted in BUG-039\'s writeup (`Microsoft Graph did not return required user fields: ` + Graph\'s JSON error body) — i.e. the token exchange succeeded, and the failure is specifically Graph rejecting the `/me` call.
+2. Re-read `MicrosoftOAuth.php` in full (not from memory — this session started fresh) and immediately spotted the actual bug on inspection: `microsoftBuildAuthUrl()`\'s `scope` parameter was `openid profile email`, which are pure OIDC scopes. Confirmed against known Microsoft Graph/Entra behavior that these do **not** grant Graph API access — Graph\'s `/me` endpoint requires its own permission (`User.Read` at minimum), requested separately in the same `scope` parameter. This is a precise, direct match for `Authorization_RequestDenied` / "Insufficient privileges."
+3. Cross-checked `GoogleOAuth.php` for the identical mistake before assuming it needed the same fix — it does not: Google\'s `userinfo` endpoint accepts the OIDC scopes directly (different provider, different behavior). Left unchanged, noted why in the logs so nobody "fixes" it unnecessarily later.
+
+**DONE / VERIFIED**:
+- `MicrosoftOAuth.php`: `scope` changed from `openid profile email` to `openid profile email User.Read`.
+- Verified by actually calling `microsoftBuildAuthUrl()` with test inputs and decoding the resulting URL\'s query string — confirmed `scope=openid+profile+email+User.Read` is present, not just eyeballed in source.
+- `useAuth.ts`: extended the existing known-cause-hint mechanism (built in the sixteenth/seventeenth sessions for `AADSTS9002325`) to also recognize `Authorization_RequestDenied`, pointing at this fix and flagging the admin-consent edge case. Confirmed the new hint string is actually present in the built JS bundle via `grep` on `dist/_expo/static/js/web/*.js` after `npx expo export --platform web --clear` — same "confirm it\'s in the real artifact, not just believed to compile" discipline the sixteenth session used.
+- `php -l` clean on all touched files. Full regression: `php tests/smoke_test.php` **24/24**, `php tests/http_api_test.php` **16/16** against a live `php -S` instance (re-ran the full suite even though this fix is a single scope-string change with no plausible interaction with case/NACE logic, matching this project\'s standing full-regression habit rather than assuming "obviously unaffected" is good enough). `scripts/check-repo-hygiene.sh`: all 4 checks pass. Frontend: `npx tsc --noEmit` clean, `npx expo export --platform web --clear` succeeds.
+- **Sandbox tooling note, same as last session, reconfirmed**: the backgrounded `php -S` instance again did not survive between separate tool-call invocations (one attempt at "start server in one call, test in the next" got `status=0`/connection-refused on every request even though it answered `curl` fine moments before). Worked around the same way: start-server + `sleep` + full-test-suite in one single shell invocation. Third session in a row this has cost a wasted round-trip — worth a future session actually diagnosing *why*, rather than just re-applying the workaround each time, if there\'s ever spare budget for pure tooling investigation.
+- Version bumped 5.1.6 → **5.1.7**, lockfile regenerated, `CHANGELOG.md` updated, `docs/BUGLOG.md` BUG-039 entry updated with the confirmed root cause (status line changed from "FIX APPLIED, reason not identified" to "ROOT CAUSE CONFIRMED AND FIXED").
+
+**NOT DONE / open — read before assuming this is fully closed**:
+1. **This sandbox cannot complete a real browser OAuth round-trip.** The fix is a precise, code-level match for the exact reported error and a well-documented, standard Microsoft Graph/Entra behavior — not a guess — but per this project\'s own standing rule, it is confirmed by the *next retry succeeding*, not by this write-up. Do not mark BUG-039/the SSO chain as fully closed until that retry comes back positive.
+2. **Flagged, not a fix failure if it happens**: a small number of Entra tenants require admin consent even for baseline permissions like `User.Read`. If this tenant is one of them, Mahdi\'s next attempt may show Microsoft\'s own "need admin approval" consent screen instead of our app\'s error banner — a different, provider-rendered, self-explanatory message, not a regression of this bug.
+3. Google\'s callback path remains completely unexercised (Mahdi has only ever attempted Microsoft) — no code change was needed there this session, but it\'s still unverified in practice.
+4. No feature or technical-debt work was attempted this session — the SSO investigation and fix, plus log updates, were the full scope, given the time this session\'s verification (full regression + build + bundle-grep confirmation) took.
+
+**DEPENDENCY / HAND-OFF for the next developer**: confirm the CI publish to `macerti/duration_calculator` has completed before asking Mahdi to retry (same standing rule every SSO session has followed). If the next retry succeeds, close out BUG-036→039 as a fully resolved SSO saga across both this file and `docs/BUGLOG.md`, and the next priority becomes either FEAT-002 acceptance testing (now actually reachable) or resuming technical debt #6 (7 of 9 design-token files remain — `NaceSearchField.tsx`/`ErrorBoundary.tsx`/`ResponsiveContainer.tsx`/`PersonnelForm.tsx` are the smaller ones, the 3 larger screens need a dedicated pass). If the retry instead shows an admin-consent screen, that needs Mahdi\'s Azure tenant admin, not more code. If it shows yet another *different* error, do not assume this fix was wrong — read the new error carefully first, the same discipline that correctly separated BUG-038 from BUG-039 from this session\'s fix.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-03 (twentieth session)', 'BUG-039 CLOSED (Mahdi confirmed working); Google SSO button removed; new priority order recorded; tech debt: 3/9 design-token files done', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-03 (twentieth session) — BUG-039 CLOSED (Mahdi confirmed working); Google SSO button removed; new priority order recorded; tech debt: 3/9 design-token files done".]
+
+## 2026-09-03 (twentieth session) — BUG-039 CLOSED (Mahdi confirmed working); Google SSO button removed; new priority order recorded; tech debt: 3/9 design-token files done
+
+**Purpose of this session**: standing instruction (read logs first, fix bugs by priority, take technical debt seriously, log everything even small progress, push before running out of budget). Started by cloning fresh and reading this file + `docs/BUGLOG.md` + `docs/ROADMAP.md` in full, per the nineteenth session\'s own hand-off instruction not to re-derive settled reasoning.
+
+**Environment**: fresh sandbox/container (not a continuation of the nineteenth session\'s environment) — cloned `macerti/duration_calculator_source` via PAT, confirmed clean `git status` and CI history (`gh actions` via `api.github.com`) showing the nineteenth session\'s publish (`2b946c4`, v5.1.7) completed successfully at 2026-09-03T11:53:51Z, before this session\'s investigation began. Node v22.22.2/npm 10.9.7 available; **PHP was not available in this sandbox** (no `php` binary on `$PATH`) — noted up front since it affects the verification-evidence level below.
+
+**Sequencing note, important for continuity**: Mahdi\'s first message this session intended to report the Microsoft SSO retry result, but the text pasted into the "current error" slot was not an error message — it was an unrelated voice-to-text transcription (a planning note about database migrations, matching `FEAT-005`, already on the roadmap from an earlier session). No `auth_error_description` or other retry evidence was present in that message. Per BUG-039\'s own standing "do not guess-fix" rule, **no action was taken on BUG-039 from that message** — it was left open and Mahdi was asked directly for the actual banner text/screenshot. His follow-up message supplied the real result: **"The Microsoft SSO works perfectly."** That is the evidence this closure is based on, not the earlier message.
+
+**DONE / VERIFIED this session**:
+1. **BUG-039 CLOSED, BUG-036→039 SSO saga fully resolved.** Mahdi confirmed Microsoft sign-in completes end to end in production. Updated `docs/BUGLOG.md` (BUG-039 entry, new dated update block) and this file\'s pipeline header (item 4) with the closure record. Per the nineteenth session\'s own admin-consent caveat, that edge case did not occur — no further action needed there.
+2. **Google SSO button removed from the login screen**, per Mahdi\'s explicit instruction ("Google is a piece of shit for now, so we remove the button"; local account creation to be prioritized later instead — see item 3 below).
+   - Files touched: `src/frontend/src/screens/LoginScreen.tsx` (removed the `onGoogle` prop, the Google `Pressable`/JSX block, and the now-unused `googleButton`/`googleButtonText`/`googleLogoContainer`/`googleLogoText` styles; updated the sign-in body copy and JSDoc to say Microsoft only), `src/frontend/App.tsx` (stopped destructuring/passing `loginWithGoogle`/`onGoogle`, updated the `AuthGate` doc comment).
+   - **Deliberately NOT touched**: `src/backend/auth/GoogleOAuth.php`, the `/auth/google` route in `api/index.php`, and `useAuth.ts`\'s `loginWithGoogle` — all left in place, functional, just unlinked from the UI. This is a UI-level deprioritization, not a deletion, so re-enabling later (if Google\'s flow improves) is a small, low-risk change. Flagging this explicitly so a future session doesn\'t "clean up" this code as dead without checking `docs/ROADMAP.md` FEAT-002 first.
+   - **BUILD-VERIFIED**: `npx tsc --noEmit` clean; `npx expo export --platform web --clear` succeeds; grepped the actual built bundle (`dist/_expo/static/js/web/*.js`) and confirmed `"Continuer avec Google"` is now absent (0 matches) while `"Continuer avec Microsoft"` is still present (1 match) — same "confirm the real artifact, not just source" discipline this project has used since the sixteenth session. `scripts/check-repo-hygiene.sh`: all 4 checks pass.
+   - **Not done / gap, stated rather than hidden**: no backend files were touched by this change, and PHP isn\'t installed in this sandbox, so `php tests/smoke_test.php` / `http_api_test.php` were **not** re-run this session. Given the change is frontend-only (JSX/styles, no `auth/*.php` or `api/index.php` edits), risk to backend behavior is effectively zero, but this is a real gap in the evidence trail relative to this project\'s normal full-regression habit, not an oversight to gloss over. Next session with PHP available should run the full suite once as a sanity check if there\'s any doubt.
+   - Version bumped **5.1.7 → 5.1.8** (`package.json`, lockfile regenerated via `npm install`), matching FEAT-003\'s governance rule that a user-visible change increments Z at minimum.
+3. **Recorded Mahdi\'s new priority instructions verbatim**, per his own stated preference for how FEAT-005 was logged ("no need to evaluate this new request just write it, other devs will check it better") — no design or feasibility work attempted on either:
+   - `docs/DEV_STATUS.md` pipeline header, new item 6 (see above): FEAT-005 (migrations) now explicitly first in the feature queue, ahead of any new auth work.
+   - `docs/ROADMAP.md`: added a new Priority 1 queue item (#9) for local email/password account creation (register, login, forgot password), explicitly sequenced *after* FEAT-005, and explicitly tied to FEAT-002\'s existing "Account model / migration constraint" section so it doesn\'t grow into a second parallel auth system. See `docs/ROADMAP.md` for the exact wording.
+4. **Technical debt: continued item #6 (design-token migration)** — one more file done, matching the standing instruction to keep chipping away at this even in small increments so it doesn\'t keep getting deferred:
+   - `src/frontend/src/components/ResponsiveContainer.tsx`: replaced the hardcoded `gap: 16` in `ResponsiveGrid` with `spacing.lg` from `../theme/tokens`. No visual change (16 = `spacing.lg`\'s existing value) — pure token-reference migration, consistent with the pattern already used in `TextField.tsx`/`NumberField.tsx` (eighteenth session). `maxWidth`/`minColWidth` props were deliberately left as plain numbers — they\'re layout dimensions specific to this component\'s API, not part of the color/spacing/radius/typography token scale this file\'s own doc comment defines.
+   - **Status: 3 of 9 files done** — `TextField.tsx`, `NumberField.tsx` (eighteenth session), `ResponsiveContainer.tsx` (this session). **Remaining**: `ErrorBoundary.tsx`, `NaceSearchField.tsx`, `PersonnelForm.tsx` (smaller), then `CalculationReportScreen.tsx`, `ClientDetailScreen.tsx`, `ClientsListScreen.tsx` (larger, need a dedicated pass — do not attempt as a "quick chunk" the way this session\'s file was).
+   - Verified with the same `tsc --noEmit` / `expo export` pass as item 2 above (both changes shipped in the same verification pass, not separately re-verified twice).
+
+**NOT DONE / open — read before assuming more happened than did**:
+1. No backend code was touched this session — nothing to re-verify with `php -l`/smoke tests, and PHP wasn\'t available in this sandbox anyway (noted above).
+2. FEAT-005 (migrations) and the new local-account-creation request are recorded, not designed. Whoever picks either up should read `docs/DEPLOY.md`, `db/schema.sql`, and `docs/ORIENTATIONS.md` first, per the existing FEAT-005 hand-off note.
+3. Google\'s callback path (`GoogleOAuth.php`) remains completely unexercised in practice — moot for near-term priority now that the button is removed, but the code is still there, untested, if it\'s ever relinked.
+4. Only one design-token file was migrated this session (time budget) — 6 of 9 remain, three of them the larger screens flagged above.
+5. `make build-deploy` / full artifact-check was not run this session (no PHP, and no backend changes to assemble) — the next session that touches backend should run it once before assuming the deploy artifact is current.
+
+**DEPENDENCY / HAND-OFF for the next developer**: the SSO saga (BUG-036→039) is done — don\'t reopen it without new contradicting evidence from Mahdi. Immediate priorities in order, per Mahdi\'s own sequencing (item 6 in the pipeline header above): (1) FEAT-005 database migrations — start with `docs/DEPLOY.md`/`db/schema.sql`, no design work exists yet; (2) local account creation (register/login/forgot-password) — do not start this before FEAT-005 per Mahdi\'s explicit ordering, and integrate with FEAT-002\'s existing account model rather than building a parallel one; (3) if picking up technical debt instead, continue design-token migration — `ErrorBoundary.tsx` is next in line (smaller file), or take on one of the three larger screens if there\'s a full session\'s budget for it. Confirm the CI publish for this session\'s commit(s) completed before reporting anything to Mahdi as live.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-03 (twenty-first session)', 'FEAT-005: Automated database schema migration framework IMPLEMENTED', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-03 (twenty-first session) — FEAT-005: Automated database schema migration framework IMPLEMENTED".]
+
+## 2026-09-03 (twenty-first session) — FEAT-005: Automated database schema migration framework IMPLEMENTED
+
+**Purpose of this session**: Per Mahdi\'s standing instruction to focus on FEAT-005 automation ("automatizing database migration it has been started continue it"), read existing docs, design idempotent migration system, and implement complete framework with CLI runner, GitHub Actions integration, and comprehensive documentation for future migrations.
+
+**Environment**: fresh sandbox clone via PAT, PHP 8.3.6 installed, MariaDB service available (connection testing paused before token limit).
+
+**DONE / VERIFIED this session (code implementation + syntax verification)**:
+
+1. **Migration Framework Class** (`src/backend/db/Migrations.php`, 313 lines):
+   - Idempotent migration discovery, tracking, and execution
+   - Atomic per-migration transactions via PDO
+   - SQL statement splitting (handles -- comments, /* block */ comments, quoted strings)
+   - Metadata table bootstrap (`migrations_metadata`: migration_name, applied_at, checksum, status, error_message)
+   - Public methods: `run()` (apply pending), `getStatus()` (diagnostic listing)
+   - Private methods for guards: `isAlreadyApplied()`, `applyMigration()`, `recordMigrationError()`
+   - **Verified**: `php -l` syntax clean, no parse errors
+
+2. **Initial Schema Migration** (`src/backend/db/migrations/001_initial_schema.sql`):
+   - Complete baseline schema consolidated from current `schema.sql`
+   - All four tables: `parameter_sets`, `clients`, `calculation_cases`, `parameter_change_log`
+   - Idempotent guards for all operations (column-existence checks via `information_schema`)
+   - Handles the tricky FK migration pattern (two-step drop-then-add to avoid MariaDB errno 121)
+   - Fully preserves all existing business logic, column constraints, indexes
+   - Safe to run multiple times against any DB state (fresh, partial, or fully migrated)
+
+3. **Migration Runner CLI Script** (`src/backend/db/migrate.php`):
+   - Executable PHP script for applying migrations from the command line
+   - Usage: `php migrate.php` (apply), `php migrate.php --check` (status only), `php migrate.php --help`
+   - Exit codes: 0 (success), 1 (failure), 2 (usage error)
+   - Loads `config.php` from `src/backend/` for DB credentials
+   - Output: formatted status list, results summary, error details if failed
+   - Safe web-access guard: refuses HTTP requests, requires CLI (`php_sapi_name()` check)
+   - **Verified**: `php -l` syntax clean
+
+4. **Migration Directory & Documentation** (`src/backend/db/migrations/README.md`):
+   - Comprehensive guide for writing future migrations (2,000+ lines)
+   - Sections: overview, how migrations run, patterns, template, best practices, troubleshooting
+   - Includes four production-ready idempotent SQL patterns (CREATE TABLE IF NOT EXISTS, ADD COLUMN guard, ADD INDEX guard, ADD FOREIGN KEY guard with errno 121 workaround)
+   - Migration template with realistic examples
+   - Documents the two-statement FK modification pattern (drop in statement 1, add in statement 2 — never combine)
+   - Explains when and why to use `information_schema` queries
+   - Future enhancements section (rollback, API endpoint, dry-run, batch migrations)
+
+5. **GitHub Actions Integration** (`.github/workflows/build-test-publish.yml`):
+   - Updated "Install schema and seed parameters" step to use migration runner
+   - Before: `mariadb ... < db/schema.sql` (direct SQL file injection)
+   - After: `php db/migrate.php` + `php seed.php` (idempotent migration framework)
+   - Maintains all existing regression tests (smoke, HTTP, frontend)
+   - Migration files now included in `_deploy/db/migrations/` via `cp -R` in artifact assembly
+   - CI workflow unchanged otherwise; migrations run in same step as before
+
+**NOT DONE / open — read before assuming more happened**:
+
+1. **End-to-end migration testing** — syntax verified, but full regression (run twice, check idempotence) paused at token limit. Next session should verify: (a) migrations apply cleanly on fresh DB, (b) second run is a no-op, (c) existing data preserved, (d) `migrations_metadata` table correctly tracks applications.
+
+2. **Direct database connectivity test** — MariaDB service available locally but socket connectivity hit some issues in the sandbox environment (errno 111 Connection refused, then errno 1698 Access denied). These are sandbox-specific; real test is in CI or on live host.
+
+3. **HTTP API endpoint for migrations** (`POST /api/migrate`) — flagged in README as future enhancement, not implemented this session. For now, migrations run via CLI only (GitHub Actions → `php migrate.php`).
+
+4. **Rollback capability** — deliberately out of scope for FEAT-005 per the request ("automatizing database migration on push"). Rollbacks require reverse migrations; recorded as Phase 2 future enhancement in README.
+
+**Verification Evidence**:
+- `php -l src/backend/db/Migrations.php` → No syntax errors detected ✅
+- `php -l src/backend/db/migrate.php` → No syntax errors detected ✅
+- File listing: `ls -la src/backend/db/migrations/` shows 001_initial_schema.sql, README.md ✅
+- GitHub Actions workflow: updated, syntax valid (no YAML errors on parse) ✅
+
+**Process Notes**:
+- This session\'s work is self-contained (no upstream blocking, no downstream changes yet)
+- Implementation follows this project\'s existing patterns (idempotent SQL guards, transaction-per-operation, explicit error handling, comprehensive logging)
+- No impact on existing deployment workflow or production code — migrations are backward-compatible (001 contains current schema)
+- Next feature (local account creation) can now rely on automatic schema migrations instead of manual DB updates
+
+**DEPENDENCY / HAND-OFF for the next developer**:
+- FEAT-005 code implementation is DONE and ready to push
+- **Before next feature\'s schema changes**, verify migrations work end-to-end (full regression: fresh DB → apply migrations → check state → apply again → confirm no-op)
+- To write a new migration after this one: follow `src/backend/db/migrations/README.md` exactly; name it `002_*.sql`, use idempotent patterns, test locally twice to confirm idempotence
+- When local account creation (FEAT-005b) is designed, its schema changes go into `002_auth_tables.sql` (or similar), not into manual edits to schema.sql
+- GitHub Actions CI now automatically runs migrations on every successful build-and-publish cycle — no manual DB-update step needed anymore
+- If CI run fails on the migration step, the error message will clearly identify which migration failed and why (full exception detail logged)
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-04 (twenty-second session)', 'Investigated and mostly fixed the CI failure on FEAT-005\'s migration runner (BUG-040→043); documentation-only push, code fix NOT yet fully verified end-to-end', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-second session) — Investigated and mostly fixed the CI failure on FEAT-005\'s migration runner (BUG-040→043); documentation-only push, code fix NOT yet fully verified end-to-end".]
+
+## 2026-09-04 (twenty-second session) — Investigated and mostly fixed the CI failure on FEAT-005\'s migration runner (BUG-040→043); documentation-only push, code fix NOT yet fully verified end-to-end
+
+**Trigger**: Mahdi reported the GitHub Actions workflow failed on the push that introduced FEAT-005 (twenty-first session, commit `51abb8c`), suspecting the database migration step. Instruction for this session was explicit: thoroughly analyze and document tests/results/deductions so the bug can be fixed by any dev with full continuity, fix what can be fixed, then (separately, later in the session) stop coding and just document + push.
+
+**Environment**: this sandbox had neither PHP nor MariaDB preinstalled — both freshly `apt-get install`ed (`php-cli`, `php-mysql`, `mariadb-server`, `mariadb-client`), yielding **PHP 8.3.6 and MariaDB 10.11.14**. This is the first session in this project\'s history to reproduce against real MariaDB matching CI\'s `mariadb:10.11` service image, rather than the MySQL 8.0.46 stand-in every prior database-touching session had to use. Confirmed (and worked around) a new instance of the established "backgrounded daemon doesn\'t survive past one tool call" sandbox limitation — this time for `service mariadb start` itself, not just `php -S`. See `docs/BUGLOG.md` BUG-040\'s environment note for the exact workaround.
+
+**Investigation method**: rather than trying to pull raw GitHub Actions log text (established this session to be impossible from this sandbox — see BUG-040\'s tooling note on the Azure Blob Storage redirect and `web_fetch`\'s URL-provenance restriction), used the Actions REST API\'s `/jobs` endpoint (works fine, plain JSON) to identify the exact failing step (step 9, "Run database migrations," commit `51abb8c`, run `33792762006`, job `100773069137`), then reproduced the failure **locally, against the exact same commit, with the exact same CI database config** (db `audit_test`, user `audit`/`audit`, replicating `.github/workflows/build-test-publish.yml`\'s service block precisely).
+
+**DONE / VERIFIED this session**:
+
+1. **BUG-040** (`src/backend/db/migrate.php`) — two sub-bugs in the config-loading block: (a) `require_once $configPath` discarded the return value that `config.php` (matching every other config consumer in this codebase) relies on being captured, so the `isset($config)` validity check failed unconditionally, on every run, everywhere — not a CI-specific or secrets-specific issue; (b) DB credentials were read from `$config[\'db\'][\'pass\']`, but every config file in this codebase uses the key `password` — silently connected with an empty password instead of erroring clearly. **Fixed and verified**: `migrate.php` now reaches its DB connection and `getStatus()` cleanly.
+
+2. **BUG-041** (`src/backend/db/Migrations.php`, `applyMigration()`) — MySQL/MariaDB DDL statements (`CREATE TABLE`/`ALTER TABLE`, and `001_initial_schema.sql` is DDL-heavy) trigger an implicit server-side COMMIT, which PDO\'s MySQL driver correctly detects via the real server transaction-status flag — so the framework\'s own later explicit `commit()` call threw `PDOException: There is no active transaction`, on every DDL migration, unconditionally. **Fixed and verified**: guarded `commit()`/`rollBack()` with `inTransaction()` checks; documented in code that DDL migrations cannot get true atomicity on this database engine (a hard MySQL/MariaDB limitation, not something worth trying to "properly" fix) — safety here comes from the idempotent guards this codebase already uses throughout `001_initial_schema.sql`, not from transactional rollback.
+
+3. **BUG-042** (`src/backend/db/Migrations.php`, `isAlreadyApplied()`) — a `fetch()` without a following `closeCursor()` stranded the connection (MySQL error 2014) for the very next query (`beginTransaction()`). **Fixed and verified**: added `closeCursor()`; also added `PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true` to `migrate.php`\'s connection options as defense-in-depth.
+
+4. **BUG-043** (`src/backend/db/Migrations.php`, `applyMigration()`\'s statement executor) — the deepest and most important finding. `001_initial_schema.sql`\'s second idempotent guard for `calculation_cases` (checking whether `idx_calculation_cases_client_id` exists) is, on a fresh DB, always a no-op — because the *first* guard\'s combined `ALTER TABLE` already creates that same index as one of its clauses. The no-op branch\'s placeholder, `\'SELECT 1\'`, gets run via `EXECUTE stmt_idx` — and the framework ran every statement (including this one) through `PDO::exec()`, which isn\'t safe for a statement that returns a result set. The stranded connection then breaks the next statement (`DEALLOCATE PREPARE`), again MySQL error 2014. **This is structural, not a one-off**: `db/migrations/README.md` documents this exact PREPARE/EXECUTE/DEALLOCATE-with-`\'SELECT 1\'` pattern as the official template for *all future migrations*, and the no-op branch firing is the *normal* case for an idempotent guard on re-run, not a rare edge case. **Fixed at the framework level** (not yet re-verified — see below): changed the executor to `query()` + `closeCursor()`, which safely drains a result set regardless of statement type.
+
+**Diagnostic technique worth reusing, not just this session\'s throwaway**: pinpointing BUG-043 required a small reflection-based PHP script that ran the real (unmodified) migration file statement-by-statement through the real `Migrations` class internals, printing `$pdo->inTransaction()` after each one — this isolated the exact failing statement precisely (`EXECUTE stmt_idx` succeeds, `DEALLOCATE PREPARE stmt_idx` is what fails) far faster than reasoning about the whole file at once. Worth rebuilding this technique (not committed — it was a `/tmp` throwaway) if a similar "which exact statement in a big SQL file is the problem" question comes up again.
+
+**NOT DONE / open — read before assuming CI is fixed**:
+
+1. **The BUG-043 fix has not been re-verified end-to-end.** It\'s confirmed correct in isolation (a minimal repro of the exact failure mechanism, forced into the `\'SELECT 1\'` branch, no longer fails under `query()`+`closeCursor()`) and by code review, but the actual `migrate.php` CLI has not been re-run against the real, complete `001_initial_schema.sql` file since this fix was applied. **This is the single most important thing for the next session to do first** — see `docs/BUGLOG.md` BUG-043\'s "Not done / open" section for the exact sequence (fresh DB → migrate.php → migrate.php again for idempotence → seed.php → full regression suite).
+2. **The complementary content-level fix (`\'SELECT 1\'` → `DO 0` in `001_initial_schema.sql` and in `db/migrations/README.md`\'s template) was identified as correct and worth doing but deliberately NOT applied this session**, per an explicit mid-session instruction to stop making code changes and document state instead. Recorded as the clear next step, not silently dropped.
+3. **`php tests/smoke_test.php`, `php tests/http_api_test.php`, and `scripts/check-repo-hygiene.sh` were NOT re-run this session** — session time went entirely into the migration-specific investigation above. No reason to suspect a regression (nothing outside `db/migrate.php`/`db/Migrations.php` was touched), but this is a real evidence gap, not a claim of a clean full regression.
+4. **Nothing from this session has been pushed as "confirmed working."** This session\'s push (see below) carries the four fixes above plus this documentation, explicitly flagged as unverified-end-to-end — not a claim that the GitHub Actions run will now go green. The next session (or Mahdi, watching the Actions tab after this push) should check the actual CI run result, since a real CI run is itself part of the missing verification.
+
+**Files changed this session**: `src/backend/db/migrate.php`, `src/backend/db/Migrations.php` (code fixes for BUG-040–043); `docs/BUGLOG.md` (BUG-040–043 entries); `docs/DEV_STATUS.md` (this entry); `CHANGELOG.md` and `docs/ROADMAP.md` (see their own entries for this date). `001_initial_schema.sql` and `db/migrations/README.md` are unmodified — the deferred `DO 0` fix is not in this push.
+
+**DEPENDENCY / HAND-OFF for the next developer**:
+- Start with `docs/BUGLOG.md` BUG-043\'s "Not done / open" section — it has the exact verification sequence to run first, before anything else.
+- Do not re-derive BUG-040/041/042\'s root causes from scratch; they are fixed and independently verified (each one\'s fix was confirmed to eliminate its specific symptom before moving to the next layer). Only BUG-043\'s fix needs re-verification.
+- If the full local sequence in BUG-043 passes: apply the deferred `DO 0` content fix, re-verify once more, commit, push, and **actually watch the resulting GitHub Actions run** (via the Actions API `/jobs` endpoint method documented in BUG-040 — raw log text still isn\'t fetchable from this sandbox, but step-level pass/fail is) rather than assuming local success transfers directly to CI.
+- If it doesn\'t pass: treat it as a fresh investigation, not a confirmation that BUG-043\'s diagnosis was wrong — check whether it\'s the same error or a new one first.
+- FEAT-005\'s own `docs/ROADMAP.md` entry has been updated to reflect this session\'s findings (see that file) — the twenty-first session\'s original entry describing it as freshly "implemented, ready to push" was already stale the moment CI failed; don\'t rely on that older wording.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-04 (twenty-third session)', 'FEAT-005 CLOSED: CI confirmed green, full local re-verification, deferred content-level fix applied', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-third session) — FEAT-005 CLOSED: CI confirmed green, full local re-verification, deferred content-level fix applied".]
+
+## 2026-09-04 (twenty-third session) — FEAT-005 CLOSED: CI confirmed green, full local re-verification, deferred content-level fix applied
+
+**Trigger**: Mahdi\'s standing instruction, repeated verbatim across recent sessions: check for CI errors and solve them, then bugs, then features by priority, with technical debt as a continuous non-deferrable stream, ending every session with a push and a log update so the next developer (human or AI) can continue without re-deriving prior work.
+
+**Environment**: fresh sandbox, PAT-cloned. Installed `php-cli`, `php-mysql`, `php-curl`, `php-mbstring`, `mariadb-server`, `mariadb-client` (PHP 8.3.6, MariaDB 10.11.14) — matching CI\'s `shivammathur/setup-php` extension set (`pdo_mysql,mbstring,curl`) exactly; the previous session\'s local testing had stopped short of installing `curl`/`mbstring`, which briefly showed up as two false "regressions" in this session before being correctly identified as sandbox setup gaps, not app bugs (see BUGLOG BUG-043\'s twenty-third-session update for detail).
+
+**DONE / VERIFIED this session**:
+1. **Confirmed via the GitHub Actions REST API that CI was already green** on the twenty-second session\'s push (`7736577`) — all 20 real steps passed, including the previously-failing "Run database migrations" step, ending in a successful publish to `macerti/duration_calculator`. This was true *before* any new work this session — the twenty-second session\'s framework-level fix (`query()`+`closeCursor()`) was sufficient on its own in the real CI environment.
+2. **Full local re-verification performed anyway**, replicating CI\'s `config.php` and DB setup byte-for-byte: fresh-DB migration apply, second-run idempotence check, seed, 24/24 PHP smoke tests, live API health check, 16/16 HTTP regression tests, repo hygiene script — all passed. See `docs/BUGLOG.md` BUG-043\'s twenty-third-session update for the exact sequence and evidence.
+3. **Applied the deferred defense-in-depth fix**: `\'SELECT 1\'` → `\'DO 0\'` in all 5 occurrences in `src/backend/db/migrations/001_initial_schema.sql` and all 8 occurrences in `src/backend/db/migrations/README.md`\'s template. Re-ran the entire local verification sequence a second time against a fresh database with this fix in place — identical pass results, confirming no behavior change (as intended).
+4. **BUG-040 through BUG-043 all now CLOSED** in `docs/BUGLOG.md`. FEAT-005 is DONE, not just "implemented" — schema changes now ship automatically on push, no manual DB step required.
+5. **Checked all other open bug entries** (BUG-025 through BUG-029, BUG-035) for anything sandbox-actionable: none found. BUG-025/026/027 are source-complete, blocked only on Mahdi\'s own real-device/browser click-through (repeatedly documented across sessions two/three as impossible from this sandbox). BUG-028 is fixed, awaiting the same. BUG-029 is explicitly P2/backlog. BUG-035\'s only gap is the same live-device constraint. None of these represent code that can be written or fixed without live evidence from Mahdi.
+6. **Technical debt (design-token migration, item 6): continued.** See this file\'s own next dated entry (same session) for `ErrorBoundary.tsx`.
+
+**NOT DONE / open**:
+1. No new feature work started (item 9, local account creation) — per Mahdi\'s own explicit sequencing this should get a full dedicated session for the auth-model design questions already flagged in `docs/ROADMAP.md` item 9, not a fraction of a session after a bug-fix push.
+2. The `POST /api/migrate` HTTP endpoint mentioned as a future enhancement in `db/migrations/README.md` remains unimplemented — not needed for the current CI-driven flow, left as backlog.
+3. BUG-025/026/027/028/035\'s live-device verification gap is unchanged — still needs Mahdi\'s own hands-on testing, not sandbox work.
+
+**Files changed this session (this fix)**: `src/backend/db/migrations/001_initial_schema.sql`, `src/backend/db/migrations/README.md`, `docs/BUGLOG.md`, `docs/DEV_STATUS.md` (this entry), `docs/ROADMAP.md`, `CHANGELOG.md`.
+
+**DEPENDENCY / HAND-OFF for the next developer**: FEAT-005 is done — don\'t reopen without new contradicting CI evidence. Next priorities in order per `docs/ROADMAP.md`: (1) local account creation (item 9) — needs a full design pass, not a quick chunk; (2) continue design-token migration (item 6) — see this session\'s own tech-debt entry below for what\'s left; (3) BUG-029 production audit whenever P2 work is picked up. Always re-check GitHub Actions status via the `/actions/runs` and `/actions/runs/{id}/jobs` API endpoints (documented in BUG-040) before assuming a previous session\'s "not yet verified" caveat is still accurate — as this session found, a real CI run can resolve it before anyone reads the note.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-04 (twenty-fourth session)', 'Local accounts + RBAC: schema and backend data layer designed and verified; API routes, mailer, and frontend not yet started', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-fourth session) — Local accounts + RBAC: schema and backend data layer designed and verified; API routes, mailer, and frontend not yet started".]
+
+## 2026-09-04 (twenty-fourth session) — Local accounts + RBAC: schema and backend data layer designed and verified; API routes, mailer, and frontend not yet started
+
+**Trigger**: Mahdi\'s request (2026-09-04) to build the full local auth process (register/login/logout, link-based email confirmation, link-based password reset) plus a complete role-based access control system — admin-manageable roles, permissions, and per-role function grants, a profile screen showing the user\'s own role, and admin UI to grant/revoke access — now that FEAT-005\'s migration framework is closed and no bugs are open. Explicit instruction: fix bugs first (none were open — see twenty-third session), build by priority, treat technical debt as continuous rather than deferred, and push with a log update even for partial progress rather than losing work to a token limit.
+
+**Investigation before writing any code**: found that despite two sessions of Microsoft SSO work, **this app had no `users` table at all**. `OAuthSession::sessionSetUser()` stored the raw provider claims (name/email/id) directly into `$_SESSION`, never persisted to the database. No `roles` table, no permissions, no account model of any kind existed prior to this session. FEAT-002\'s "explicit account-linking policy" requirement (`docs/ROADMAP.md`) was still fully open, not partially done — worth knowing before assuming any auth plumbing already existed.
+
+**DONE / VERIFIED this session**:
+1. **Migration `002_add_auth_and_rbac.sql`**: adds `users`, `roles`, `permissions`, `role_permissions`, `user_identities` (SSO↔user linking), `email_verification_tokens`, `password_reset_tokens`, `rate_limits`. Seeds 3 default roles (administrateur/technicien/utilisateur) and 6 starting permissions (manage_users, manage_roles, manage_clients, manage_calculations, override_percentages, add_custom_adjustment — the latter two are Mahdi\'s own named examples). All seeding via `INSERT IGNORE` against unique keys, safe to re-run without resetting an admin\'s later edits. **Verified**: fresh-DB apply + second-run idempotence check, both clean, against real MariaDB 10.11.14 (same install method as the twenty-second/third sessions — the "backgrounded daemon doesn\'t survive between tool calls" limitation applied again to `service mariadb start` and was worked around the same way: start + verify in one shell call).
+2. **Backend data layer** (`src/backend/db/userRepo.php`, `roleRepo.php`, `permissionRepo.php`, `rateLimiter.php`) — **not yet wired into `api/index.php`**, so nothing is reachable over HTTP yet, but every function was exercised against a real database with a throwaway verification script (25 assertions, all passing; script deleted before commit, per this project\'s own convention of not committing throwaway diagnostics). Covered: local registration with bootstrap-first-user-becomes-admin, default-role assignment for everyone after, email verification token issue/consume/reuse-rejection, password reset token issue/consume/single-use enforcement (and that a reset also works as "set my first local password" for an SSO-only account), SSO identity linking (same email → same user, no duplicate; unknown identity + existing email → auto-link; brand-new email → new pre-verified user; repeat login by the same identity → same user again), role CRUD including delete-blocked-while-users-assigned and permission assignment, permission CRUD including key-format validation and delete-blocked-while-in-use, the "can\'t demote/disable the last active system administrator" guard, and the rate limiter\'s fixed-window counting.
+3. **Design decisions locked in** (so the next session doesn\'t need to re-derive them):
+   - **Password policy**: `password_hash()`/`PASSWORD_DEFAULT` (bcrypt), min 10 / max 72 chars (bcrypt\'s own silent-truncation limit), no forced complexity rules — current NIST guidance, not the older composition-rule approach.
+   - **Tokens are link-based, never copy-paste**: the raw token only ever appears in the emailed URL; only its SHA-256 hash is stored. Email verification link: 24h expiry. Password reset link: 1h expiry, single-use, and issuing a new one invalidates older outstanding ones for that user.
+   - **Registration vs. an existing email**: registration is refused outright (generic "an account already exists, use login or forgot-password" message) if the email is already in `users` at all, regardless of whether that account has a password yet. "Forgot password" doubles as "set my first local password" for an SSO-only account, since it already requires proving mailbox ownership via the emailed link — this avoids a separate "link a password to an existing SSO account" code path and its account-takeover risk if done carelessly.
+   - **Login stays fully generic on failure** ("adresse e-mail ou mot de passe incorrect") regardless of whether the email doesn\'t exist, the password is wrong, or the account is SSO-only with no password set — only *after* a correct password check does it reveal a more specific reason (unverified email, disabled account), to avoid leaking account existence/provider to a wrong-password guesser.
+   - **Email change requires re-verification of the new address before it takes effect** (`pending_email` column; the live `email` column never becomes unverified) — avoids ever locking a user out of their own account mid-change.
+   - **Session will store only `user_id`**; role and permissions are to be loaded fresh from the DB on every authenticated request (not cached in the session), so an admin\'s role/permission/disable change takes effect on the affected user\'s very next request, not only after they log out and back in. This is a deliberate change from the SSO-only prototype\'s session shape, to be finished in `Guard.php`/`api/index.php` next session.
+   - **RBAC is single-role-per-user** (`users.role_id`), not multi-role — matches Mahdi\'s own phrasing ("see their profile\'s granted access level name") and keeps the admin UI to one role-picker per user plus one permission-matrix per role, rather than a more complex multi-role union.
+   - Seeded permissions are deliberately minimal, matching Mahdi\'s own "we\'ll identify the rest later." The durable part built this session is the admin UI\'s future ability to grant/revoke and create new permission entries generically — not an exhaustive permission list now.
+
+**NOT DONE / open — read before assuming any of this is usable yet**:
+1. **Nothing is wired into `api/index.php`.** No `/auth/*` or `/admin/*` HTTP routes exist. The data layer above is real and tested at the PHP-function level, but not reachable by the frontend or by `curl` yet.
+2. **No mailer exists yet**, and `config.example.php` has no mail keys yet either. Needs a driver-based sender — real SMTP for production (Mahdi has `info@macerti.com` available, but its SMTP host/port/username/password are not yet known — needs asking) plus a `log` driver for local/dev testing that writes to a file instead of sending, which is what this session\'s local `config.php` used.
+3. **No `Guard.php`** (`requireAuth()`/`requirePermission()`/CSRF check) — and relatedly, **`/clients` and `/cases` are still completely unauthenticated** (`SECURITY.md`\'s own "Todo #1 — the single biggest gap"), unchanged this session. Closing this is part of the very next chunk, not a separate future task: shipping "full auth" while leaving the existing data endpoints open would leave the single biggest documented security gap open regardless.
+4. **No frontend work at all this session** — `useAuth.ts`, `LoginScreen.tsx`, and every new screen (Register, Forgot/Reset Password, Profile, Admin Users, Admin Roles) are exactly as they were before this session. This is the largest remaining chunk of the request.
+5. **CSRF**: SameSite=Lax (already in place for the existing SSO session cookie) gives real protection against classic cross-site form POST, but no explicit CSRF token exists yet. Planned, not yet built: a `csrfToken` returned by `/auth/me`, required as an `X-CSRF-Token` header on new state-changing auth/admin routes; extending that same requirement to the pre-existing `/clients`/`/cases` mutating routes is a reasonable following step once the plumbing exists, not claimed as done here.
+6. **Full local regression**: `smoke_test.php` re-run and still 24/24 green (confirms the four new, currently-unreferenced files haven\'t broken anything). `http_api_test.php` and `scripts/check-repo-hygiene.sh` were **not** re-run this session — no route changes yet for them to exercise, and no reason to suspect regression, but this is a real evidence gap, not an assumed-clean claim.
+
+**Files changed this session**: new files only — `src/backend/db/migrations/002_add_auth_and_rbac.sql`, `src/backend/db/userRepo.php`, `src/backend/db/roleRepo.php`, `src/backend/db/permissionRepo.php`, `src/backend/db/rateLimiter.php`. Nothing existing was modified. `docs/DEV_STATUS.md` (this entry), `docs/ROADMAP.md`, `CHANGELOG.md` also updated. No version bump — nothing user-reachable changed yet (this project\'s own versioning rule classifies by resulting user-visible change, not internal effort).
+
+**DEPENDENCY / HAND-OFF for the next developer**:
+- Start by re-reading this entry\'s "design decisions locked in" section before designing anything from scratch — the schema, token, and account-linking policy questions are already answered and verified.
+- Next chunk, in order: (a) `Guard.php` (`requireAuth`/`requirePermission`/CSRF); (b) `Mailer.php` (needs Mahdi\'s SMTP credentials for `info@macerti.com`, or an explicit go-ahead to ship with a dev-only `log` driver first and real sending as a documented follow-up); (c) wire `/auth/register`, `/auth/login`, `/auth/logout`, `/auth/me`, `/auth/verify-email`, `/auth/forgot-password`, `/auth/reset-password`, `/auth/resend-verification`, `/auth/change-password`, `/auth/profile` into `api/index.php`, using the already-verified repo functions directly; (d) gate `/clients` and `/cases` behind `requireAuth()`; (e) `/admin/roles`, `/admin/permissions`, `/admin/users` behind `requirePermission(\'manage_roles\' | \'manage_users\')`; (f) only then move to the frontend (extend `useAuth.ts`, update `LoginScreen.tsx`, add Register/ForgotPassword/ResetPassword/Profile/AdminUsers/AdminRoles screens).
+- Rewiring `MicrosoftOAuth.php`\'s callback handler in `api/index.php` to call `resolveSsoUser()` (already written and tested) instead of `sessionSetUser()` with raw claims is part of step (c) above, not a separate task — do it in the same pass as the rest of the auth routes so there\'s only one session-shape change, not two.
+- Re-run the full local sequence (fresh DB → migrate twice → the new routes\' own tests → `smoke_test.php` → `http_api_test.php` → hygiene script) before pushing the next chunk, same discipline as the twenty-second/third sessions.
+
+---
+**Post-push confirmation (same session)**: GitHub Actions run `33867358419` on commit `8a844dc` confirmed **green, all 22 steps**, including "Run database migrations" against `002_add_auth_and_rbac.sql` on the real CI database, and "Publish deployment artifact" succeeded. So the migration is now confirmed working in CI, not just locally — directly answering Mahdi\'s stated skepticism about whether a DB-structure-changing push would actually work.
+', NULL, NULL, NULL, NULL),
+  ('2026-09-04 (twenty-fifth session)', 'Local accounts + RBAC: wired end-to-end and verified over real HTTP (42/42); two real bugs found and fixed', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-fifth session) — Local accounts + RBAC: wired end-to-end and verified over real HTTP (42/42); two real bugs found and fixed".]
+
+## 2026-09-04 (twenty-fifth session) — Local accounts + RBAC: wired end-to-end and verified over real HTTP (42/42); two real bugs found and fixed
+
+**Trigger**: direct continuation of the twenty-fourth session\'s data layer (schema + repo functions, committed but not reachable over HTTP). This session\'s job was exactly what that entry\'s hand-off said to do next: `Guard.php`, `Mailer.php`, wire everything into `api/index.php`, gate the pre-existing `/clients`/`/cases` routes, and prove all of it with a real HTTP-level regression run — not just unit-level PHP function calls.
+
+**DONE / VERIFIED this session**:
+1. **`auth/Guard.php`** (new): `currentUser()`, `requireAuth()` (401), `requirePermission()` (403), `requireCsrf()` (403, double-submit header check), `ensureCsrfToken()`.
+2. **`auth/Mailer.php`** (new): driver-based sender — `log` driver (writes to a file, used by every test this session) and a hand-rolled `smtp` driver (AUTH LOGIN, STARTTLS/implicit TLS, no Composer/PHPMailer, matching this codebase\'s existing raw-PHP style) — plus the two email templates (verification link, reset link). **The `smtp` driver is written but not yet tested against a real mail server** — still needs Mahdi\'s SMTP host/port/username/password for `info@macerti.com` before it can be trusted in production; `log` is what\'s actually been exercised.
+3. **`auth/OAuthSession.php`** changed: `sessionSetUser()`/`sessionGetUser()` (raw claims array) replaced with `sessionSetUserId()`/`sessionGetUserId()` (int only) — role/permissions are now always loaded fresh from the DB per request (see Guard.php), not cached in the session.
+4. **`api/index.php`** fully wired: `/auth/register`, `/auth/login`, `/auth/logout`, `/auth/me`, `GET /auth/verify-email`, `/auth/resend-verification`, `/auth/forgot-password`, `/auth/reset-password`, `/auth/change-password`, `PUT /auth/profile`, `/admin/roles` (GET/POST/PUT/DELETE), `/admin/permissions` (GET/POST/PUT/DELETE), `/admin/users` (GET/PUT). The Microsoft and Google OAuth callbacks now call `resolveSsoUser()` + `sessionSetUserId()` instead of dumping raw provider claims into the session — SSO logins are real, persisted, linkable `users` rows for the first time.
+5. **`/clients` and `/cases` are now behind `requireAuth()`** (all 11 route handlers) — this closes `SECURITY.md`\'s own "Todo #1, the single biggest gap" (anyone who found the API URL could previously read/write any client or calculation with no login at all). `/health`, `/parameters`, `/nace/*`, `/nae`, `/calculate` remain public — a deliberate scoping choice (stateless calculation utilities, no persisted business data), not an oversight.
+6. **`tests/http_api_test.php` rewritten** with real cookie-jar session handling (previously stateless — every call was independent, which is why this file needed real changes, not just new cases appended) and a full auth+RBAC flow: unauthenticated rejection, register → blocked-before-verify → verify-via-link → login → CSRF-protected admin CRUD (create/rename/delete a role, confirming the CSRF header is actually enforced by testing both with and without it) → forgot/reset password with auto-login → profile update → the pre-existing NACE/cases regression (now running inside the authenticated session) → logout → confirms `/clients` is rejected again post-logout. **42/42 passing** against a live PHP server + real MariaDB.
+7. **Two real bugs found by this testing, not by inspection — worth reading if either resurfaces**:
+   - **`Guard.php`\'s `currentUser()` never called `sessionStart()`** before reading `$_SESSION[\'user_id\']` — so it always saw an empty superglobal regardless of a valid session cookie, and every authenticated request 401\'d right after a successful login. Root-caused by inspecting the actual PHP session file on disk (confirmed the server-side session data was correct and complete) and tracing forward from there — the bug was purely on the read side. Fixed by adding `sessionStart()` to `currentUser()`, `requireCsrf()`, and `ensureCsrfToken()` (defensive — `sessionStart()` is idempotent, see its own `session_status()` guard, so this doesn\'t depend on call order elsewhere).
+   - **The test script\'s own `/auth/reset-password` call used `withSession=false`**, so the fresh session cookie that call establishes was silently discarded, leaving a stale CSRF token from the earlier login in play for the next request. Test-only bug, not a production one — fixed by letting that call use the shared cookie jar like every other session-establishing call.
+8. **Full local regression re-confirmed clean end-to-end**: fresh DB → migrate (twice, idempotent) → seed → `smoke_test.php` (24/24) → `http_api_test.php` (42/42) → `scripts/check-repo-hygiene.sh` (all passed) → `make build-deploy` (frontend export + backend copy) → `scripts/check-deploy-artifact.sh` (all passed, including the require/require_once resolution check that would have caught a missing `require_once` for any of the new files).
+
+**A gotcha worth recording for whoever debugs a "works in isolation, fails combined" moment**: `requireDb($dbAvailable)` — reused as-is from the pre-existing `/clients`/`/cases` pattern for the new auth/admin routes — is gated on both DB connectivity **and** an active parameter set existing (`getActiveParameterSet()` must return non-null). Forgetting to run `seed.php` after a fresh migrate makes every auth route 503 with "Database not configured/available." even though the database itself is perfectly reachable (`/health`\'s `dbConnected` is `true` while `dbBackedParameters` is `false` — that\'s the tell). This is pre-existing behavior, not something introduced this session, and was the first of two false leads chased down before finding the two real bugs above.
+
+**NOT DONE / open**:
+1. **No frontend work at all yet** — `useAuth.ts`, `LoginScreen.tsx`, and every new screen (Register, Forgot/Reset Password, Profile, Admin Users, Admin Roles) are unchanged. This is now the entire remaining scope of Mahdi\'s request.
+2. **Mailer\'s `smtp` driver is untested against a real server** — needs Mahdi\'s SMTP credentials for `info@macerti.com`, or an explicit go-ahead to ship to production with the `log` driver a little longer.
+3. **CSRF is not applied to the pre-existing `/clients`/`/cases` mutating routes** — SameSite=Lax still covers the classic cross-site-POST vector for them, but the explicit double-submit token that now protects `/auth/*` and `/admin/*` mutations does not yet extend there. Recorded as the natural next security-hardening step, not silently skipped.
+4. **CI result for this commit (`f45129d`): RED.** Run `33925751962` failed at the very first real step, "Repository hygiene checks" — every step after it was skipped, so none of the auth/RBAC/migration/HTTP-test work above has actually been confirmed by real CI yet, only locally. Root cause fully diagnosed and documented as **BUG-044** in `docs/BUGLOG.md`: an unrelated MIME boundary string literal in `Mailer.php` (`\'audit-app-\' . bin2hex(...)`) happens to contain the substring the hygiene script\'s stale-path check looks for — a one-line rename fixes it. **Read BUG-044 before doing anything else next session** — it also documents a real gap in this session\'s own verification order (the hygiene script was run twice this session, both times before `git add`, so it silently skipped the one file that would have failed; going forward, run it against a fresh clone of the commit about to be pushed, or at minimum after staging, not against an unstaged working tree).
+
+**Files changed this session**: `src/backend/api/index.php` (modified — new routes + auth gating), `src/backend/auth/OAuthSession.php` (modified — session shape change), `src/backend/auth/Guard.php` (new), `src/backend/auth/Mailer.php` (new), `src/backend/tests/http_api_test.php` (rewritten). No migration changes. No frontend changes. No version bump — still nothing reachable by an actual UI yet, though the API surface itself is now real and usable via `curl`/Postman.
+
+**DEPENDENCY / HAND-OFF for the next developer**: **fix BUG-044 first** (one-line rename in `Mailer.php` + re-verify against a fresh clone + confirm real CI green) before doing anything else — the backend is locally verified but not yet CI-confirmed on `main`. Once that\'s green, the entire backend for this feature is real, wired, and verified, and the next session should go straight to the frontend: extend `useAuth.ts` (role/permissions/emailVerified/csrfToken; handle the `verified=1`/`verify_error=...`/`reset_token=...` query params the backend now produces, the same way `auth=ok`/`auth_error` are already handled), update `LoginScreen.tsx` to add local email/password alongside the existing Microsoft SSO button, and add Register/ForgotPassword/ResetPassword/Profile/AdminUsers/AdminRoles screens. Every backend contract those screens need to call already exists and is tested — see the route list in point 4 above for the exact endpoints and this entry\'s point 7 if a session/CSRF issue looks familiar.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-04 (twenty-sixth session)', 'BUG-044 CLOSED: Mailer.php MIME boundary renamed, full local re-verification, mail config documented', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-sixth session) — BUG-044 CLOSED: Mailer.php MIME boundary renamed, full local re-verification, mail config documented".]
+
+## 2026-09-04 (twenty-sixth session) — BUG-044 CLOSED: Mailer.php MIME boundary renamed, full local re-verification, mail config documented
+
+**Instruction this session started from** (Mahdi, same standing instruction repeated verbatim across sessions): fix the CI bug first, explain the mailer\'s config needs, then continue fixing bugs, then features by priority, with technical debt never indefinitely deferred, and push with enough log detail that the next developer (human or AI) loses no context.
+
+**BUG-044 — fixed and verified**:
+- Read `docs/BUGLOG.md`\'s existing BUG-044 entry first, per its own explicit instruction not to re-investigate from scratch. Root cause and fix were already fully diagnosed by the twenty-fifth session; this session executed the fix and the verification, not fresh discovery.
+- Reproduced the failure locally first, against the exact committed state (`e749594`), to confirm the documented root cause before changing anything: `scripts/check-repo-hygiene.sh` failed with exactly the predicted `FAIL: stale pre-restructure references found in: src/backend/auth/Mailer.php`.
+- Applied the fix: `src/backend/auth/Mailer.php` line 142, `\'audit-app-\'` → `\'ddc-mail-\'`. No functional change.
+- Sandbox had neither PHP nor MariaDB (same starting point as every prior sandbox session touching the DB). Installed PHP 8.3.6 + MariaDB 10.11.14 — the same major/minor version CI\'s `mariadb:10.11` service image runs, matching the standard the twenty-second/twenty-third sessions established.
+- Ran the complete standing local sequence, in the correct order (staged/committed tracked state, not an unstaged working tree — the exact process fix this entry itself called for): hygiene check (4/4 pass) → fresh-DB `migrate.php` (2 new, 0 skipped) → `migrate.php` again (0 new, 2 skipped, idempotence confirmed) → `seed.php` → `smoke_test.php` (**24/24**) → live `php -S` + `/health` (`dbConnected: true`) → `http_api_test.php` (**42/42**, the full auth/RBAC/CSRF suite from two sessions ago, still green) → `npm ci` → `npx tsc --noEmit` (clean) → `npx expo export --platform web --clear` (succeeds) → assembled `_deploy` per the workflow\'s own exact recipe → `check-deploy-artifact.sh` (4/4 pass). Also independently confirmed `check-deploy-artifact.sh` has no overlapping stale-path scan of its own, so it was never at risk from this bug (matches BUG-044\'s own prediction).
+- **CI confirmation**: pushed as commit `b4bad0d`. Confirmed via the Actions API — run `33927539078`, conclusion `success`, **all 20 real steps green**, including step 4 "Repository hygiene checks" (the one that was failing) and step 20 "Publish deployment artifact" (confirms the artifact actually reached `macerti/duration_calculator`, not just that the source-repo checks passed). BUG-044 is genuinely closed, not just locally verified.
+
+**Mailer config — documentation gap closed**: `config.example.php` never got a `\'mail\'` key template when `Mailer.php` was added two sessions ago, even though `Mailer.php`\'s own header comment already documented the expected shape. Added a commented `\'mail\'` block to `config.example.php` (driver/host/port/encryption/username/password/from_email/from_name) so a developer copying the example file sees where SMTP settings go. **Still open, needs Mahdi directly**: real SMTP host/port/encryption/username/password for `info@macerti.com` — these are NOT GitHub Action secrets/variables for this project (there is exactly one GitHub secret in use, `DURATION_CALCULATOR_TOKEN`, for cross-repo artifact publishing, unrelated to mail). Mail credentials belong in `config.php` on the DirectAdmin host directly, the same way DB and OAuth credentials already do — `config.php` is gitignored and never touches GitHub. Until Mahdi supplies them, the `\'log\'` driver (already verified, writes to a local file) remains the safe default and is what CI/local testing exercises.
+
+**Version bump**: 5.1.8 → **5.1.9** (`src/frontend/package.json`) — one bug found and fixed, per this project\'s own `x.y.z` convention in `docs/ORIENTATIONS.md`.
+
+**Files changed this session**: `src/backend/auth/Mailer.php` (one-line rename), `src/backend/config.example.php` (added `\'mail\'` template block, no other changes), `src/frontend/package.json` (version bump only), `docs/BUGLOG.md` (BUG-044 closed with full verification record), `docs/ROADMAP.md` (item 9 status line updated), `CHANGELOG.md` (new 5.1.9 entry). No migration changes. No new frontend screens — the frontend auth work below remains entirely untouched.
+
+**NOT DONE / open, in priority order for the next developer**:
+1. **Confirm the real CI run on this session\'s push is green** (see the caveat above — do this before anything else, don\'t assume).
+2. **Frontend for local accounts + RBAC** (`docs/ROADMAP.md` item 9) — this is now, per that item\'s own words, "the entire remaining scope": extend `useAuth.ts` (role/permissions/emailVerified/csrfToken state, plus handling the `verified=1`/`verify_error=...`/`reset_token=...` query params the backend already produces), add local email/password to `LoginScreen.tsx` alongside the existing Microsoft SSO button, and build Register/ForgotPassword/ResetPassword/Profile/AdminUsers/AdminRoles screens. Every backend endpoint these need already exists and is tested (42/42) — see the twenty-fifth session\'s entry above for the exact route list.
+3. **Technical debt #6 (design-token migration)**: 2 of 9 files done as of the eighteenth session (`TextField.tsx`, `NumberField.tsx`). Remaining: `ErrorBoundary.tsx`, `ResponsiveContainer.tsx`, `PersonnelForm.tsx`, `NaceSearchField.tsx`, `CalculationReportScreen.tsx`, `ClientDetailScreen.tsx`, `ClientsListScreen.tsx`. Flagged P1 "Do Not Defer" in `docs/ROADMAP.md` — genuinely low-risk, bounded, easy to verify (`tsc --noEmit` + visual no-op), a good chunk for a session with limited time.
+4. Real SMTP credentials for `info@macerti.com`, from Mahdi directly into production `config.php` — see the mailer section above.
+5. Technical debt #7 (relocate `src/backend/tests/` to top-level `tests/backend/`, add frontend unit tests) — untouched, still backlog per `docs/ROADMAP.md`.
+
+**Dependency / hand-off**: item 1 above is a pure verification step, no code needed. Item 2 is the real next body of work and has no blockers — every backend contract it needs is already live and tested.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-04 (twenty-seventh session)', 'BUG-045: diagnosed and documented a full production SSO outage (missing `user_identities` table); no code fix possible from this sandbox — runbook handed to Mahdi, process gap closed in docs', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-seventh session) — BUG-045: diagnosed and documented a full production SSO outage (missing `user_identities` table); no code fix possible from this sandbox — runbook handed to Mahdi, process gap closed in docs".]
+
+## 2026-09-04 (twenty-seventh session) — BUG-045: diagnosed and documented a full production SSO outage (missing `user_identities` table); no code fix possible from this sandbox — runbook handed to Mahdi, process gap closed in docs
+
+**Trigger**: Mahdi reported he is now locked out of the app via Microsoft sign-in, which "was working perfectly" before: `⚠ callback_failed: SQLSTATE[42S02]: Base table or view not found: 1146 Table \'macerti_audit_calc.user_identities\' doesn\'t exist`. Standing instruction repeated verbatim: read logs first, thoroughly document tests/results/deductions, fix bugs, then features by priority, don\'t defer technical debt, push with enough detail for full continuity.
+
+**What changed since this session last touched the repo**: three sessions happened in between (twenty-third through twenty-sixth, per `git log`) — BUG-040–043 got fully closed and CI-confirmed green, then a substantial new feature (local email/password accounts + RBAC) was designed, built, wired end-to-end, and shipped (migration `002_add_auth_and_rbac.sql`, `Guard.php`, `Mailer.php`, full `/auth/*` and `/admin/*` routes, `/clients`+`/cases` gated behind auth, Microsoft/Google OAuth callbacks rewired to call `resolveSsoUser()`), verified with 42/42 HTTP tests and confirmed green in CI (run `33927539078`). All of that work is real, tested, and correctly implemented — the bug reported this session is not a defect in that work\'s logic, but a **deployment/process gap** none of those sessions surfaced.
+
+**Root cause, fully confirmed by tracing the actual pipeline (not guessed)** — full detail in `docs/BUGLOG.md` BUG-045, summary here:
+- The twenty-fifth session\'s `resolveSsoUser()` rewiring means every Microsoft/Google login now unconditionally queries/writes the `user_identities` table (added by migration 002).
+- Both feature-building sessions verified this thoroughly, but only ever against CI\'s own throwaway `mariadb:10.11` service database and this sandbox\'s local MariaDB — never against the real production database.
+- Traced the full deploy pipeline end to end: `duration_calculator_source`\'s CI only migrates its own ephemeral test DB, then pushes a built artifact to a **separate** repo, `macerti/duration_calculator` (confirmed via the workflow\'s `DEPLOY_REPO` env var — note for continuity: `macerti/duration_calculator_backend`, despite the name, turned out to have an identical commit history to the source repo and does not appear to be the real deploy target used by this workflow). That repo\'s own `deploy.yml` ships files to the live host via `SamKirkland/FTP-Deploy-Action` in pure file-sync mode — **no step anywhere in this entire pipeline has ever executed a migration against the real production database.** Confirmed the migration file and the fixed `migrate.php` are both physically present in the `macerti/duration_calculator` deploy repo (i.e. already FTP\'d to the live host), just never run.
+- This is the exact "whether it targets the live DirectAdmin/MariaDB host directly or a staged step" design question the original FEAT-005 roadmap entry flagged as unresolved, back before any of this was built — it was never actually resolved, and its absence is what caused this incident the moment code depending on a new table got deployed.
+
+**Why this reads as a sudden regression, and correctly so**: the previous production code never touched `user_identities` (SSO was a pure in-memory PHP session, no DB write). The new code requires it unconditionally. There was no gradual degradation — the first login attempt after the new code landed via FTP broke instantly, for every user, including Mahdi.
+
+**NOT a code bug to fix in this repository** — migration `002_add_auth_and_rbac.sql` itself is correct and safe (verified: 8 `CREATE TABLE` + 5 `INSERT IGNORE`, nothing destructive, cannot touch existing data). It simply has never been run against production. **This session made no source code changes** — there is nothing to fix in `src/`. The fix is operational: run `php db/migrate.php` (or the phpMyAdmin fallback) against the real production database. Full runbook in `docs/BUGLOG.md` BUG-045 — **this needs to be run by Mahdi or whoever has host/SSH/phpMyAdmin access; this sandbox has none of those**, consistent with every prior session\'s own notes on this limitation.
+
+**Process gap closed this session** (documentation only, but a real fix, not just a note): `docs/DEPLOY.md` step 5 was still describing the pre-FEAT-005 manual `schema.sql`-paste process and had never been updated to mention `migrate.php` at all — rewritten with the correct command, plus a loud, explicit warning (both in the numbered steps and in the earlier deploy-flow narrative) that this step is not automated anywhere and must be done manually after every push containing a new `db/migrations/*.sql` file, pointing at BUG-045 as the concrete cost of skipping it.
+
+**Flagged as urgent technical debt, not left implicit**: added a new item **0** at the very top of `docs/ROADMAP.md`\'s P1 list (previous items renumbered are unaffected, this was inserted before item 1) — closing this gap for real means a properly authenticated `POST /api/migrate` endpoint that `deploy.yml` can call right after its FTP sync, since the production API is already confirmed publicly reachable over HTTPS from GitHub Actions (the existing health-check curl proves this). Scoped but deliberately not built this session — needs its own careful design pass (auth secret, safe error handling), and building new infrastructure mid-incident was the wrong call versus documenting the fix and getting Mahdi unblocked.
+
+**Files changed this session**: `docs/BUGLOG.md` (BUG-045), `docs/DEV_STATUS.md` (this entry), `docs/DEPLOY.md` (step 5 rewritten + deploy-flow narrative updated), `docs/ROADMAP.md` (new urgent item 0). **No files under `src/` changed** — there was no source bug to fix. No version bump (no user-reachable code changed; the production incident\'s fix is operational, not code).
+
+**NOT DONE / open, in priority order**:
+1. **Confirm with Mahdi that running `php db/migrate.php` (or the phpMyAdmin fallback) against production actually restores Microsoft sign-in.** This is a high-confidence diagnosis with a low-risk fix, but unconfirmed until it\'s actually run — this sandbox cannot do it.
+2. **The real fix for the underlying gap (automated production migration, e.g. the `POST /api/migrate` endpoint sketched above and in `docs/ROADMAP.md` item 0) is not built.** This will recur on the next migration file if left as a purely manual/documentation-only safeguard.
+3. **Once item 1 is confirmed**, resume the last still-open feature thread from the twenty-sixth session\'s hand-off: frontend for local accounts + RBAC (`useAuth.ts`, `LoginScreen.tsx`, Register/ForgotPassword/ResetPassword/Profile/AdminUsers/AdminRoles screens) — untouched, still the largest remaining scope for that feature, and still fully unblocked (every backend contract it needs is live and tested at 42/42).
+4. Design-token migration (item 6, renumbered from this session\'s insertion) and the `tests/` relocation (item 7) remain exactly as the twenty-sixth session left them — not touched this session, correctly so, given the priority was the live incident.
+
+**Dependency / hand-off**: item 1 needs Mahdi (or host access) directly — nothing else in this list should be treated as done until that\'s confirmed, since a next session assuming SSO is fixed without checking would be repeating this exact session\'s own opening mistake (trusting CI-only verification for something that only matters in production). Item 2 is real, scoped infrastructure work with no other blockers. Item 3 has zero blockers and was already fully scoped by the twenty-sixth session.
+
+---
+**UPDATE (same day, following message) — BUG-045 CONFIRMED CLOSED.** Mahdi applied the migration himself and confirmed: "i updated it and logged in using Microsoft it worked perfectly." The production lockout is fully resolved. He also asked directly whether pushes now update the database automatically — answered: no, confirmed not automatic; CI only migrates its own test database, production still needs this same manual step on every future push that adds a new `db/migrations/*.sql` file, until `docs/ROADMAP.md` item 0 (the automated production-migration endpoint) is actually built. **That item is now the top-priority open task** — nothing else is blocking it, and this incident is the concrete proof of why it matters, not just a theoretical nice-to-have.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-05 (twenty-eighth session)', 'FEAT-005 automation gap CLOSED: built `POST /api/migrate`, wired it into the deploy pipeline, no bugs left open to work on, features not started this session', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-05 (twenty-eighth session) — FEAT-005 automation gap CLOSED: built `POST /api/migrate`, wired it into the deploy pipeline, no bugs left open to work on, features not started this session".]
+
+## 2026-09-05 (twenty-eighth session) — FEAT-005 automation gap CLOSED: built `POST /api/migrate`, wired it into the deploy pipeline, no bugs left open to work on, features not started this session
+
+**Trigger**: Mahdi\'s instruction, repeated in essence from prior sessions but with new emphasis: pull latest, read logs first, make migrations "fully automatic... forever" (his words) — research the best approach given our actual hosting constraints (FTP deploy, phpMyAdmin/SSH-or-not on DirectAdmin) before building, ask if anything is needed from him, then bugs, then features by priority, and treat technical debt as continuous. Explicit standing instruction to push before the session\'s own resource budget runs out, with log updates even for partial progress, so continuity across devs/sessions is never lost.
+
+**Starting state confirmed by reading the logs first, per instruction**: `docs/ROADMAP.md` P1 item 0 and `docs/BUGLOG.md` BUG-045 already fully diagnosed this exact gap and scoped the fix (a secret-authenticated `POST /api/migrate` endpoint called by the deploy repo right after its FTP sync) — so this session executed an already-well-specified plan rather than starting from scratch. Only two bugs were open going in: BUG-029 (production-quality/framework-residue audit, needs live browser access this sandbox doesn\'t have) and BUG-035 (needs a real device, same limitation) — both unchanged, still blocked on the same access this sandbox has never had in any prior session either. No features were started this session; closing the migration gap was treated as the single highest-priority item, per Mahdi\'s explicit instruction and per `docs/ROADMAP.md` already ranking it above every feature.
+
+**What was built** (full detail in `docs/BUGLOG.md` BUG-045\'s 2026-09-05 update and `src/backend/db/migrations/README.md`\'s updated checklist):
+- `POST/GET /api/migrate` in `src/backend/api/index.php` — shared-secret auth (`X-Migrate-Secret` header or `?secret=` query param — deliberately not `Authorization`, since shared hosting sometimes strips that header before PHP sees it, and this codebase\'s own `X-CSRF-Token` precedent is already confirmed working in production), `hash_equals()` timing-safe comparison, per-IP rate limiting via the existing `rateLimitCheck()` helper (10/600s, same pattern as login/register/forgot-password). `GET` is status-only and side-effect-free by default (mirrors `migrate.php --check`); it only applies when `POST` is used, or `GET` carries `?apply=1` — so a bare GET (bot, link preview, curious visitor) can never trigger a write, while a human can still trigger the real thing from a plain browser URL, which Mahdi\'s original ask implicitly wanted ("run in phpMyAdmin or any other way fitting our situation").
+- `config.example.php` documents the new `migration_secret` key and explains why it\'s the one step that can never be automated (config.php is gitignored, lives only on the server, no pipeline can write to it).
+- `macerti/duration_calculator`\'s `deploy.yml` (the *deployment* repo, not this one) now has a step after `FTP-Deploy-Action` that `curl -f -X POST`s the endpoint with a new `MIGRATE_SECRET` GitHub Actions secret — generated this session (`openssl rand -hex 32`) and set directly via the GitHub API (this session\'s token had `admin` permission on both repos, confirmed via `GET /repos/.../permissions` before relying on it, and `actions/secrets/public-key` + libsodium sealed-box encryption to set it without ever putting the raw value in a file this repo tracks).
+- `src/backend/tests/http_api_test.php`: 6 new cases for this endpoint. `.github/workflows/build-test-publish.yml`\'s CI config generator now sets a CI-only `migration_secret` so these run in CI too, not just locally.
+- Docs: `docs/DEPLOY.md` step 5 rewritten (automation is now the primary path, phpMyAdmin/CLI kept as an explicit fallback, not the main instructions), `docs/ROADMAP.md` item 0 marked DONE, `db/migrations/README.md`\'s "future enhancement" checklist item checked off.
+
+**Testing — done for real, not just syntax-checked**, since this session\'s whole point was closing a gap that three prior sessions\' CI-only verification had already been burned by once (BUG-045 itself): installed PHP 8.3 + MariaDB 10.11 directly in this sandbox via `apt` (both `archive.ubuntu.com`/`security.ubuntu.com` are allowed egress domains here) rather than relying on the sandbox\'s usual "no real DB" limitation. Ran the actual PHP built-in server against a real MariaDB instance, reset to a genuinely fresh database, applied migrations, seeded, then ran the full suite:
+- `tests/smoke_test.php`: **24/24 passing**, unchanged.
+- `tests/http_api_test.php`: **50/50 passing** (44 pre-existing + 6 new), including: unauthenticated `/migrate` rejected, wrong-secret rejected, `GET` returns status without applying anything, `POST` applies and reports success, and — the property this whole feature depends on — **a second `POST` is a genuine no-op** (`applied: 0`), proving a retried/re-run deploy workflow step is safe.
+- One real bug found by this local testing, not by inspection: first implementation attempt returned 500 — `Call to undefined function getPdo()`, because `getPdo()` lives under the `AuditEngine` namespace and the new code (in the router\'s global-namespace scope) called it unqualified. Fixed with `use function AuditEngine\\getPdo;`. Worth recording because it is exactly the kind of bug that only a real execution (not a syntax check) catches, and this project\'s own BUG-040 was the same class of mistake (an unread config array) — **syntax-clean PHP is not the same as working PHP, still true after 27 prior sessions established it.**
+- Sandbox limitation reconfirmed (matches prior sessions\' own notes on `php -S`): **`mysqld` also does not survive between tool calls in this environment** — several attempts to split "start services" and "run tests" into separate calls silently lost the running database, producing misleading connection-refused errors that looked like new bugs but were purely sandbox artifacts. Whoever hits this again: do the entire start-services-and-test sequence inside one single shell invocation, with short/fixed sleeps rather than long retry loops (some multi-step scripts in this session were themselves killed by what looks like a wall-clock limit on a single tool call, separate from the process-survival issue).
+- **Not independently re-verified this session**: a fully-cold HTTP-only bootstrap (i.e., hitting `/migrate` via `POST` against a database that has *never* once had `migrate.php` run against it, skipping the CLI entirely). Judged low-risk rather than skipped for no reason: the endpoint calls the exact same `Migrations::run()` method the CLI does, `ensureMetadataTable()` already runs `CREATE TABLE IF NOT EXISTS` unconditionally on every construction, and this exact code path (fresh DB → migrate) was exercised via the CLI moments earlier in the same test run with an unrelated database. A repeat attempt to isolate this one variant hit the same tool-call timeout noted above twice in a row; if a future session wants this specific proof, budget one dedicated short call for it rather than folding it into a longer script.
+- **CI-confirmed on real GitHub Actions — DONE, same session**: pushed as commit `4208c69`. `duration_calculator_source` run `33949573839`: **20/20 steps green**, including the HTTP regression suite (now 50/50) exercising the new endpoint against CI\'s own real MariaDB, not just this sandbox. That run\'s artifact-publish step pushed to the deploy repo, which triggered `deploy.yml` there (run `33949623405`, and an earlier manual-push trigger `33949571386` from this session\'s own `deploy.yml` commit `5e86cf6`) — both completed with the FTP sync step green and the new migration step failing exactly as designed: production `config.php` doesn\'t have `migration_secret` yet, so `/api/migrate` returns 501 and the step fails loudly instead of silently no-op\'ing. This is the correct, intended first-run behavior, not a bug — confirmed by inspecting each run\'s per-step conclusions via the GitHub API (FTP step: success; migration step: failure; health-check step: skipped as a consequence, since it has no `if: always()`).
+
+**Deliberate design choices, recorded so they aren\'t re-litigated from scratch**:
+- `GET` vs `POST` semantics (read-only by default, opt-in apply via `apply=1`) was chosen over "any request applies" specifically so a health-check bot, crawler, or shared link preview can never have a side effect, while still satisfying Mahdi\'s original ask that a human be able to trigger this directly from a browser.
+- Rate limiting reuses the existing `rate_limits` table/helper rather than inventing a new mechanism — this is exactly the kind of small technical-debt item ("do we have a rate limiter already or do we bolt on a new one") that\'s easy to duplicate under time pressure; reusing it was a deliberate five-minute check, not an accident.
+- The GitHub Actions secret was set via direct API call (libsodium sealed-box encryption against the repo\'s public key) rather than asking Mahdi to paste it into Settings by hand, since this session\'s token happened to carry `admin` rights on both repos — confirmed before relying on it, not assumed. The one piece that genuinely cannot be automated (`config.php` on the live server) was left as a clearly-flagged manual step rather than requesting FTP/SSH/database credentials in this conversation to attempt it directly — those are higher-sensitivity credentials than a single rotatable migration secret, and the one remaining step is a 30-second copy-paste, not a recurring burden.
+
+**NOT DONE / open, in priority order**:
+1. ~~Observe the real GitHub Actions run this push triggers~~ **DONE, same session** — see the update above: both repos ran green through the FTP/publish steps; the new migration step correctly fails until `config.php`\'s one-time setup is done (item 2 below), which is the intended behavior, not a new bug.
+2. ~~Confirm with Mahdi that the one manual step has been done~~ **DONE, same session.** Mahdi added `migration_secret` to production `config.php` and asked for a status/log update. Verified by triggering `deploy.yml` again via `workflow_dispatch` (run `33949882138`) rather than just taking his word for it: **all 7 steps green, including the migration step and the health check** — this is the real production host, not CI\'s ephemeral database, so this is the actual end-to-end proof the whole saga needed. FEAT-005\'s automation gap is now closed in practice, not just in code. Until then, the new deploy step will fail loudly (by design) rather than silently doing nothing — that failure is expected and is not a new bug if seen once, but should not still be happening on the second push after this one.
+3. **BUG-029** (production-quality audit — framework residue, console errors, deployment hygiene) remains OPEN, blocked on live browser access this sandbox has never had. **BUG-035** similarly blocked on real device access. Neither was touched this session — the explicit instruction was migrations first, and this session\'s own resource budget went entirely to that, tested properly, rather than spreading thin across multiple fronts.
+4. **No feature work started** (Parameter Admin UI, FEAT-001 Synthèse tabs, PDF export, etc. — see `docs/ROADMAP.md` items 1-6). Per the standing priority order (migrations → bugs → features) and per Mahdi\'s own repeated instruction not to spread a session thin, and given the two open bugs are both access-blocked rather than fixable from here, the very next dev session should either (a) get BUG-029/BUG-035 unblocked with real browser/device access and close them, or (b) if that\'s not available, move straight to `docs/ROADMAP.md` item 1 (or item 2, Parameter Admin UI — check with Mahdi which he\'d rather see next, both are already fully scoped).
+5. **Documentation drift noticed, not fixed (flagging, not scope creep)**: `macerti/duration_calculator` (the deployment repo) carries its own root-level copies of `DEPLOY.md`, `ROADMAP.md`, `BUGLOG.md`, `CHANGELOG.md`, `ORIENTATIONS.md`, `TEST_CHECKLIST.md`, `CONTRIBUTING.md`, `SECURITY.md`, `README.md` — none of these are touched by either repo\'s CI, so they are stale snapshots from whenever they were first copied, not living docs. This session deliberately only edited `duration_calculator_source`\'s `docs/` (the actual single source of truth per this file\'s own header) to avoid scope creep, but the existence of silently-diverging doc copies in the deploy repo is itself a small piece of technical debt worth a future session\'s attention (either delete them there with a pointer back to the source repo, or explicitly decide they serve a different purpose and say so).
+
+**Dependency / hand-off**: item 1 has no blocker other than time — watch the next Actions run on both repos once this is pushed. Item 2 needs Mahdi directly (server file access this sandbox has never had, consistent with every prior session). Items 3-4 need either live access (not yet available) or a product-priority call from Mahdi. Item 5 is a documentation cleanup with no code risk, safe for any future session to pick up in a spare few minutes.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-05 (twenty-ninth session)', 'Local accounts + RBAC frontend: STARTED, NOT FINISHED. `useAuth.ts`/`useAdminApi.ts`/`LoginScreen.tsx` done; six screens and `App.tsx` wiring NOT done. **Tree does not currently typecheck — see blocker below before touching anything else.**', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-05 (twenty-ninth session) — Local accounts + RBAC frontend: STARTED, NOT FINISHED. `useAuth.ts`/`useAdminApi.ts`/`LoginScreen.tsx` done; six screens and `App.tsx` wiring NOT done. **Tree does not currently typecheck — see blocker below before touching anything else.**".]
+
+## 2026-09-05 (twenty-ninth session) — Local accounts + RBAC frontend: STARTED, NOT FINISHED. `useAuth.ts`/`useAdminApi.ts`/`LoginScreen.tsx` done; six screens and `App.tsx` wiring NOT done. **Tree does not currently typecheck — see blocker below before touching anything else.**
+
+**Trigger**: Mahdi confirmed migrations (FEAT-005) are fixed and asked to continue the local-accounts/RBAC frontend (`docs/ROADMAP.md` item 9 — the entire remaining scope per every session since the twenty-fourth), asked for the mail-config explanation in DirectAdmin-matching terms, and repeated the standing instruction: read logs first, fix bugs, build features by priority, treat technical debt as continuous, push with enough log detail for continuity even on partial progress. This session ran out of tool-call budget partway through the frontend build; this entry is a deliberate stop-and-document-only push per Mahdi\'s explicit follow-up instruction, not a natural stopping point in the work itself.
+
+**Read first, confirmed against source (no code changes needed)**: backend for local accounts + RBAC is exactly as the twenty-fourth/twenty-fifth/twenty-sixth session entries describe — fully wired in `api/index.php`, 42/42 HTTP tests, CI-confirmed. Re-read every `/auth/*` and `/admin/*` route handler in `src/backend/api/index.php` directly (not from memory of the log) to get exact request/response shapes before writing any frontend code against them — see each function below for which route it targets.
+
+### DONE this session (code written, NOT typechecked, NOT committed until this push, NOT tested against a live server)
+
+1. **`src/frontend/src/api/client.ts`** — one-line-intent fix: the shared `request()` helper never set `credentials: \'include\'` on its `fetch()` call. Found by inspection while reading this file to decide where new admin-endpoint calls should live, not by a report — the browser\'s default `same-origin` credentials policy silently drops the session cookie on any cross-origin call, meaning **every existing call through this client to the now-auth-gated `/clients` and `/cases` routes would have failed with 401 in any cross-origin setup** (e.g. Expo dev server on a different port than the PHP dev server) even though `useAuth.ts`\'s own hand-rolled fetches already did this correctly for the exact same reason. Logged as **BUG-046** in `docs/BUGLOG.md` — read that entry for full reasoning; not yet confirmed against a real cross-origin run this session (no live browser access, consistent with every prior session\'s own sandbox limitation).
+
+2. **`src/frontend/src/components/TextField.tsx`** — extended with optional `secureTextEntry`, `autoCapitalize`, `keyboardType`, `autoComplete`, `error` props. Every new prop defaults to this file\'s prior hard-coded behavior (`keyboardType="default"`, `autoCapitalize="sentences"`, `secureTextEntry=false`, no error row), so **no existing caller\'s rendering or behavior changes** — this was verified by reading every prop\'s default inline, not assumed; an actual `tsc`/visual re-check of the wizard screens that already use `TextField` has NOT been run this session. Needed because Register/Login/Profile/ResetPassword all need password-masked and email-typed inputs and there was no reason to build a parallel one-off component when this one already existed and is mid-way through its own design-token migration (see technical debt #6 below — do not let this edit block that item, it\'s additive only).
+
+3. **`src/frontend/src/hooks/useAuth.ts`** — full rewrite. Changes, each with why:
+   - **Corrected `AuthUser`** to match `db/userRepo.php`\'s `getUserProfile()` exactly (`id, name, email, pendingEmail, emailVerified, status, hasPassword, linkedProviders, role:{id,name}, permissions, lastLoginAt, createdAt`). The pre-existing type had a hard-coded `provider: "microsoft" | "google"` field left over from **before** the twenty-fifth session rewired SSO callbacks onto `resolveSsoUser()` — it had been silently wrong for two sessions\' worth of shipped backend work because nothing in the frontend consumed it yet to surface the mismatch.
+   - Added `csrfToken`, `notice`, `resetToken` (+ `clearResetToken()`) to `AuthState`. `csrfToken` is read from whichever response includes it (`/auth/me`, `/auth/login`, `/auth/reset-password`) and threaded automatically as `X-CSRF-Token` on every subsequent mutating call via a new internal `authFetch()` helper — this is the one and only place that header gets attached, so no screen has to remember to add it itself.
+   - Added URL-param handling for `?verified=1` (sets `notice`), `?verify_error=...` (sets `error`), `?reset_token=...` (sets `resetToken`) — same pattern (read once on mount, strip from URL via `history.replaceState`) as the pre-existing `auth_error`/`auth=ok` handling, so there is exactly one convention for "PHP redirected here with a query flag" across all five cases now, not a new one-off per link type.
+   - Added methods: `login`, `register`, `forgotPassword`, `resetPassword`, `resendVerification`, `changePassword`, `updateProfile`, plus a `hasPermission(key)` helper. Each returns `{ ok, error?, code?, message? }` rather than throwing, specifically so a screen can show the exact backend message (e.g. login\'s `email_not_verified` code drives LoginScreen\'s "resend confirmation" prompt) instead of a generic caught-exception string.
+   - **Not tested against a live server this session** — every request/response shape was taken from reading `api/index.php` and the repo functions it calls directly (cited above), not from an executed HTTP round-trip. Treat as "written to spec, unexecuted" until a future session runs it against real PHP + MariaDB, the same standard this project has held every other backend-facing frontend change to.
+
+4. **`src/frontend/src/hooks/useAdminApi.ts`** (new file) — thin client for `/admin/roles`, `/admin/permissions`, `/admin/users` (list/create/update/delete as each route supports). Deliberately separate from `useAuth.ts`: admin management isn\'t part of the "am I logged in" state machine, and keeping it out avoids re-rendering every admin screen on every auth-state tick. Takes `csrfToken` as a parameter from the caller\'s own `useAuth()` rather than tracking its own, so there remains exactly one CSRF/session source of truth in the app, per the account-model constraint `docs/ROADMAP.md` item 9 itself calls out. Types (`Role`, `Permission`, `AdminUser`) copied field-for-field from `db/roleRepo.php`/`permissionRepo.php`/`userRepo.php`\'s actual return arrays, cited inline in the file\'s own comments.
+
+5. **`src/frontend/src/screens/LoginScreen.tsx`** — rewritten to add a local email/password form (with inline validation, a busy state, and a "resend confirmation e-mail" prompt that appears specifically on the `email_not_verified` login error code) alongside the pre-existing Microsoft button, plus a green `notice` banner (for `?verified=1`) and two links, "Mot de passe oublié ?" and "Créer un compte". **These two links call `onNavigateForgotPassword`/`onNavigateRegister` props that are new, required (non-optional) props on this component.**
+
+### NOT DONE — genuinely unbuilt, not just untested
+
+- `RegisterScreen.tsx`, `ForgotPasswordScreen.tsx`, `ResetPasswordScreen.tsx`, `ProfileScreen.tsx`, `AdminUsersScreen.tsx`, `AdminRolesScreen.tsx` — **none of these six files exist yet.**
+- `App.tsx` — **not touched this session.** No pre-auth view-switching for Register/ForgotPassword/ResetPassword (all three currently have nowhere to render), no new `Stack.Navigator` entries for Profile/AdminUsers/AdminRoles, no navigation entry point to reach Profile from anywhere in the authenticated app (e.g. from `HomeScreen`), and no handling of `useAuth()`\'s new `resetToken`/`notice` fields at the call site.
+
+### ⚠️ KNOWN-BROKEN INTERMEDIATE STATE — read this before doing anything else
+
+**`App.tsx`\'s existing `<LoginScreen onMicrosoft={loginWithMicrosoft} error={error} />` call (line 66) no longer satisfies `LoginScreen`\'s props interface.** The rewritten `LoginScreen.tsx` requires `onLogin`, `onNavigateRegister`, `onNavigateForgotPassword`, and `onResendVerification` as non-optional props that `App.tsx` does not pass. This means, as of this commit:
+- **`npx tsc --noEmit` will fail** on this mismatch (not run this session to confirm — this is a static read of both files\' current contents, not a guess, but it has not been executed).
+- **`npx expo export --platform web` would also be expected to fail** for the same reason, or at minimum produce a broken login screen at runtime if the type error is somehow bypassed (calling `undefined` as a function the moment the user touches "Se connecter", "Mot de passe oublié ?", or "Créer un compte").
+- **This has NOT been pushed to production and must not be**, and no CI run should be trusted green if it somehow reports otherwise against this exact commit — if that happens, treat the CI check itself as suspect before the code.
+
+This is a known, deliberate, and clearly-flagged incomplete state — not an accidental regression discovered later — but it means **the very next action on this codebase, before any of the six missing screens, must be one of**: (a) finish wiring `App.tsx` (requires at least a minimal `RegisterScreen`/`ForgotPasswordScreen`/`ResetPasswordScreen` to exist so there\'s something to navigate to, i.e. realistically means finishing the rest of this feature in the same pass), or (b) if a session genuinely only has time to stabilize rather than continue, make the four new `LoginScreen` props optional with safe no-op fallbacks purely to restore a compiling tree — **not recommended as a real fix**, since it would silently ship dead buttons, but noted here as the minimum-effort option if a future session needs to unblock unrelated work on this branch first.
+
+### Dependency / hand-off for the next developer
+
+Pick up in this exact order:
+1. Build `RegisterScreen.tsx` (calls `useAuth().register`), `ForgotPasswordScreen.tsx` (calls `forgotPassword`), `ResetPasswordScreen.tsx` (calls `resetPassword`, reads `useAuth().resetToken`) — these three unblock `App.tsx`\'s pre-auth view-switching and are the direct dependents of this session\'s `LoginScreen.tsx` links.
+2. Wire `App.tsx`: a small `authView` state (`\'login\' | \'register\' | \'forgot\' | \'reset\'`, defaulting to `\'reset\'` when `useAuth().resetToken` is set on mount) to switch between the four pre-auth screens; pass the four new required props into `LoginScreen`; add `Profile`/`AdminUsers`/`AdminRoles` to the existing `Stack.Navigator` (only reachable once authenticated); add a way to reach `Profile` from `HomeScreen` (a header button or a small account row — not yet designed, open to whoever picks this up).
+3. Build `ProfileScreen.tsx` (own name/email/password, `hasPassword`/`linkedProviders`/`role.name` display, calls `updateProfile`/`changePassword`), then `AdminUsersScreen.tsx`/`AdminRolesScreen.tsx` (gated behind `hasPermission(\'manage_users\')`/`hasPermission(\'manage_roles\')` respectively — both already exposed by `useAuth()`) using `useAdminApi.ts`, already built and untouched-since-write.
+4. **Only once all of the above compiles**: run `npx tsc --noEmit`, then `npx expo export --platform web --clear`, then a real `php -S` + MariaDB pass exercising register→verify→login→forgot→reset→profile→admin end to end (mirroring the rigor the twenty-fifth session\'s `http_api_test.php` rewrite applied to the backend) — do not commit-and-trust; this project\'s own history (BUG-040, the `getPdo()` namespace bug in the twenty-eighth session) has repeatedly shown syntax-clean is not the same as working.
+5. Mail config (asked this session, answered in-conversation, not yet reflected anywhere in docs beyond the pre-existing `config.example.php` comments from the twenty-sixth session): still waiting on Mahdi to supply the real DirectAdmin SMTP host/port/encryption/username/password for `info@macerti.com` — `driver` stays `\'log\'` until then. No doc change needed here beyond what already exists; flagging only so it isn\'t re-asked next session without checking `config.example.php`\'s own `\'mail\'` block first.
+6. Version: **do not bump `package.json`\'s `5.1.9` yet** — nothing user-visible is reachable/working yet (the local-login form exists but the tree doesn\'t compile), and this project\'s own versioning rule (`docs/ROADMAP.md` FEAT-003) ties a feature-version bump to something a user can actually reach. Bump once the full flow compiles, typechecks, and is at minimum locally verified end-to-end.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-06 (thirtieth session)', 'no version bump — local-accounts/RBAC frontend now SOURCE-COMPLETE and building clean; the broken tree from the twenty-ninth session is fixed; still pending a live browser click-through', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-06 (thirtieth session) — no version bump — local-accounts/RBAC frontend now SOURCE-COMPLETE and building clean; the broken tree from the twenty-ninth session is fixed; still pending a live browser click-through".]
+
+## 2026-09-06 (thirtieth session) — no version bump — local-accounts/RBAC frontend now SOURCE-COMPLETE and building clean; the broken tree from the twenty-ninth session is fixed; still pending a live browser click-through
+
+**Picked up exactly where the twenty-ninth session\'s hand-off left off, in the order it specified.**
+
+### Done this session
+
+1. **`src/frontend/src/context/AuthContext.tsx`** (new) — a thin `React.createContext` wrapping `useAuth()`\'s return value, with a `useAuthContext()` hook that throws if called outside the provider. This is the one design decision the hand-off left open ("not yet designed, open to whoever picks this up"): `Profile`/`AdminUsers`/`AdminRoles` need `user`/`csrfToken`/`hasPermission`/`logout`/`changePassword`/`updateProfile`, and threading those through `RootStackParamList` route params would mean every route carries auth fields it doesn\'t otherwise need. Pre-auth screens (`Login`/`Register`/`ForgotPassword`/`Reset`) are unaffected — they still get their handlers as direct props from `AuthGate`, unchanged, since they render *instead of* the navigator, not inside it.
+
+2. **`RegisterScreen.tsx`, `ForgotPasswordScreen.tsx`, `ResetPasswordScreen.tsx`** (new) — built per the hand-off\'s spec. Client-side password-length validation (10–72 chars) mirrors `userRepo.php`\'s `MIN_PASSWORD_LENGTH`/`MAX_PASSWORD_LENGTH` constants for an immediate inline hint only; the server re-validates independently and its message wins on any drift. `ForgotPasswordScreen` always shows a success message regardless of `result.ok`, matching `POST /auth/forgot-password`\'s own deliberately generic response (never confirm/deny an email exists). `ResetPasswordScreen` does nothing on success beyond clearing its own local state — `resetPassword()` sets `user` inside `useAuth`, so `AuthGate`\'s `isAuthenticated` flips true and the app re-renders into the authenticated stack on its own, the same direction sign-in already worked.
+
+3. **`App.tsx`** rewired: `preAuthView` state machine (`\'login\' | \'register\' | \'forgot\' | \'reset\'`, defaulting to `\'reset\'` the instant `useAuth().resetToken` is set, both on initial mount and via a `useEffect` for the async case); all four `LoginScreen` props now passed; `Profile`/`AdminUsers`/`AdminRoles` added to the `Stack.Navigator` (authenticated-only, wrapped in `<AuthProvider value={auth}>`); **Home\'s header gets a "Profil" text link** (`headerRight`, navigates to `Profile`) — the concrete choice for the entry point the hand-off left open, chosen over a bigger account-row component to avoid touching `HomeScreen.tsx` itself.
+
+4. **`ProfileScreen.tsx`** (new) — own name/email (editable, calls `updateProfile`), `role.name`/`hasPassword`+`linkedProviders`/`lastLoginAt` (read-only), password change (calls `changePassword`), a "Se déconnecter" button, and — gated behind `hasPermission(\'manage_users\')`/`hasPermission(\'manage_roles\')` respectively — buttons into `AdminUsers`/`AdminRoles`. This is the only navigation entry point into either admin screen; there is no other route to them.
+
+5. **`AdminUsersScreen.tsx`** (new) — lists every user via `useAdminApi().listUsers()`, role and active/disabled status each editable inline via the existing `SegmentedPicker` component (reused as-is, not modified). Re-checks `hasPermission(\'manage_users\')` itself rather than trusting the navigation gate alone — matches this project\'s stated defense-in-depth security posture; the server enforces the same permission independently regardless.
+
+6. **`AdminRolesScreen.tsx`** (new) — role CRUD (name/description/permission-set) and permission CRUD (key/label/description), covering `docs/ROADMAP.md` item 9\'s "admin-manageable roles, permissions, and per-role function grants" in full, not just user↔role assignment. Two small new patterns introduced here, neither of which exists elsewhere in the codebase yet, both scoped to this file only: **`PermissionChips`** (a plain multi-select toggle — `SegmentedPicker` is single-select only, so this isn\'t a `SegmentedPicker` replacement, just a different shape for a different job) and **`DangerButton`** (two-tap confirm — first tap arms it, second fires — used for role/permission deletion instead of a `Modal` dialog, since this app doesn\'t have a shared confirmation-modal component yet and one felt like overkill for two delete buttons on one screen). Both `/admin/roles` and `/admin/permissions` are gated server-side behind the same single `manage_roles` permission (confirmed by reading `api/index.php` — there is no separate `manage_permissions`), so this screen checks exactly one flag for both sections.
+
+### Verified for real this session
+
+- **`npx tsc --noEmit`: clean.** The known-broken tree from the twenty-ninth session (`LoginScreen` prop mismatch) is fixed.
+- **`npx expo export --platform web --clear`: succeeds**, 547 modules bundled, no errors.
+- **`make build-deploy`: succeeds end-to-end**, including `scripts/check-deploy-artifact.sh` — all four checks pass (allowlist, no forbidden files, no vendored `node_modules` tree, every `__DIR__`-relative `require`/`require_once` resolves).
+- **`scripts/check-repo-hygiene.sh`: ALL CHECKS PASSED.**
+- **Backend regression re-run from scratch** (PHP 8.3 + MariaDB 10.11 installed fresh in-session, exactly as prior sessions have done) to confirm nothing broke, even though no backend file was touched this session: fresh-DB `migrate` → idempotent re-migrate → `seed` → **`smoke_test.php` 24/24** → **`http_api_test.php` 50/50**, all green. This re-confirms the full register→verify→login→forgot-password→reset→profile→admin/roles→admin/users→admin/permissions flow end-to-end **at the HTTP/API level** — the same endpoints every new screen this session calls.
+
+### Local-testing gotcha found, fixed, and worth flagging so nobody repeats it
+
+While setting up this session\'s `config.php` (gitignored, sandbox-local, never committed) for the HTTP regression, the first run came back **17 passed, 33 failed** — looked alarming, was not a code regression. Root cause: two values in a from-scratch local `config.php` must match what `tests/http_api_test.php` hardcodes, or the test cascades into failure from one broken link (a wrong verification-email token → never verified → never logged in → every downstream authenticated check gets a 401):
+- `migration_secret` must be exactly `ci-test-migrate-secret-do-not-use-in-prod` (see `tests/http_api_test.php`\'s own `$migrateSecret` comment) — any other value makes every `/migrate` test fail with 401.
+- `mail.log_path` must be exactly `/tmp/audit_app_mail_log.txt` (the test\'s default when not given an explicit path via `argv[2]`) — any other path means the test can\'t find the verification/reset token it just asked the mailer to write, and everything downstream of "log in" fails.
+Once both matched the test\'s expectations, the second from-scratch run was **50/50** immediately, no code changes involved. `config.example.php` already documents the mail path correctly in its commented-out example; it does not mention the CI-test-specific `migration_secret` value, since that value only matters for exercising the test suite locally, not for a real deployment. Not treating this as a doc-fix item — the info now lives here for the next session that sets up a fresh local `config.php`.
+
+### NOT done — the one gap left, and why it\'s flagged rather than skipped over
+
+**No live browser click-through of the new screens happened this session.** Everything above proves the code compiles, bundles, and calls real backend endpoints that are themselves proven correct — it does not prove the six new screens render and behave correctly for an actual person tapping through them (navigation transitions, `SegmentedPicker`/`PermissionChips` interaction, `ResetPasswordScreen`\'s auto-sign-in-triggered re-render, toast timing, responsive layout at phone width). This session had no browser-automation tool available to drive and screenshot the running app. This is the same category this project already has a name for — **source-complete, pending live verification** (the same status `BUG-025` through `BUG-028` have carried) — not "done."
+
+### Hand-off for the next developer
+
+1. **Live-verify the six screens** in an actual running app (web or device) against a local `php -S`+MariaDB backend (or the existing CI-adjacent flow): register → click the real verification link from the `log` mailer\'s output file → log in → forgot-password → reset via the real link → edit profile/change password → (as an admin) manage a user\'s role/status → manage a role\'s permission set → manage a permission\'s label. This is the one item standing between "source-complete" and actually closing `docs/ROADMAP.md` item 9.
+2. Once live-verified: bump `package.json`\'s version (currently `5.1.9`) — this is a real feature, satisfies the versioning rule once a person can actually reach and use it.
+3. Still open, unrelated to this session\'s work, carried forward from the twenty-ninth session: real SMTP credentials for `info@macerti.com` (still `\'log\'` driver), and extending CSRF-token enforcement to the pre-existing `/clients`/`/cases` mutating routes.
+4. Once item 9 is fully closed: next in priority order per `docs/ROADMAP.md`\'s P1 queue are item 1 (in-app guided acceptance test runner), item 2 (parameter admin UI + dossier codification), item 6 (design-token migration — technical debt, 2 of 9 files done, explicitly flagged "Do Not Defer"), and item 7 (top-level `tests/` relocation + frontend unit tests — technical debt).
+
+**UPDATE, same session**: pushed as `afda70c`, then confirmed via the GitHub Actions API (not assumed) — real CI run [`34011464914`](https://github.com/macerti/duration_calculator_source/actions/runs/34011464914) against this exact commit is **`completed` / `success`**. The prior commit `55dbf6e` (the twenty-ninth session\'s known-broken push) shows `completed` / `failure` on record, exactly as that session predicted and documented — confirms CI itself is trustworthy here, not just this session\'s code.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-06 (thirty-first session)', 'Mahdi\'s live click-through (exactly what the thirtieth session\'s hand-off asked for) surfaced 4 real issues in registration; one backend bug fixed-then-refixed (not yet re-verified), the other three not yet started or not yet verified — see BUG-047 in docs/BUGLOG.md for full detail, summarized here', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-06 (thirty-first session) — Mahdi\'s live click-through (exactly what the thirtieth session\'s hand-off asked for) surfaced 4 real issues in registration; one backend bug fixed-then-refixed (not yet re-verified), the other three not yet started or not yet verified — see BUG-047 in docs/BUGLOG.md for full detail, summarized here".]
+
+## 2026-09-06 (thirty-first session) — Mahdi\'s live click-through (exactly what the thirtieth session\'s hand-off asked for) surfaced 4 real issues in registration; one backend bug fixed-then-refixed (not yet re-verified), the other three not yet started or not yet verified — see BUG-047 in docs/BUGLOG.md for full detail, summarized here
+
+**Trigger**: Mahdi did the live browser click-through the thirtieth session\'s hand-off explicitly asked for (item 1: "register → click the real verification link → ..."), and reported four findings from that single pass: password field has no show/hide option; the verification email isn\'t styled to match macerti.com; the verification link 404s; and the registration form only shows validation errors on submit, all at once, rather than per field as each one is finished. Also asked, in the same message, for the full worklist to be handled continuously (fix bugs, then build features by priority, treat technical debt as continuous) and for logs to be updated with enough detail for continuity even on partial progress, with a push before this session\'s own resource budget runs out.
+
+### Done this session
+
+1. **BUG-047 #2 (email branding)** — `src/backend/auth/Mailer.php`: added `renderBrandedEmail()`/`renderEmailButton()`, a table-based, all-inline-style HTML layout using the brand palette (Ink Charcoal `#2F3E46` / Slate `#526D82` / Sage Teal `#5F8A8B` / Paper `#F5F7F8`), applied to both `sendVerificationEmail()` and `sendPasswordResetEmail()`. Not visually verified against a real mail client (no such tool in this sandbox) — confirmed only that the `log` driver writes well-formed HTML.
+
+2. **BUG-047 #3 (verification link 404)** — root cause confirmed by reading the router directly (full trail in BUG-047): the link duplicated `basePath`\'s already-included `/api` segment. **First fix attempt was wrong** — mirrored the OAuth `redirect_uri` pattern, which looked right by analogy but 404\'d when actually run against a real local server, because that pattern has only ever been verified in production and carries the same latent issue, just never locally exercised. Corrected fix derives the request origin from `app_url` (via `parse_url()`) and combines it properly with `basePath`. Also fixed an adjacent gap this exposed: neither `config.example.php` nor CI\'s generated `config.php` ever set `app_url` for local/CI use (silently defaulting to `\'\'`, which would have made even the *original* link relative/unusable locally too) — added a local-dev example and set the value in CI\'s config generator. Also closed a real test-coverage gap: `http_api_test.php`\'s verify-email check built its own URL from a bare token rather than parsing the real link `Mailer.php` produced, which is exactly why a 50/50-passing suite never caught any of this — added `latestMailLink()` and rewired the check to use the real parsed link, asserting its origin matches the test\'s own `$base`.
+
+### DONE / NOT EMPIRICALLY VERIFIED — read this before trusting #3 is closed
+
+**The corrected #3 fix has not yet been run through this session\'s own local regression.** What WAS run: the full sequence (fresh-DB `migrate` → `seed` → `smoke_test.php` 24/24 → live `php -S 127.0.0.1:8080` → `http_api_test.php`) against the FIRST fix attempt, which is exactly how its 404 was caught. This session ran out of tool-call budget before re-running the same sequence against the corrected version. **Do not treat BUG-047 #3 as closed until that re-run happens and is green** — see BUG-047\'s own "NOT DONE" list, item 1, for the exact config values needed (same ones the thirtieth session\'s "local-testing gotcha" note documents — `migration_secret`, `mail.log_path` — plus this session\'s new `app_url` requirement).
+
+### NOT DONE — genuinely unstarted, not just unverified
+
+- **BUG-047 #1 (password show/hide toggle)** — not started. `@expo/vector-icons`\'s `Ionicons` is already a dependency and already used elsewhere in this codebase (`DualSectorPicker.tsx`, `Breadcrumbs.tsx`); no new dependency needed. Natural to build directly into `TextField.tsx` (auto-render whenever `secureTextEntry` is passed) so every password field in the app (Login/Register/Reset/Profile) gets it in one change.
+- **BUG-047 #4 (validate-on-blur, per-field errors)** — not started. `TextField.tsx` already renders each field\'s error inline next to that field, not in a shared block — the "grouped" feeling Mahdi described is very likely just every field\'s error appearing simultaneously on submit rather than one at a time as each field is finished, not a separate rendering bug. Needs an `onBlur` prop on `TextField.tsx` plus per-field validators wired into `RegisterScreen.tsx` at minimum; `LoginScreen`/`ForgotPasswordScreen`/`ResetPasswordScreen`/`ProfileScreen` share the identical submit-only pattern (confirmed by inspection) but were not part of what Mahdi tested this round — worth a product-priority call on fixing all five in one pass given the shared infrastructure.
+- No feature work started this session — all budget went to BUG-047, per the standing bugs-before-features priority order, and per this session\'s own explicit instruction to that effect.
+
+### Hand-off for the next developer
+
+1. **Highest priority**: re-run the full local regression (see above) against the corrected BUG-047 #3 fix before doing anything else. If green, push and watch the real GitHub Actions run to completion before telling Mahdi this is closed (this project\'s own established habit, most recently BUG-044/BUG-045/BUG-046).
+2. Build BUG-047 #1 (password toggle) and #4 (blur validation) — both fully actionable, no blockers, isolated to `TextField.tsx`/`RegisterScreen.tsx`.
+3. Once BUG-047 is fully closed and CI-confirmed: no other bugs are open (BUG-029/BUG-035 remain blocked on live browser/device access, unchanged from every prior session). Resume `docs/ROADMAP.md`\'s P1 queue: item 1 (acceptance test runner), item 2 (parameter admin UI), item 6 (design-token migration, technical debt), item 7 (`tests/` relocation, technical debt).
+4. Do not tell Mahdi BUG-047 is closed until items 1–2 above are actually done and observed, not assumed — the exact mistake this session\'s own first #3 fix attempt shows is an easy one to make (an analogy to working code is not verification).
+
+**Dependency / hand-off**: item 1 has no blocker other than a single sandbox session\'s worth of time (same PHP+MariaDB setup used every recent session). Item 2 is isolated frontend work with no blockers. Item 3 depends on item 1\'s outcome.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-06 (thirty-second session)', 'BUG-047 #1/#3 closed, #4 partially closed; FEAT-006 requested — session cut off before a full spec, build re-verification, or push could happen; corrected in a same-session follow-up', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-06 (thirty-second session) — BUG-047 #1/#3 closed, #4 partially closed; FEAT-006 requested — session cut off before a full spec, build re-verification, or push could happen; corrected in a same-session follow-up".]
+
+## 2026-09-06 (thirty-second session) — BUG-047 #1/#3 closed, #4 partially closed; FEAT-006 requested — session cut off before a full spec, build re-verification, or push could happen; corrected in a same-session follow-up
+
+**Trigger**: Mahdi asked to continue the standing pipeline (bugs → features by priority → technical debt not deferred), and separately requested a new feature: an admin-only in-app annotation/comment tool — right-click (desktop) or tap-and-hold (mobile) anywhere in the app opens a custom contextual menu; admins can pin a timestamped, app-version-stamped comment to the exact {x,y} position AND to the specific UI element there (e.g. the header); comments export to a document usable by other developers and by Claude to action as bugs/feature requests. Instructed to log this as the next-to-do item, then keep working the existing bugs→features→tech-debt pipeline, with an explicit warning against letting technical debt sit indefinitely, and to push before the session\'s own budget ran out. **This session ran out of tool-call budget before writing the FEAT-006 spec, re-running the build, or pushing** — the work below was done, then Mahdi asked directly for a log update and push covering exactly that partial state, which is what this entry and the immediately following commit are.
+
+### Done this session
+1. Local dev environment stood up from scratch — PHP 8.3 (+ pdo_mysql/mbstring/curl) and MariaDB 10.11 were not preinstalled in this sandbox; installed via `apt`. `config.php` written to match CI\'s shape (`docs/DEPLOY.md`/`build-test-publish.yml`), including `migration_secret = \'ci-test-migrate-secret-do-not-use-in-prod\'` — this exact literal is hardcoded in `tests/http_api_test.php`, so a mismatched value 401s all 6 `/migrate` checks even though nothing is actually broken (lost some time to this before spotting it; recording it explicitly so the next session doesn\'t repeat that).
+2. **BUG-047 #3 confirmed closed** — full 51/51 HTTP regression green against a fresh DB, closing the exact verification gap the thirty-first session\'s hand-off named as its top priority. See `docs/BUGLOG.md` BUG-047\'s thirty-second-session update for the full trail.
+3. **BUG-047 #1 (password show/hide toggle) — FIXED**, built into `TextField.tsx` itself so every password field in the app gets it in one change, as scoped.
+4. **BUG-047 #4 (validate-on-blur) — PARTIALLY FIXED**: `RegisterScreen.tsx` and `ResetPasswordScreen.tsx` done (both already had the needed `fieldErrors` state). `LoginScreen.tsx`/`ForgotPasswordScreen.tsx`/`ProfileScreen.tsx` deliberately NOT touched — they have no field-error infrastructure at all yet, which is a bigger change than reusing what Register/Reset already had, and the thirty-first session\'s own hand-off flagged this as needing a product-priority call rather than a unilateral decision.
+5. `npx tsc --noEmit` clean after all of the above.
+
+### NOT DONE — genuinely unstarted or interrupted by the token budget, not silently skipped
+- **FEAT-006 (admin annotation/comment tool) — requested this session, NOT yet speced.** Recording Mahdi\'s request close to verbatim here so it is not lost, using the same "recorded verbatim, other devs will check it better" treatment this project already gave FEAT-005 and local-accounts when they were first requested:
+  - Admin-privileged users right-click (web/desktop) or long-press (mobile/touch) anywhere in the running app to open a custom contextual menu.
+  - The menu offers normal/expected contextual actions plus a new "add comment" action.
+  - A comment anchors to the exact {x,y} position AND to the specific UI element under the pointer/touch — e.g. right-clicking the header links the comment to the header specifically, not just to the screen generally.
+  - Comments are later exportable as a document, carrying each comment\'s timestamp and the app version it was made against, in a format meant to be directly usable by other developers — and by Claude — to action as bug fixes or feature requests without manual transcript synthesis.
+  - Also requested to work from a mobile view via tap-and-hold, not just desktop right-click.
+  - **Per Mahdi\'s explicit instruction, this becomes the next feature priority once currently-open bugs are closed** — do not silently fall back to resuming the old items 1/2/6/7 order (recorded earlier in this file) ahead of this without checking with Mahdi first. Same "new standing priority, recorded verbatim, not re-evaluated this session" treatment as the 2026-09-03 entry above.
+  - **Open questions identified but not resolved or run past Mahdi** (useful starting point for whoever specs this, not a substitute for actually specing it in `docs/ROADMAP.md` FEAT-001–005\'s format before writing code): what "basic contextual menu stuff" should include beyond the new comment action, since a custom in-app menu cannot reproduce real browser-native copy/inspect without separately reimplementing that; how arbitrary UI elements get a stable reference to comment against (likely an incrementally-applied `testID`/`nativeID`-based wrapper, not instrumenting every element on day one); how a long-press can be captured globally on native (iOS/Android via Expo) without breaking normal touch handling elsewhere in the app — this is a real open technical risk, not just wiring, and deserves explicit design attention rather than an optimistic default; and whether this should share export/report tooling with the already-queued P1 item #1 (in-app guided acceptance test runner), since both ultimately produce a dev/AI-readable feedback report from inside the app.
+- **Build not re-verified.** Only `npx tsc --noEmit` was run against this session\'s TextField/RegisterScreen/ResetPasswordScreen changes — `npx expo export --platform web` and `make build-deploy` were NOT run. Do not assume either succeeds from the typecheck alone; this has bitten prior sessions before (see BUG-047 #3\'s own "analogy is not verification" lesson).
+- No tech-debt work (ROADMAP items 6/7) started — all of this session\'s budget went to environment setup plus BUG-047, consistent with the standing bugs-before-features order, not a deprioritization of tech debt.
+- BUG-047 #2\'s outstanding item (visual verification of the branded email in a real mail client) still not possible from any sandbox — unchanged.
+
+### Hand-off for the next developer
+1. **Run the actual build** (`npx expo export --platform web`, then `make build-deploy`) before treating this session\'s frontend changes as deployable — this session verified typecheck only.
+2. **Decide BUG-047 #4\'s remaining scope**: build field-error validation for `LoginScreen`/`ForgotPasswordScreen`/`ProfileScreen` (new infrastructure, not just wiring), or explicitly decide Register+Reset is sufficient for now. Either way, record the decision here — don\'t leave it ambiguous for a third session in a row.
+3. **Write the full FEAT-006 spec** into `docs/ROADMAP.md` in the same format as FEAT-001–005 (Objective / Required behavior / data model / API routes / export format / Acceptance criteria), using the "Open questions" above as the starting point — resolve or explicitly flag each one to Mahdi rather than guessing silently. Once specced, this is the next feature to build, ahead of the old items 1/2/6/7, per Mahdi\'s explicit instruction this session.
+4. Once BUG-047 is fully closed (build-verified, and ideally CI-green): resume tech debt (ROADMAP items 6/7) before or alongside FEAT-006 rather than after it again — Mahdi has now twice emphasized not letting technical debt sit indefinitely; treat that as standing guidance for prioritization calls, not just a one-time reminder.
+5. This session\'s local sandbox setup (MariaDB, PHP, `config.php`) does not persist — redo it from `docs/DEPLOY.md` steps 3/5/6 plus this entry\'s step 1 note about `migration_secret`\'s exact required value.
+
+**Dependency / hand-off**: item 1 (build verification) has no blocker. Item 2 (BUG-047 #4 scope decision) needs Mahdi\'s input, not a blocker to starting other work. Item 3 (FEAT-006 spec) has no blocker other than time — this entry\'s "Open questions" is the starting point. Item 4 depends on items 1–3\'s outcomes.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-06 (thirty-third session)', 'BUG-047 fully closed as far as any sandbox can (#1/#3/#4 all done, #3 independently re-confirmed, real build verified for the first time in several sessions); FEAT-006 spec NOT reached — Mahdi asked to log and push now rather than continue into it', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-06 (thirty-third session) — BUG-047 fully closed as far as any sandbox can (#1/#3/#4 all done, #3 independently re-confirmed, real build verified for the first time in several sessions); FEAT-006 spec NOT reached — Mahdi asked to log and push now rather than continue into it".]
+
+## 2026-09-06 (thirty-third session) — BUG-047 fully closed as far as any sandbox can (#1/#3/#4 all done, #3 independently re-confirmed, real build verified for the first time in several sessions); FEAT-006 spec NOT reached — Mahdi asked to log and push now rather than continue into it
+
+**Trigger**: standing pipeline repeated once more (pull latest, read logs first, do FEAT-006, then bugs, then features by priority, treat technical debt as continuous, push with enough detail for full continuity even on partial progress). Per the thirty-second session\'s own hand-off, item 1 (re-run the full regression against the corrected BUG-047 #3 fix) and item 2 (decide/build #4\'s remaining scope) were the concrete unblocked next steps, so — consistent with this project\'s own standing bugs-before-features order — this session did those before touching FEAT-006. Mid-way through reading the existing RBAC/permissions migration to design FEAT-006\'s backend consistently, Mahdi asked directly to update the logs and push now rather than continue further, which is what this entry and the accompanying commit are.
+
+### Done this session
+
+1. **Local sandbox stood up from scratch again** (does not persist between sessions, as every prior session has also noted): PHP 8.3 + MariaDB 10.11 via `apt`, repo cloned fresh, `src/backend/config.php` written to CI\'s shape (`migration_secret = \'ci-test-migrate-secret-do-not-use-in-prod\'`, `app_url = \'http://127.0.0.1:8080\'`, `mail.log_path = \'/tmp/audit_app_mail_log.txt\'` — the exact three values the last two sessions\' own notes said are required).
+
+2. **BUG-047 #3 (verification link 404) — INDEPENDENTLY RE-CONFIRMED CLOSED**, not just trusted from the log. Ran the full sequence the thirty-first/second sessions\' hand-offs called for, from a genuinely fresh database, in one single shell invocation (MariaDB does not survive between tool calls in this sandbox, confirmed again this session exactly as prior sessions documented): `migrate` → `seed` → `smoke_test.php` **24/24** → live `php -S 127.0.0.1:8080` → `http_api_test.php` **51/51**, including "GET /auth/verify-email redirects with verified=1" and the link-parsing check — the exact two checks that caught the original bug and the first wrong fix attempt. This is a second, independent confirmation from a different session than the one that first got it green.
+
+3. **BUG-047 #4 (validate-on-blur) — NOW FULLY CLOSED across all five auth screens**, not just Register/Reset. Extended the exact same shared-validator-plus-`onBlur` pattern the thirty-second session established:
+   - `LoginScreen.tsx`: added `fieldErrors` (email/password), presence-only validators (no password-strength rule here — that would leak signup policy on the wrong screen), replaced the old single combined-banner precheck in `submit()` with the same per-field-then-submit pattern as Register.
+   - `ForgotPasswordScreen.tsx`: already had `fieldError` state from the original bug fix; just added `handleEmailBlur` reusing a new shared `validateEmailRequired()`, and had `submit()` call the same function instead of its own inline check.
+   - `ProfileScreen.tsx`: the password-change card already had `passwordErrors` (current/next/confirm) for `submitPasswordChange()`; extracted that logic into three named validators (`validateCurrentPassword`/`validateNewPassword`/`validateConfirmNewPassword`, mirroring Register\'s `validatePassword`/`validateConfirm` shape) shared between new `onBlur` handlers and submit, plus a `confirmNewTouched` flag so fixing the new-password field re-clears a stale "don\'t match" message exactly like Register already does for its own confirm field. The "Informations" (name/email) card above it was deliberately left untouched — it has no validation rule at all today (no field is required), so there is nothing to move to blur-time; scoping this to the password-change card only, since that\'s the only part of this screen BUG-047 #4 actually applies to.
+   - `npx tsc --noEmit` clean after all three files.
+
+4. **Build verified for real, for the first time since this became a known gap** (thirty-first/second sessions both flagged "typecheck only, `expo export`/`build-deploy` NOT run — do not assume either succeeds"): ran both. `npx expo export --platform web --clear` succeeds (547 modules, no errors). `make build-deploy` succeeds end-to-end, including `scripts/check-deploy-artifact.sh`\'s 4 checks (allowlist, no forbidden files, no vendored `node_modules`, every `__DIR__`-relative require resolves) — **all pass**. This closes a real, twice-flagged verification gap; the frontend tree is now confirmed deployable, not just typecheck-clean.
+
+5. **Version bumped 5.1.9 → 5.1.10** (`src/frontend/package.json`, `package-lock.json` synced via `npm install --package-lock-only`): per this project\'s own versioning rule, a real user-reachable bugfix closing across five screens plus a previously-unconfirmed link fix now independently confirmed both warrant a patch bump. Re-ran `npm ci` + `npx tsc --noEmit` after the bump to confirm the lockfile change itself introduced nothing.
+
+### NOT DONE — explicitly, not silently skipped
+
+- **FEAT-006 spec — NOT written.** Started reading `db/migrations/002_add_auth_and_rbac.sql`\'s permission-seeding pattern (`manage_users`/`manage_roles` shape) to design FEAT-006\'s data model/API consistently with the existing RBAC system before writing the spec into `docs/ROADMAP.md`, per the thirty-second session\'s own hand-off item 3. Mahdi asked to log and push before this went further — recording the direction taken so the next session doesn\'t re-derive it: an `annotations` table (screen/element-ref/x/y/comment/created_by/app_version/status), gated by a new `manage_annotations` permission (same shape as `manage_users`), CRUD under `/api/admin/annotations` plus an export endpoint, backend-first (fully testable in this sandbox) with the frontend gesture/menu UI deliberately deferred to a later pass (no browser here to verify right-click/long-press behavior, the same reasoning this project already applied to auth: build and fully test the backend, verify the frontend only once it can actually be built and typechecked, flag visual/interactive behavior as unverified until a live pass happens). The open technical questions the thirty-second session listed (element-tagging strategy, native long-press capture, menu scope, overlap with item 1\'s export tooling) are still open, not resolved.
+- **No CI-confirmed green run yet for this session\'s changes** — will only be knowable once this push\'s Actions run is checked (next step, not yet done as of writing this entry).
+- **Live click-through for #1/#2/#4** (an actual person tapping through Login/Register/Reset/Profile in the running app) — still not possible from any sandbox, same limitation every prior "source-complete, pending live verification" entry in this project has recorded. Do not treat BUG-047 as *fully* closed (only as closed as this sandbox can verify) until Mahdi does that pass.
+- Tech debt (ROADMAP items 6/7) — not touched this session; all budget went to finishing BUG-047 and verifying the build, consistent with the standing bugs-before-features order and Mahdi\'s own repeated instruction not to let it slide indefinitely, but a session only has so much time and BUG-047 was the unblocked, unfinished item already in flight.
+
+### Hand-off for the next developer
+
+1. **Write the FEAT-006 spec into `docs/ROADMAP.md`** in the FEAT-001/002 format (Objective / Required behavior / data model / API routes / export format / Acceptance criteria) — see "NOT DONE" above for the design direction already chosen, and the thirty-second session\'s entry for the original open questions. Once specced, per Mahdi\'s explicit instruction this is the next feature to build, ahead of ROADMAP\'s old items 1/2/6/7.
+2. **Build FEAT-006\'s backend first** (migration + `manage_annotations` permission + CRUD API + HTTP tests, same pattern as every other admin feature in this codebase) — fully testable in this sandbox, no blockers. Defer the frontend gesture/contextual-menu UI to a session after that, and flag it clearly as unverified until a live browser/device pass happens.
+3. **Watch this session\'s push through a real GitHub Actions run before telling Mahdi BUG-047 is closed** — this project\'s own established habit (BUG-044/045/046 all did this) and directly relevant here since #3 was already burned once by CI-only trust in a different bug.
+4. Resume tech debt (ROADMAP items 6: 2/9 design-token files done; 7: `tests/` relocation) opportunistically — not deprioritized, just not reached this session.
+5. This session\'s local sandbox setup does not persist — redo from `docs/DEPLOY.md` steps 3/5/6 plus the three `config.php` values named in "Done" item 1 above.
+
+**Dependency / hand-off**: item 1 has no blocker but time. Item 2 is isolated backend work with no blockers once item 1 exists. Item 3 has no blocker — just needs to be done. Item 4 is isolated, no blockers.
+
+---
+**UPDATE (same day) — CI CONFIRMED GREEN.** Commit `ad2bab3`\'s run (GitHub Actions `34034235296`) completed `success`, **all 20 steps**, including hygiene checks, migrations, `smoke_test.php`, `http_api_test.php`, frontend typecheck, `expo export`, deploy-artifact assembly + hygiene check, and publish to `macerti/duration_calculator`. This satisfies hand-off item 3 above. **Remaining before BUG-047 can be called fully closed**: only the live click-through for #1/#2/#4, which needs Mahdi (or a sandbox with browser/mail-client access) — no code-side work left.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-06 (thirty-fourth session)', 'FEAT-006 SPECCED and its BACKEND built + fully tested (65/65); bugs re-confirmed all closed as far as any sandbox can; frontend deliberately deferred — see hand-off', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-06 (thirty-fourth session) — FEAT-006 SPECCED and its BACKEND built + fully tested (65/65); bugs re-confirmed all closed as far as any sandbox can; frontend deliberately deferred — see hand-off".]
+
+## 2026-09-06 (thirty-fourth session) — FEAT-006 SPECCED and its BACKEND built + fully tested (65/65); bugs re-confirmed all closed as far as any sandbox can; frontend deliberately deferred — see hand-off
+
+**Trigger**: standing pipeline once more, explicitly stated this time as: launch PHP+MariaDB locally, pull latest, read the logs first, do FEAT-006 end-to-end, then bugs, then features by priority, treat technical debt as a continuous non-negotiable (not something any single dev gets to defer indefinitely), and push before the token budget runs out with enough log detail that a *different* session (dev or Claude) can continue with zero rediscovery. Mahdi also separately corrected repo naming mid-session — see below.
+
+**Repo-naming correction (from Mahdi directly, mid-session)**: the real source repo is `macerti/duration_calculator_source`; the real deploy repo is `macerti/duration_calculator` — auto-populated by a GitHub Action from source and explicitly **not to be touched directly**, ever. This matches, word for word, what the thirty-third session\'s own BUG-045 investigation already found (`duration_calculator_backend`, cloned this session too out of habit from older log wording, is confirmed once again to be a stale/unused mirror — identical commit hash to source, not the CI publish target). Only `duration_calculator_source` was pushed to this session. Recommend the next session skip cloning `duration_calculator_backend` entirely — it adds nothing and has caused naming confusion across at least two sessions now.
+
+**Security note (recurring — see prior sessions\' same note)**: a live GitHub PAT was again pasted in plaintext directly in chat this session. It was moved into a `git-credential-store` file (`chmod 600`) rather than left embedded in the git remote URL (which would otherwise leak it back out through any future `git remote -v`), and never written to any log, commit, or this project\'s persistent memory. **Mahdi should still rotate this token** — moving it out of the remote URL reduces *this session\'s* accidental-leak surface, it does not undo the fact that it was already exposed in the chat transcript itself.
+
+### Done this session
+
+1. **Local sandbox stood up from scratch again** (confirmed once more: does not persist between sessions, and — new finding this session — does not even persist *between tool calls within the same session* if the process isn\'t started and used inside one single shell invocation; MariaDB had to be restarted several times before this was pinned down). PHP 8.3 + MariaDB 10.11 via `apt`. `root@localhost` defaults to `unix_socket` auth, which rejects the TCP connection PDO needs — created a dedicated `appuser`@`127.0.0.1` with password auth instead of fighting the root socket-auth default; documented here so the next session doesn\'t lose time rediscovering it. `src/backend/config.php` written to CI\'s shape.
+
+2. **All tracking docs read before any action**, per this project\'s own standing session protocol.
+
+3. **Bugs — re-confirmed nothing new to fix.** BUG-047 remains closed as far as any sandbox can verify (per the thirty-third session); BUG-029/BUG-035 remain blocked on live browser/device access, unchanged. No code-side bug work was needed or done this session — consistent with Mahdi\'s own instruction to move to features once bugs are clear.
+
+4. **FEAT-006 fully specced** into `docs/ROADMAP.md` item 10, resolving every open question the thirty-second session had left open, with concrete, buildable decisions rather than deferring them again:
+   - **Element-tagging**: best-effort via React Native Web\'s existing `testID`→`data-testid` DOM rendering (web) or an explicit `testID` prop reachable from the capture layer (native); `null` and still-savable when no reference resolves — never a save-blocker.
+   - **Native long-press capture**: one top-level responder-capture wrapper around the app root (no per-component instrumentation needed), with its real limitation — React Native\'s responder-capture phase can be pre-empted by an already-active child responder (e.g. a scrolling `ScrollView`) — stated as a named, known trade-off rather than promised as flawless.
+   - **Menu scope**: exactly one action ("Ajouter un commentaire") for this pass; built as a real `Menu` component so more can be added later without a redesign, not a single-purpose modal.
+   - **Overlap with P1 item 1** (guided acceptance-test runner): kept as two separate features — one is a structured test script, the other an unstructured anywhere-anytime comment — not coupled.
+   - **Export**: Markdown by default (dev/Claude-pastable with zero reformatting), `?format=json` for structured consumers.
+
+5. **FEAT-006 backend built and fully HTTP-tested**:
+   - `db/migrations/003_add_annotations.sql` — new `annotations` table (screen/element_ref/x/y/comment/app_version/created_by/status, `status` mirrors the existing `active`/`disabled` user-status pattern rather than inventing a new shape) + new `manage_annotations` permission, granted to `administrateur` only (admin-only tool, per the original request — not the `002` migration\'s one-time "administrateur: everything" wildcard, which only applied to permissions that existed at that migration\'s own time).
+   - `db/annotationRepo.php` — new file, same shape/conventions as `permissionRepo.php`/`roleRepo.php` (`listAnnotations`, `getAnnotationById`, `createAnnotation`, `updateAnnotationStatus`, `deleteAnnotation`).
+   - `api/index.php` — `GET/POST /admin/annotations`, `PUT/DELETE /admin/annotations/:id`, `GET /admin/annotations/export?format=markdown|json&status=...`, all gated behind `requirePermission(\'manage_annotations\')`, mutating routes also behind `requireCsrf()` — identical pattern to every existing `/admin/*` route, no new auth mechanism invented.
+   - `tests/http_api_test.php` — 20 new checks covering: unauthenticated rejection, CSRF rejection, blank-comment rejection, create/list/filter/update-status/invalid-status-rejection/export-markdown/export-json/delete/re-empty-after-delete.
+   - **Fresh-DB regression, run twice** (once before, once after fixing one stale pre-existing assertion — see next item), final run: `migrate` (3 new migrations applied cleanly) → `seed` → `smoke_test.php` **24/24** → live `php -S 127.0.0.1:8080` → `http_api_test.php` **65/65**, zero warnings in the PHP server log.
+   - **One pre-existing test fixed, not a new bug**: `GET /admin/permissions lists the 6 seeded permissions` correctly started failing once `manage_annotations` became the 7th permission — this is the migration working as designed, not a regression. Assertion updated to `7`, re-ran, green.
+
+6. **Verified the diff is backend-and-docs-only** (`git diff --stat`: `docs/ROADMAP.md`, `src/backend/api/index.php`, `src/backend/tests/http_api_test.php`, plus two new files) before touching any logs — zero frontend files changed, so the frontend build status carries over unchanged from the thirty-third session\'s own `expo export`/`build-deploy` pass; **not re-run this session** since there is nothing new for it to catch.
+
+7. **No version bump** — same rule this project has applied every time backend-only work landed with no user-reachable surface yet (e.g. the twenty-fourth/twenty-ninth/thirtieth sessions\' own RBAC/auth backend work): FEAT-006 has no frontend yet, so nothing changed that a user can actually reach.
+
+### NOT DONE — explicitly, not silently skipped
+
+- **FEAT-006 frontend — not started at all.** Capture layer (web `contextmenu` interception + native top-level long-press responder), the context menu component, the comment-submission form, and an admin-facing annotations list/status/export screen (same shape as `AdminUsersScreen`/`AdminRolesScreen`) are all still to build. This was a deliberate scope decision, not an oversight — it mirrors this project\'s own established sequencing for the *entire* auth feature (backend built-and-tested first, frontend as its own later pass) and keeps this session\'s diff to something that was fully testable without a browser.
+- **ROADMAP items 1/2/6/7** (guided acceptance-test runner, PDF export, design-token migration [2/9 files done], `tests/` relocation) — not touched this session. All budget went to FEAT-006 per Mahdi\'s own explicit priority ordering (FEAT-006 ahead of these). Technical debt (item 6/7) is not being ignored — it simply hasn\'t been reached yet since FEAT-006 was placed ahead of it by direct instruction; flagging this plainly rather than letting silence read as "forgotten."
+- **No CI-confirmed green run yet for this push** — will only be knowable once this specific commit\'s Actions run is checked (see hand-off item 1).
+- **Live click-through / actual interactive verification of anything in this session** — n/a this session (backend-only change; nothing new to click through yet).
+
+### Hand-off for the next developer
+
+1. **Watch this session\'s push through a real GitHub Actions run before assuming CI is green** — this project\'s own established habit (BUG-044/045/046, thirty-third session all did this); check it before building anything else on top of this commit.
+2. **Build FEAT-006\'s frontend** exactly per the spec now in `docs/ROADMAP.md` item 10 — every design decision (element-tagging, native long-press limitation, menu scope, export format) is already resolved there; this should not require re-deriving anything, only implementing it. Once built: `npx tsc --noEmit`, `npx expo export --platform web --clear`, `make build-deploy` all clean before calling it source-complete — same bar as every other frontend feature in this project. Live click-through (does right-click/long-press actually work in a real browser/device) will still need Mahdi, exactly like BUG-047\'s #1/#2/#4 did.
+3. **Do not touch `macerti/duration_calculator` directly** — confirmed again this session by Mahdi directly: it\'s the CI-populated deploy artifact, source-of-truth is always `macerti/duration_calculator_source`.
+4. Resume tech debt (ROADMAP items 6: 2/9 design-token files done; 7: `tests/` relocation) — genuinely not deprioritized, just not yet reached; Mahdi has explicitly flagged that deferred technical debt must not become permanently-deferred technical debt.
+5. This session\'s local sandbox setup does not persist — redo per `docs/DEPLOY.md`, plus: use a dedicated `appuser`@`127.0.0.1` (password auth) rather than `root` (socket-auth-only by default), and run MariaDB-start-through-test-suite as one single shell invocation, not split across multiple tool calls.
+
+**Dependency / hand-off**: item 1 has no blocker but time. Item 2 has no blocker — the spec is complete. Item 3 is a standing rule, not a task. Item 4 is isolated, no blockers.
+
+---
+**UPDATE (same day) — CI CONFIRMED GREEN.** Commit `6b1cc60`\'s run (GitHub Actions `34053947320`) completed `success`, **all 20 steps**, including hygiene checks, migrations, `smoke_test.php`, `http_api_test.php`, frontend typecheck, `expo export`, deploy-artifact assembly + hygiene check, and publish to `macerti/duration_calculator`. This satisfies hand-off item 1 above. FEAT-006\'s backend is now confirmed deployed; only its frontend remains, per hand-off item 2.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-07 (thirty-fifth session)', 'FEAT-006 frontend CODE WRITTEN but COMPLETELY UNVERIFIED; do not trust or build on it until it\'s checked', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-07 (thirty-fifth session) — FEAT-006 frontend CODE WRITTEN but COMPLETELY UNVERIFIED; do not trust or build on it until it\'s checked".]
+
+## 2026-09-07 (thirty-fifth session) — FEAT-006 frontend CODE WRITTEN but COMPLETELY UNVERIFIED; do not trust or build on it until it\'s checked
+
+**Trigger**: standing pipeline again (launch PHP+MariaDB locally, pull latest, read the logs first, do FEAT-006 end-to-end, then bugs, then features by priority, treat technical debt as continuous/non-negotiable, push before token budget runs out). Mid-session, Mahdi explicitly cut the session short: **stop testing, stop coding, update the logs, commit, and push immediately** so another dev/session can continue. This entry exists because of that instruction — it is a hard stop, not a natural finishing point.
+
+**Security note (recurring — see prior sessions\' same note)**: a live GitHub PAT was again pasted in plaintext directly in chat this session. Used only transiently in the `git clone` URL for this sandbox; never written to any log, commit, or this project\'s persistent memory. **Mahdi should rotate this token** — pasting it in chat already exposed it in the transcript regardless of how it was handled sandbox-side.
+
+### Done this session
+
+1. **Local sandbox stood up from scratch** (confirmed again: does not persist between sessions). PHP 8.3 + MariaDB 10.11 via `apt`, dedicated `appuser`@`127.0.0.1` (password auth, not root socket-auth), `src/backend/config.php` written to CI\'s shape, all inside one shell invocation per the established gotcha.
+
+2. **Baseline regression run BEFORE writing any code, to confirm the starting point was actually clean**: fresh migrate (3/3, idempotent on re-run) → seed → `smoke_test.php` **24/24** → live `php -S 127.0.0.1:8080` → `http_api_test.php` **65/65**. Matches the thirty-fourth session\'s own numbers exactly — nothing regressed between sessions, confirmed rather than assumed.
+
+3. **FEAT-006 frontend written**, per the spec already resolved in `docs/ROADMAP.md` item 10 (no re-deriving needed, per the thirty-fourth session\'s hand-off):
+   - `src/frontend/src/hooks/useAdminApi.ts` — added `Annotation` interface + `listAnnotations`/`createAnnotation`/`updateAnnotationStatus`/`deleteAnnotation`/`exportAnnotations` (the last bypasses the shared `request()` JSON helper since the export endpoint returns plain text, not the usual JSON envelope).
+   - `src/frontend/src/components/AnnotationCapture.tsx` (new) — web `contextmenu` interception (`preventDefault` + captures `{x,y}` + walks up to 6 DOM ancestors for `data-testid`/`id`) and a native long-press implementation.
+     **Deliberate design correction from the thirty-fourth session\'s spec, not a literal implementation of it**: the spec described a top-level "responder-capture" wrapper. Checked this against React Native\'s own gesture-responder docs before writing code — a literal `onStartShouldSetResponderCapture` returning `true` at the app root wins the capture phase ahead of every descendant and would silently break every button/ScrollView/TextInput in the entire app the moment it shipped, not just annotate on top of them. Used the non-capture (bubble-phase) `onStartShouldSetResponder` instead: nested Pressables/ScrollViews still win the negotiation for their own touches first exactly as today, and this wrapper only ever fires on otherwise-non-interactive surface (background, containers, static text). This is also what the spec\'s own "can be pre-empted by a ScrollView actively scrolling, or a nested Pressable already mid-press" limitation actually describes once you trace through the mechanism — recorded here so the next session doesn\'t have to re-derive it or, worse, "fix" it back to the literal capture-phase version and reintroduce the app-breaking bug.
+     Native element-tagging: deliberately left as `elementRef: null` always — resolving a touch target\'s native view tag to a `testID` needs plumbing this pass didn\'t add (see code comment). Graceful degradation, not a blocker, per spec.
+   - `src/frontend/src/screens/AdminAnnotationsScreen.tsx` (new) — list/filter (all/open/actioned/dismissed via `SegmentedPicker`)/per-row status change/two-tap `DangerButton` delete (duplicated locally, same as `AdminRolesScreen`\'s own copy — not shared, see ROADMAP item 7)/export (Markdown or JSON, rendered as selectable text for manual copy — no clipboard/file-download library added since none was already a dependency and none could be verified working in this sandbox).
+   - `App.tsx` — new `AdminAnnotations` route; `<AnnotationCapture>` now wraps `<Stack.Navigator>` inside `<NavigationContainer>` (needs both `useNavigationState` for the current screen name and `useAuthContext` for the permission check + CSRF token).
+   - `ProfileScreen.tsx` — added a `manage_annotations`-gated "Gérer les annotations" button next to the existing admin buttons.
+   - `docs/ROADMAP.md` item 10\'s status line updated to reflect exactly this (code written, unverified) — see there for the terse version of the same warning.
+
+### NOT DONE — explicitly, not silently skipped, and this is the part that matters most this entry
+
+- **`npx tsc --noEmit` — NEVER RUN against this session\'s frontend changes.** Unknown if it even typechecks. `npm ci` succeeded (versionInfo generated, 5.1.10) but that only confirms dependencies installed, nothing about this session\'s new code.
+- **`npx expo export --platform web --clear` — NOT RUN.**
+- **`make build-deploy` / `scripts/check-deploy-artifact.sh` — NOT RUN.**
+- **Nothing committed before this log update; this push is the first commit of this session\'s code.** Unlike every prior session in this log, code and logs are landing in the same push with zero local verification in between — flagging this explicitly rather than letting the log\'s usual tone imply the same confidence level as sessions that ran the full check sequence.
+- **No CI run exists yet for this push** — check GitHub Actions before trusting this compiles, let alone works. Given the above, **there is a real chance CI fails on this commit** (typos, missing imports, a prop-name mismatch against `SegmentedPicker`/`Breadcrumbs`/`ResponsiveContainer`\'s actual signatures, `tokens.ts` color-key names not matching what was assumed while writing styles, etc. were all written from reading those files earlier in the session, not copy-pasted, so mismatches are plausible) — this is a normal, expected possibility given the process that produced it, not a surprise finding to report back in shock.
+- **No bugs or tech debt (ROADMAP items 6/7) touched this session** — all time went to FEAT-006 frontend per standing priority order, then this session was cut short before reaching them.
+- **Live click-through** — not possible from any sandbox, same standing limitation as every prior entry.
+
+### Hand-off for the next developer
+
+1. **Before anything else**: stand up the sandbox (steps in "Done" item 1 above / `docs/DEPLOY.md`), `cd src/frontend`, `npm ci`, then `npx tsc --noEmit`. **Fix whatever it finds** — treat this session\'s code as a first draft, not a near-final one, given it was never typechecked.
+2. Once typecheck is clean: `npx expo export --platform web --clear`, then `make build-deploy` (includes `scripts/check-deploy-artifact.sh`\'s 4 checks). Fix anything either surfaces.
+3. Re-run the backend regression too (migrate → seed → `smoke_test.php` → `http_api_test.php`) — this session\'s frontend changes shouldn\'t have touched the backend at all, but confirm rather than assume, per this project\'s own standing rule.
+4. Once source-complete (typecheck + export + build-deploy all clean): commit, push, **watch the real GitHub Actions run before telling Mahdi FEAT-006 is done** — standard practice in this log (BUG-044/045/046, thirty-third/thirty-fourth sessions all did this) and especially warranted here since nothing has been checked yet.
+5. Live click-through (does right-click actually open the menu; does long-press actually work on a real device; does the export text actually look right) will still need Mahdi or a sandbox with browser/device access, same as every other frontend feature in this project.
+6. If the native long-press design (bubble-phase `onStartShouldSetResponder`, see "Done" item 3 above) needs revisiting, read that code comment first — it documents a real failure mode of the naive alternative that was checked against React Native\'s own docs, not assumed.
+7. Resume tech debt (ROADMAP items 6: 2/9 design-token files done; 7: `tests/` relocation) once FEAT-006 is actually confirmed working — still not deprioritized, just not yet reached across two sessions now; flagging plainly again so it doesn\'t quietly become permanent, per Mahdi\'s own repeated instruction.
+
+**Dependency / hand-off**: item 1 blocks everything else in this list — nothing past it should be attempted on unverified code. Items 2–4 are sequential. Item 5 needs Mahdi specifically. Items 6/7 are independent and can happen in parallel with anything above once picked up.
+
+---
+', NULL, NULL, NULL, NULL),
+  ('2026-09-07 (thirty-sixth session)', 'BUG-048 (P0 production outage, confirmed live) diagnosed and fixed same session; build-verified; pushed. Live click-through and everything past it still outstanding.', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-07 (thirty-sixth session) — BUG-048 (P0 production outage, confirmed live) diagnosed and fixed same session; build-verified; pushed. Live click-through and everything past it still outstanding.".]
+
+## 2026-09-07 (thirty-sixth session) — BUG-048 (P0 production outage, confirmed live) diagnosed and fixed same session; build-verified; pushed. Live click-through and everything past it still outstanding.
+
+**Trigger**: standing pipeline again (launch PHP+MariaDB locally, pull latest, read logs first, do FEAT-006 end-to-end, then bugs, then features by priority, technical debt never indefinitely deferred, push before token budget runs out). Mahdi opened this session by reporting the app itself showing a crash screen: *"Un problème est survenu … Couldn\'t get la navigation state. Is your component inside a navigator? … Retour à l\'accueil"* — with the button doing nothing. This took priority over everything else in the standing pipeline; a live outage is not something to queue behind a fresh FEAT-006 pass.
+
+**Security note (recurring — see prior sessions\' same note)**: a live GitHub PAT was again pasted in plaintext directly in chat this session. Used only transiently in the `git clone` URL for this sandbox; never written to any log, commit, or this project\'s persistent memory. **Mahdi should rotate this token.**
+
+### Done this session
+
+1. **Local sandbox stood up from scratch** (does not persist between sessions, as every prior session has noted): PHP 8.3 + MariaDB 10.11 via `apt`, dedicated `appuser`@`127.0.0.1`, `src/backend/config.php` written to CI\'s shape. Confirmed again this session: MariaDB/`php -S` background processes do not survive between separate tool-call shell invocations here — every DB-touching step must run in one single shell invocation, including the config write itself (an earlier attempt lost the `config.php` write to a silent `&&`-chain short-circuit after an unrelated command failed — worth naming explicitly: write config files as their own standalone step, never chained with `&&` after a command that might fail, or a later step can silently run against a missing/stale file without any obvious error pointing at that cause).
+
+2. **Confirmed the outage was real and live in production**, not just a local sandbox finding, via the GitHub Actions API before doing anything else: source repo commit `1eec309` (the thirty-fifth session\'s "code written, UNVERIFIED" FEAT-006 frontend push) — run `34082222104`, **all 23 steps `success`**, including "Typecheck frontend" and "Build Expo web artifact." That publish triggered the deploy repo\'s own workflow — run `34082291799`, **`success`**, meaning this shipped all the way to `tools.macerti.com`. This is the concrete, load-bearing finding of this session: **CI passing does not mean the app works** — `tsc --noEmit` and `expo export` are a type check and a bundler build, neither of which renders the component tree, so a pure runtime context-resolution failure like this one is structurally invisible to both.
+
+3. **Root cause diagnosed by reading the actual code, not guessed from the error text alone**: `App.tsx` renders `<AnnotationCapture>` as the *parent* of `<Stack.Navigator>` (wrapping it, inside `<NavigationContainer>`) so it can capture right-click/long-press gestures app-wide, including on chrome outside any individual screen — that part of the FEAT-006 design was correct and deliberate. But `AnnotationCapture.tsx` called `useNavigationState(...)` near the top of its body, unconditionally (before the `manage_annotations` permission check\'s early return), to get the current screen name for new annotations. `useNavigationState`/`useRoute`-family hooks resolve the *nearest* navigator context strictly downward from a component\'s own tree position — a component that wraps a navigator from outside can never read a context that navigator provides only to its own descendants. This is why the crash hit **every authenticated user**, not just admins holding `manage_annotations` — the hook call ran before that permission was even checked. Confirmed exactly matching the reported error text, and confirmed why "Retour à l\'accueil" appeared to do nothing: clearing the `ErrorBoundary`\'s caught-error state remounts `children`, which remounts straight back into the same unconditional crash — on native `onGoHome` is a no-op to begin with, and even web\'s `window.location.reload()` lands on the identical crash on the very next load.
+
+4. **Fixed**: moved screen-name tracking to `AuthGate` in `App.tsx` via `useNavigationContainerRef<RootStackParamList>()`, wired to `<NavigationContainer ref={navigationRef} onReady={...} onStateChange={...}>`, and passed down to `AnnotationCapture` as a plain `screenName: string` prop. `AnnotationCapture.tsx` no longer imports or calls `useNavigationState` at all. Both files\' header comments updated to explain the mechanism and point at BUG-048 so a future session doesn\'t have to re-derive why the screen name is threaded this way instead of read via a hook inside the component that needs it.
+
+5. **Verified fresh, both halves, this session** (not trusted from the diagnosis alone):
+   - **Backend baseline** (untouched by this fix — confirmed rather than assumed, per this project\'s own standing rule): fresh DB → `migrate.php` (3/3 applied; re-ran a second time, 0/3 applied/3 skipped — idempotent) → `seed.php` → `smoke_test.php` **24/24** → live `php -S 127.0.0.1:8080` → `http_api_test.php` **65/65**, zero warnings. Matches the thirty-fourth/thirty-fifth sessions\' own numbers exactly.
+   - **Frontend, for the first time for this exact code**: `npx tsc --noEmit` clean. `npx expo export --platform web --clear` succeeds (549 modules, no errors). `make build-deploy` succeeds end-to-end including `scripts/check-deploy-artifact.sh`\'s 4 checks (allowlist, no forbidden files, no vendored `node_modules`, every `__DIR__`-relative require resolves).
+   - `git diff --stat` confirmed the fix touches exactly `src/frontend/App.tsx` and `src/frontend/src/components/AnnotationCapture.tsx` — nothing else, so nothing besides this fix is riding along in the same commit.
+
+6. **Version bumped 5.1.10 → 5.1.11** (`package.json`, `package-lock.json` synced via `npm install --package-lock-only`, re-ran `npx tsc --noEmit` after — clean). A confirmed P0 production-outage fix is the clearest possible case of this project\'s own "real user-reachable bugfix warrants a patch bump" rule; also closes the gap that the *original* FEAT-006 frontend commit shipped on top of 5.1.10 without its own bump.
+
+7. **Docs updated**: `docs/BUGLOG.md` (new BUG-048, full mechanism/fix/verification trail and 3 named follow-ups not done — see there), `CHANGELOG.md` (5.1.11 entry), `docs/ROADMAP.md` item 10\'s status line (reflects the outage, the fix, and that live click-through is still the one thing outstanding).
+
+### NOT DONE — explicitly, not silently skipped
+
+- **Live click-through** — does the app actually load normally now, does right-click/long-press really open the annotation menu, does export read correctly. Needs Mahdi or a sandbox with real browser/device access; this sandbox has never had either, same standing limitation as every prior "source-complete, pending live verification" entry in this project. **Do not tell Mahdi FEAT-006 (or even "the crash") is fully resolved until this happens** — build-verified is not the same bar as working, and this exact distinction is what let BUG-048 ship in the first place.
+- **No CI-confirmed green run yet for this specific fix commit** — will only be knowable once this push\'s Actions run is checked (next immediate step after this push, not yet done as of writing this entry).
+- **The process gap this exposed is not closed, only named**: this pipeline\'s frontend CI step (typecheck + bundle build) cannot catch a render-time-only crash like this one. A minimal smoke-render check (e.g. headless-rendering `<App />` in its major states) would be a real, scoped follow-up — not attempted this session, flagged in `docs/BUGLOG.md` BUG-048 rather than left implicit.
+- **`ErrorBoundary`\'s `onGoHome` is still a no-op on native for any future, unrelated crash** — this session removed the *specific* crash that was hitting it, but didn\'t give native a real "reload" equivalent (would need `expo-updates`, a new dependency, deliberately not added to keep this hotfix small and immediately shippable). Separate, lower-severity follow-up — see BUG-048.
+- **No other bugs touched, no tech debt (ROADMAP items 6/7) touched** — all of this session\'s budget went to diagnosing and fixing a live P0 outage, which correctly pre-empted the standing bugs→features→tech-debt order rather than queuing behind it. Tech debt is not being newly deprioritized by this — it was already carried over unstarted from the two sessions before this one, and remains exactly that: carried over, not forgotten, flagging plainly again per Mahdi\'s own repeated instruction not to let it become permanent.
+
+### Hand-off for the next developer
+
+1. **Watch this session\'s push through a real GitHub Actions run first** — standard practice in this log, and remember what this exact bug just demonstrated: **a green CI run confirms compile+build, not correctness.** Green here means "safe to trust the type/build layer," not "confirmed fixed."
+2. **Get a real live click-through from Mahdi** before calling BUG-048 or FEAT-006 done: does the app load without the crash screen, does right-click (desktop) / long-press (mobile) actually open the annotation menu, does submitting a comment actually work, does export produce sane Markdown/JSON. This is the one thing separating "build-verified" from "actually done" right now.
+3. **Once BUG-048 is fully confirmed closed**: resume tech debt (ROADMAP items 6: 2/9 design-token files done; 7: `tests/` relocation) before or alongside anything else — genuinely not deprioritized, just not yet reached across three sessions now. Mahdi has repeatedly emphasized this must not become permanent; treat that as standing guidance, not a one-time reminder.
+4. **Consider the CI process gap** flagged in `docs/BUGLOG.md` BUG-048 (follow-up #1) as its own scoped session: a minimal render-smoke-test step so a future purely-runtime bug like this one doesn\'t reach production again on green CI.
+5. **`ErrorBoundary`\'s native `onGoHome` no-op** (BUG-048 follow-up #2) is a real, separate, lower-severity gap — worth a session once higher-priority items are clear, not urgent on its own.
+6. This session\'s local sandbox setup does not persist — redo per `docs/DEPLOY.md`, plus the `&&`-chain config-write gotcha noted in "Done" item 1 above.
+
+**Dependency / hand-off**: item 1 has no blocker but time. Item 2 needs Mahdi specifically and is the one thing that actually closes this out. Items 3–5 are independent of each other and of items 1–2, and can be picked up in any order once higher-priority verification is done.
+', NULL, NULL, NULL, NULL),
+  ('2026-09-07 (thirty-seventh session)', 'BUG-049 fixed: FEAT-006 export now has a real Copier/Partager/Télécharger path; backend regression deliberately NOT re-run this session, by explicit instruction — next dev must run it before trusting this push', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-07 (thirty-seventh session) — BUG-049 fixed: FEAT-006 export now has a real Copier/Partager/Télécharger path; backend regression deliberately NOT re-run this session, by explicit instruction — next dev must run it before trusting this push".]
+
+## 2026-09-07 (thirty-seventh session) — BUG-049 fixed: FEAT-006 export now has a real Copier/Partager/Télécharger path; backend regression deliberately NOT re-run this session, by explicit instruction — next dev must run it before trusting this push
+
+**Trigger**: standing pipeline (launch PHP+MariaDB locally, pull latest, read logs first, fix bugs, features by priority, technical debt continuous, push before budget runs out). Mahdi\'s live click-through of BUG-048\'s fix (exactly what that session\'s hand-off asked for) reported the app running well and annotations creating successfully (toast confirms it), but "no way to export them." Mid-session, Mahdi explicitly instructed: skip backend re-verification, just update the logs so another developer can verify the backend, then commit and push immediately.
+
+**Read first**: this file\'s own thirty-sixth session entry (BUG-048, the P0 navigation crash — fixed and CI-confirmed green before this session started) and `docs/BUGLOG.md`\'s BUG-048 entry, to confirm the starting point was actually clean before diagnosing a new issue on top of it.
+
+### Done this session
+
+1. **Local sandbox stood up from scratch** (does not persist between sessions, as every prior session has noted): PHP 8.3 + MariaDB 10.11 via `apt`, repo cloned. Confirmed CI green on the current `main` tip (`72b789e`, BUG-048\'s fix) via the Actions API before starting any new work.
+
+2. **BUG-049 diagnosed and fixed** — full detail in `docs/BUGLOG.md`. Summary: `AdminAnnotationsScreen.tsx`\'s export card only offered manual text-selection as its "export" mechanism, which is unreliable-to-nonfunctional on mobile. Added three real actions: **Copier** (`expo-clipboard`, new dependency, version-matched to Expo SDK 57), **Partager** (React Native core `Share.share()`, no new dependency, confirmed working through `react-native-web`\'s own `navigator.share`-backed implementation), and **Télécharger** (web-only, `Blob` + temporary download link).
+
+3. **Frontend verified fresh, this session**: `npx tsc --noEmit` clean; `npx expo export --platform web --clear` succeeds (558 modules); grepped the built bundle directly and confirmed all three new button labels are actually shipped (`Télécharger` appears minifier-escaped as `T\\xe9l\\xe9charger` — decoded and confirmed before trusting the raw grep, which initially looked like a miss); `make build-deploy` succeeds end-to-end, all 4 `scripts/check-deploy-artifact.sh` checks pass; `scripts/check-repo-hygiene.sh` all 4 checks pass (including the secret-scan, relevant since a PAT was pasted into this session\'s chat — see BUG-049\'s own security note).
+
+4. **Version bumped 5.1.11 → 5.1.12** (`package.json`, lockfile synced via `npm install --package-lock-only`, re-typechecked clean).
+
+### NOT DONE — explicitly, by direct instruction, not an oversight
+
+- **Backend regression suite (`smoke_test.php`, `http_api_test.php`) was deliberately NOT re-run this session.** This fix\'s diff is frontend-only (`git diff --stat`: `src/frontend/package.json`, `src/frontend/package-lock.json`, `src/frontend/src/screens/AdminAnnotationsScreen.tsx` — nothing under `src/backend/`), so there is no code-level mechanism for it to have broken the backend. But per this project\'s own repeatedly-learned lesson (BUG-040, BUG-028, and others: "syntax-clean is not the same as working," and more specifically here, "no code change" is not the same as "verified unchanged") — **this needs an actual run, not an inference from the diff.** Mahdi asked explicitly this session to skip that run and push with the logs updated instead, so the next developer (human or AI) picking this up should treat that as their first action: fresh DB → `migrate.php` (idempotent check too) → `seed.php` → `smoke_test.php` (expect 24/24) → live `php -S 127.0.0.1:8080` → `http_api_test.php` (expect 65/65, matching the thirty-fourth/fifth/sixth sessions\' own numbers) — before telling Mahdi this push is fully backend-clean.
+- **No live click-through** of the three new export buttons — needs Mahdi or a sandbox with real browser/device access, same standing limitation as every frontend fix in this project\'s history.
+- **No CI-confirmed green run yet for this push** — check the Actions run for this commit before relying on it.
+- **No other bugs or tech debt (ROADMAP items 6/7) touched** — this session\'s entire scope was BUG-049, per Mahdi\'s own explicit instruction to log and push immediately rather than continue further.
+
+### Hand-off for the next developer
+
+1. **Run the backend regression suite first** (see "Not done" above for the exact sequence and expected numbers) — this is the single most important unblocked next step and has no dependency on anything else.
+2. **Watch this push\'s GitHub Actions run** before telling Mahdi anything is confirmed — standard practice in this log.
+3. **Get a live click-through from Mahdi** on the three new export buttons specifically (Copier/Partager/Télécharger) — this is what actually closes BUG-049, the same bar every other frontend fix in this project has been held to.
+4. Once BUG-049 is fully confirmed: resume tech debt (ROADMAP items 6: 2/9 design-token files done; 7: `tests/` relocation) — genuinely not deprioritized, just not yet reached across several sessions now; Mahdi has repeatedly emphasized this must not become permanent.
+5. This session\'s local sandbox setup does not persist — redo per `docs/DEPLOY.md`, including the `migration_secret`/`mail.log_path`/`app_url` config values documented in the thirtieth/thirty-first/second/third sessions\' own notes above.
+
+**Dependency / hand-off**: item 1 has no blocker but time — do it before anything else touches this codebase. Item 2 is a pure verification step. Item 3 needs Mahdi specifically. Items 4 is independent and can proceed once 1–3 are clear.
+', NULL, NULL, NULL, NULL),
+  ('2026-09-07 (thirty-eighth session)', 'BUG-050: first real live-annotation batch (8 items) triaged, 6 fixed, 2 logged; full verification and 2 pieces of unfinished work deliberately deferred to the next session, by explicit instruction', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-07 (thirty-eighth session) — BUG-050: first real live-annotation batch (8 items) triaged, 6 fixed, 2 logged; full verification and 2 pieces of unfinished work deliberately deferred to the next session, by explicit instruction".]
+
+## 2026-09-07 (thirty-eighth session) — BUG-050: first real live-annotation batch (8 items) triaged, 6 fixed, 2 logged; full verification and 2 pieces of unfinished work deliberately deferred to the next session, by explicit instruction
+
+**Trigger**: standing pipeline (launch PHP+MariaDB locally, pull latest, read logs first, fix bugs, features by priority, technical debt continuous, push before budget runs out). Session started the same way as the thirty-seventh: independently re-ran the backend regression suite (fresh DB → `migrate.php` ×2 → `seed.php` → `smoke_test.php` **24/24** → live `http_api_test.php` **65/65**) since the prior session had explicitly deferred that to "the next developer" — that was this session, so it happened first, before anything else. With no bugs left open and CI confirmed green on `main`\'s tip (`b8599fa`, BUG-049), moved to technical debt (ROADMAP item 6, design-token migration): took it from 3/9 files to 8/9 (`ErrorBoundary.tsx`, `NaceSearchField.tsx`, `PersonnelForm.tsx`, `ClientsListScreen.tsx`, `ClientDetailScreen.tsx` done this session; `CalculationReportScreen.tsx` import added but not finished — see hand-off). Mid-session, Mahdi tested the app live for the first time with real annotation capture, hit a real "can\'t find export" report that turned out to be a separate scrolling bug (BUG-050 #1), then came back with an actual export file containing 8 real annotations from two different admin accounts. Triaged and fixed 6 of the 8; logged the remaining 2 (one needs Mahdi\'s clarification, one is a bigger design decision) rather than guessing. Mahdi then explicitly instructed: stop writing more code, log everything done and everything still needed in the docs, commit, and push.
+
+**Read first**: this file\'s own thirty-seventh session entry (BUG-049, export buttons) and `docs/BUGLOG.md`\'s BUG-049 entry, to confirm the starting point.
+
+**Security note (recurring — see prior sessions\' identical note)**: a live GitHub PAT was again pasted in plaintext directly in chat this session (first message). Used only transiently for `git clone`/this session\'s push; never written to any log, commit, or this project\'s persistent memory. **Mahdi should rotate this token** — now flagged in at least five separate sessions (tenth, eighteenth, thirty-fourth, thirty-fifth, thirty-seventh, this one).
+
+### Done this session
+
+1. **Backend regression suite re-run fresh, independently of the thirty-seventh session\'s own numbers** (which it had deferred): fresh DB → `migrate.php` (3/3 then 0/3 on a second run — idempotent) → `seed.php` → `smoke_test.php` **24/24** → live `php -S 127.0.0.1:8080` → `http_api_test.php` **65/65**. Also confirmed via the GitHub Actions API that CI\'s own run of `b8599fa` (BUG-049) passed all steps independently, including the same two test suites — two independent confirmations of the same starting state, not just one.
+
+2. **ROADMAP item 6 (design-token migration): 3/9 → 8/9 files.** `ErrorBoundary.tsx`, `NaceSearchField.tsx`, `PersonnelForm.tsx`, `ClientsListScreen.tsx`, `ClientDetailScreen.tsx` fully converted to `src/theme/tokens.ts` — exact-hex-match values converted to their token (e.g. `#1c1c1e` → `colors.contentPrimary`/`colors.actionPrimary` depending on role, `#f0f0f0` → `colors.borderSubtle`), near-matches converted to the closest semantic role consistent with prior sessions\' own established substitutions (`#444`→`colors.contentSecondary`, `#999`→`colors.contentQuaternary`, `#333`→`colors.contentPrimary` — this last one newly established this session, applied consistently across both files that needed it), off-scale raw numbers (2, 3, 6, 15, 18, 220, etc.) deliberately left as plain numbers, matching the precedent already set by every previously-migrated file rather than forcing everything onto the spacing scale. `npx tsc --noEmit` run and clean after each file. `CalculationReportScreen.tsx` — the 9th file — only got its `theme/tokens` import added before this session moved to the live-annotation work; its style values are unconverted. See hand-off.
+
+3. **BUG-050 diagnosed and fixed/logged — 8 items from Mahdi\'s and a second admin\'s first real live-annotation batch.** Full mechanism, fix, and rationale for each of the 8 in `docs/BUGLOG.md` BUG-050 — summary:
+   - **#1 (Profile can\'t scroll) — fixed.** `ProfileScreen.tsx`\'s content `View` → `ScrollView`. This is *why* Mahdi originally couldn\'t find annotation export at all, before the export file existed — not a missing feature, an unreachable one.
+   - **#2/#3 (double header; Profile unreachable from most screens) — fixed.** `App.tsx`: `headerShown: false` added to every screen except `Home` (which already had no double-chrome issue), matching the pattern `CalculationWizard`/`CalculationReport` already used. `Breadcrumbs.tsx`: new optional `onProfilePress` prop rendering a persistent right-aligned profile icon, wired into the four screens (`ClientsList`, `ClientDetail`, `CalculationWizard`, `CalculationReport`) that didn\'t already have a "Profil" crumb in their trail.
+   - **#4 (save button position jump) — fixed.** `CalculationWizardScreen.tsx`: `marginLeft: "auto"` moved from the conditionally-rendered `savedIndicator` text onto the always-rendered `headerSaveBtn`, pinning the button to the row\'s right edge regardless of autosave state.
+   - **#5 ("this total is useless") — investigated, not fixed.** Couldn\'t map the reported {x,y} to one specific element with confidence (two candidate totals in that area of Synthèse) without live device access; deliberately didn\'t guess-remove a calculation display in an audit tool. Needs Mahdi\'s clarification.
+   - **#6 (AdminRoles layout/desktop-width) — investigated, logged as `docs/ROADMAP.md` item 11, not fixed.** Root cause confirmed (flat list, no tabs; `maxWidth` capped well below what `CalculationWizard` uses); the actual redesign needs a design decision this session didn\'t make unilaterally.
+   - **#7 (export filename not timestamped) — fixed.** `AdminAnnotationsScreen.tsx`\'s `exportFilename()` now appends a `YYYYMMDD-HHmmss` stamp — directly confirmed as the fix for the exact collision that produced `annotations-open__1_.md` (the file this bug was reported from).
+   - **#8 (no element detail in annotations) — root cause confirmed, partially addressed.** Zero `testID` props exist anywhere in the frontend (confirmed by grep, not assumed), so the existing element-reference capture has nothing to ever match — confirmed against all 8 real annotations, every one came back with `elementRef: null`. Added `testID`s opportunistically to buttons already being edited for other fixes (7 total, listed in BUGLOG); real coverage is a separate, larger follow-up per this feature\'s own original spec.
+
+### NOT DONE — explicitly, by direct instruction, not an oversight
+
+- **Full verification of this session\'s own changes was deliberately NOT run** — only `npx tsc --noEmit` (clean). No `npx expo export`, no `make build-deploy`, no `scripts/check-repo-hygiene.sh`, and **no backend regression re-run after this session\'s own edits** (item 1 above was a *pre*-session confirmation of the starting state, before BUG-050\'s fixes existed) — despite `App.tsx`\'s navigation config changing for every screen in the stack. Mahdi explicitly instructed: log what\'s done and what\'s needed, then commit and push, without continuing further code or verification work this session.
+- **`CalculationReportScreen.tsx`\'s design-token migration is unfinished** — import added, ~24 style values not converted. See `docs/ROADMAP.md` item 6.
+- **AdminRoles (`docs/ROADMAP.md` item 11) is untouched code-wise** — logged only.
+- **Annotation #5 needs Mahdi\'s clarification** before anyone touches it — see BUG-050 #5.
+- **No live click-through of anything in BUG-050** — same standing limitation as every frontend fix in this project\'s history.
+- **No CI-confirmed green run yet for this push.**
+
+### Hand-off for the next developer — 4 explicit tasks, by Mahdi\'s own direct instruction this session
+
+1. **Run the full verification suite** first, before trusting or building on top of this push: backend regression (fresh DB → migrate ×2 → seed → `smoke_test.php` expect 24/24 → live `http_api_test.php` expect 65/65 — needed specifically because `App.tsx`\'s navigation changed, even though the diff is frontend-only), then `npx expo export --platform web --clear`, `make build-deploy` (4 `check-deploy-artifact.sh` checks), `scripts/check-repo-hygiene.sh`.
+2. **Finish `CalculationReportScreen.tsx`\'s token migration** (ROADMAP item 6, 8/9 → 9/9) — the last file, already scoped, `tsc`-safe starting point (import already in place).
+3. **Finish AdminRoles** (ROADMAP item 11) — quick `maxWidth` bump is low-risk and can happen immediately; the list→tabs/matrix redesign needs its own scoped session.
+4. **Write up whatever 1–3 find, in `docs/BUGLOG.md` and here** — confirm or correct the test numbers once actually re-run, record the `CalculationReportScreen.tsx`/AdminRoles work with the same done/not-done/verification structure every session in this log uses.
+5. **Get Mahdi\'s clarification on annotation #5** ("this total is useless" — which total, specifically) before touching `CalculationWizardScreen`\'s Synthèse totals.
+6. **Get a live click-through** of BUG-050\'s fixes (especially #1–#4, the navigation changes) — same standing bar every frontend fix in this project has been held to.
+7. This session\'s local sandbox setup does not persist — redo per `docs/DEPLOY.md`.
+
+**Dependency / hand-off**: item 1 blocks trusting anything else in this push — do it first. Items 2 and 3 are independent of item 1\'s outcome and of each other (both additive, low-interaction-risk). Item 4 wraps up once 1–3 are done. Items 5–6 need Mahdi specifically and can happen in parallel with 1–4.
+
+### Update, same day — hand-off item 1 (full verification) done, no code changed this pass
+
+Ran the full suite against the actual pushed commit `4408bfa`, as instructed, and nothing else — no further fixes, no further scope. Full detail and the stale-DB gotcha discovered along the way: `docs/BUGLOG.md` BUG-050\'s own update. Summary: backend regression **24/24 / 65/65** on a properly fresh DB (first attempt against a reused DB gave a false 21-failure result — logged as a test-fixture gotcha, not a real bug), `npx expo export` succeeds (558 modules, matching the last known-good count), `make build-deploy` all 4 hygiene checks pass, `scripts/check-repo-hygiene.sh` all 4 checks pass (secret-scan included), and CI independently confirms `4408bfa` green. Hand-off items 2 (`CalculationReportScreen.tsx`), 3 (AdminRoles), 5 (annotation #5 clarification), and 6 (live click-through) are still open.
+
+### Update, same day — hand-off item 2 done: `CalculationReportScreen.tsx` design tokens finished, ROADMAP item 6 closed (9/9)
+
+Converted the file\'s remaining ~24 raw style values to `src/theme/tokens.ts` using the same substitution rules as the other 8 files (exact hex → its token, near-matches → closest semantic role, off-scale numbers left raw). `npx tsc --noEmit` clean, `npx expo export --platform web --clear` succeeds at the same 558-module count. Confirmed with a repo-wide grep that no screen or component uses `StyleSheet.create` without importing `theme/tokens` anymore — item 6 is fully closed, not just "this session\'s files done." Full substitution detail: `docs/BUGLOG.md` BUG-050\'s own update. Only hand-off item 3 (AdminRoles, `docs/ROADMAP.md` item 11) remains from this entry\'s original 4-item list; annotation #5\'s clarification and a live click-through are still open separately.
+', NULL, NULL, NULL, NULL),
+  ('2026-09-07 (thirty-ninth session)', 'Bug/feature tracker schema designed and committed (migration 004); BUG-049\'s backend regression independently re-confirmed clean', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-07 (thirty-ninth session) — Bug/feature tracker schema designed and committed (migration 004); BUG-049\'s backend regression independently re-confirmed clean".]
+
+## 2026-09-07 (thirty-ninth session) — Bug/feature tracker schema designed and committed (migration 004); BUG-049\'s backend regression independently re-confirmed clean
+
+**Trigger**: Mahdi asked to launch PHP+MariaDB, pull latest, and read the logs first — then, separately in chat, proposed replacing markdown-based bug/feature tracking (`BUGLOG.md`/`ROADMAP.md`/`DEV_STATUS.md`, 236KB/56KB/308KB as of this session) with a database table an admin can see and update from a UI, keeping markdown only for dev-to-dev narrative hand-off.
+
+**Concurrency note**: this session ran in parallel with the thirty-eighth session above (BUG-050 + ROADMAP item 6 completion) — both started from `b8599fa` independently and pushed separately; this push landed second and was rebased on top via `git pull --rebase` (one real conflict, in this file\'s own tail, resolved by keeping both entries in push order and renumbering this one from a collided "thirty-eighth" to "thirty-ninth"; `docs/ROADMAP.md`\'s new item also renumbered 10→12 for the same reason — the thirty-eighth session\'s own BUG-050 write-up already used both 10 and 11). This session\'s own diff (a new migration file + one test-assertion fix) never touched anything the thirty-eighth session changed, so no code-level conflict existed, only the two sessions independently picking the same "next" session number and item number.
+
+**Read first**: this file\'s own thirty-seventh session entry (BUG-049, the fix whose backend regression this session closed) and the thirty-eighth session entry directly above (BUG-050 + ROADMAP item 6 close-out, pushed first) — both are new since this session\'s own starting point.
+
+### Done this session
+
+1. **Local sandbox stood up again** (PHP 8.3 + MariaDB 10.11, does not persist between sessions — same note every prior session has made; the MariaDB *daemon* also doesn\'t survive between separate tool calls within one sandbox session here, only the on-disk data does — worth remembering next time this trips up a test run). Re-ran the thirty-seventh session\'s deliberately-skipped backend regression against BUG-049\'s push (`b8599fa`) first: **24/24 smoke, 65/65 HTTP, clean** — that hand-off item is now closed.
+
+2. **Bug/feature tracker schema designed** across several rounds of back-and-forth with Mahdi in chat, landing on a two-table design: `tracker_items` (one row per bug/feature/tech-debt item, `code` as primary key rather than a surrogate id) and `tracker_updates` (append-only `done`/`next` history, so progress history is never lost the way overwriting a single field would lose it). Full reasoning for every column — including why `status` is an ENUM but `type` isn\'t, and why `dependencies` is plain text rather than a real foreign key — is written inline in the migration file itself rather than duplicated here.
+
+3. **Wrote and applied `004_add_bug_feature_tracker.sql`**: both tables, plus a new `manage_tracker` permission seeded and granted to `administrateur` only (same pattern as `003_add_annotations.sql`\'s `manage_annotations`). Verified locally: applies cleanly on a fresh DB, idempotent on a second run (0 applied), FK cascade-delete sanity-checked directly (`DELETE FROM tracker_items` correctly removed its `tracker_updates` rows), 24/24 smoke tests. HTTP regression came back 64/65 on the first clean pass — the one failure was `GET /admin/permissions` asserting exactly 7 seeded permissions, which is now 8 because of `manage_tracker`; fixed the hardcoded count in `tests/http_api_test.php`. Re-running the full suite a second time to confirm 65/65 hit this sandbox\'s own rate limiter and leftover test-user state from the first run rather than surfacing anything new — the fresh-DB run\'s 64/65-with-one-expected-and-now-fixed-diff is the real signal here, not a phantom later failure caused by testing against an already-tested DB.
+
+4. **`docs/ROADMAP.md` item 10 added** for this (schema written, not yet built — no API/UI).
+
+### NOT DONE
+
+- **No backend API, no admin UI screen** — this session\'s scope was schema only, by Mahdi\'s own explicit instruction ("later we will start this from your new migration description file").
+- **No CI-confirmed green run yet** for this push.
+- **ROADMAP items 6/7 (tech debt)** untouched again — four sessions running now; Mahdi\'s repeated point that this must not become permanent still stands.
+
+### Hand-off for the next developer
+
+1. **Build the CRUD API** for `tracker_items`/`tracker_updates`, gated behind the new `manage_tracker` permission — `annotationRepo.php` is the closest existing pattern to mirror.
+2. **Then an admin UI screen**: list with filters (status/type/priority), detail view showing the `tracker_updates` history in order.
+3. **Watch this push\'s Actions run** before treating anything above as CI-confirmed — standard practice in this log.
+4. **Tech debt (ROADMAP items 6/7)** still waiting, same standing note as the last several sessions.
+
+**Dependency / hand-off**: item 1 has no blocker but time. Item 2 depends on item 1. Item 3 is a pure verification step, independent of 1–2. Item 4 is independent of all three and can be picked up any time.
+', NULL, NULL, NULL, NULL),
+  ('2026-09-07 (fortieth session)', 'Tracker CRUD data layer + backlog seed migration written; routes, admin UI, and the regression suite explicitly deferred by direct instruction, not started', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-07 (fortieth session) — Tracker CRUD data layer + backlog seed migration written; routes, admin UI, and the regression suite explicitly deferred by direct instruction, not started".]
+
+## 2026-09-07 (fortieth session) — Tracker CRUD data layer + backlog seed migration written; routes, admin UI, and the regression suite explicitly deferred by direct instruction, not started
+
+**Trigger**: standing pipeline instruction (launch PHP+MariaDB locally, pull latest, read logs first, continue the previously-defined next task; reorganize bug/feature/tech-debt tracking behind an admin-visible, filterable, CRUD-able UI; then bugs → features by priority → technical debt, continuously logged, pushed before the token budget runs out). Read the thirty-ninth session\'s hand-off (build the CRUD API + admin UI on top of migration 004) and treated it as this session\'s literal starting point. Partway through — data layer and seed migration written, before any route or UI existed — Mahdi explicitly instructed: stop writing more code, update the logs with what\'s done and what\'s still needed, and push.
+
+**Read first**: this file\'s thirty-ninth session entry (hand-off), `docs/ROADMAP.md` item 12, and `docs/BUGLOG.md`\'s BUG-048/BUG-050 entries (source material for the seed data below).
+
+**Security note (recurring — see prior sessions\' identical note)**: a live GitHub PAT was again pasted in plaintext directly in chat this session. Used only transiently for `git clone`/this session\'s push; never written to any log, commit, or this project\'s persistent memory. This token has now been pasted in chat, in plaintext, across essentially every session in this log — rotating it costs a few minutes and removes a standing, growing exposure.
+
+### Done this session
+
+1. **Local sandbox stood up** (PHP 8.3 + MariaDB 10.11 installed fresh; does not persist between sessions — same note every prior session has made). Pulled latest — no new commits since the thirty-ninth session\'s push; `f8e68e6` was and remains tip.
+2. **Read `docs/DEV_STATUS.md` (thirty-ninth session hand-off), `docs/ROADMAP.md` (item 12), and `docs/BUGLOG.md` (BUG-048 and BUG-050 in full)** to ground this session\'s plan — and the seed data in point 4 below — in the project\'s actual recorded state rather than assumption.
+3. **Wrote `src/backend/db/trackerRepo.php`**: the full CRUD data layer for `tracker_items`/`tracker_updates` — `listTrackerItems` (status/type/priority filters), `getTrackerItemByCode` (item + its update history in order), `createTrackerItem`, `updateTrackerItem` (partial — only supplied fields change), `deleteTrackerItem`, `addTrackerUpdate` (logs one history row and refreshes `comments`/optionally `status` in a single transaction, per migration 004\'s own design note on what `comments` is for), `suggestNextTrackerCode` (collision-free next-code suggestion per prefix, e.g. `BUG` → `BUG-053`). Mirrors `annotationRepo.php`\'s shape and validation style throughout, per the prior session\'s own hand-off note. `php -l` clean. **Not yet required or routed anywhere in `api/index.php`** — the file is currently inert, with zero effect on the running app.
+4. **Wrote and applied migration `005_seed_tracker_backlog.sql`**: seeds the (until now empty) tracker with the actual current backlog — 13 items, each with one `tracker_updates` row summarizing history (`done`) and hand-off (`next`):
+   - `FEAT-006` — annotation tool, pending a live click-through (`fixed_unverified`, p1)
+   - `DEBT-001` — no CI render-smoke-test, the process gap behind BUG-048 (open, p1)
+   - `BUG-051` — `ErrorBoundary`\'s `onGoHome` is a no-op on native (open, p2)
+   - `BUG-052` — "this total is useless" annotation, needs Mahdi\'s clarification on which total (open, p2, blocked)
+   - `DEBT-002` — AdminRoles flat-list layout + narrow desktop width, needs redesign (open, p1)
+   - `DEBT-003` — near-zero `testID` coverage app-wide (open, p2)
+   - `DEBT-004` — top-level `tests/` relocation + missing frontend unit tests (open, p1)
+   - `FEAT-007` — In-App Guided Acceptance Test Runner & Report Exporter (open, p1)
+   - `FEAT-008` — Parameter Admin UI & dossier reference codification (open, p1)
+   - `FEAT-001` — Synthèse per-site tabs + consolidated view (open, p1)
+   - `FEAT-009` — PDF export of the calculation report (open, p1)
+   - `FEAT-004` — production web presence / SEO review (open, p2)
+   - `FEAT-002` — Google sign-in, deferred indefinitely (open, p3)
+
+   `INSERT IGNORE` throughout — idempotent, and deliberately won\'t overwrite a row an admin has since edited through the (future) UI on a re-run. Verified locally: fresh-DB `migrate.php` applies all 5 migrations; a second run applies 0 new; row counts and spot-checked field content confirmed correct against both source markdown files.
+5. **Assigned this feature itself — `docs/ROADMAP.md` item 12 — its own code, `FEAT-010`** (FEAT-007/008/009 were claimed this same session for the other, unrelated items above), and updated that ROADMAP entry inline with this session\'s exact status.
+
+### NOT DONE — explicitly, by direct instruction, not an oversight
+
+- **No API routes wired in `api/index.php`** — `trackerRepo.php` exists but nothing calls it yet.
+- **No admin UI screen** — nothing to see, filter, or CRUD yet, despite the data layer and seed data existing underneath.
+- **No tracker-specific tests, and — importantly — the existing backend regression suite (`smoke_test.php`, `http_api_test.php`) was NOT re-run this session at all.** Only the migration itself was verified in isolation (fresh apply + idempotent re-run + row-count/content spot-check). Do not assume the thirty-ninth session\'s 24/24 smoke or 65/65 HTTP numbers still hold without re-running them fresh.
+- **No CI-confirmed green run yet** for this push.
+- **No bugs fixed, no features built, no other tech debt (`DEBT-001`–`004`) touched** — this session\'s entire scope was the tracker\'s data layer and backlog seed, per Mahdi\'s own explicit instruction partway through to stop coding, log, and push.
+
+### Hand-off for the next developer
+
+1. **Wire the routes in `api/index.php`**: `GET /admin/tracker/items` (list, optional `?status`/`?type`/`?priority`), `GET /admin/tracker/items/:code` (detail + history), `POST /admin/tracker/items` (create), `PUT /admin/tracker/items/:code` (partial update), `DELETE /admin/tracker/items/:code`, `POST /admin/tracker/items/:code/updates` (log an update), `GET /admin/tracker/next-code?prefix=BUG` (suggestion) — all gated behind `requirePermission(\'manage_tracker\')`, CSRF on the mutating ones, next to the annotations routes in `index.php`. Every function these routes need already exists in `trackerRepo.php` and is documented inline there.
+2. **Run the full backend regression suite fresh, first** — establish the real current baseline (see "Not done" above) before adding a single tracker-specific test. Then add an HTTP regression block for `/admin/tracker/*` mirroring the annotations test block — note `listTrackerItems` will start from 13 real seeded rows, not zero, so write assertions accordingly.
+3. **Build `AdminTrackerScreen.tsx`**: list with status/type/priority filters, detail view with the update history in order, create/edit/delete forms, a "log an update" action (`done`/`next`/optionally `status`). Mirror `AdminAnnotationsScreen.tsx`/`useAdminApi.ts` for the pattern. Use a wide `ResponsiveContainer` `maxWidth` (~1100, matching `CalculationWizardScreen`) rather than the 640–800 cap already flagged as its own tech debt (`DEBT-002`/ROADMAP item 11) — no reason to bake that same mistake into a brand-new screen.
+4. **Wire into `App.tsx`** (import + `RootStackParamList` + `Stack.Screen`) **and `ProfileScreen.tsx`** (nav button gated on `hasPermission(\'manage_tracker\')`) — the same three-file pattern every existing admin screen already follows.
+5. **Once routes exist, add a `tracker_items` row for `FEAT-010`** (this feature, tracking itself) — either through the new API directly or a further seed migration, whichever is more convenient at that point.
+6. **Full verification before calling any of this closed**: `tsc --noEmit`, `expo export --platform web --clear`, `make build-deploy`, `scripts/check-repo-hygiene.sh`, the full backend regression suite, then watch this push\'s and the next one\'s CI runs.
+7. **Only after the tracker is fully live**: move to bugs (none open at P0/P1 currently — the real remaining work is what this session tracked as `BUG-051`/`052` and `DEBT-001`–`004`), then features by priority (`FEAT-007`/`008`/`001`/`009`, roughly in that order per ROADMAP\'s own P1 queue), then the rest of tech debt (`DEBT-004`, `tests/` relocation, carried over untouched for four-plus sessions now).
+
+**Dependency / hand-off**: item 1 has no blocker but time. Item 2 depends on item 1 existing. Item 3 can start in parallel with 1–2 (a UI can be built against a not-yet-live API) but needs item 1 to actually work end-to-end. Item 4 depends on item 3. Item 5 depends on item 1. Item 6 depends on 1–4. Item 7 depends on the whole tracker (1–6) being live and confirmed, per Mahdi\'s own stated ordering: tracker/UI first, then bugs, then features, then tech debt.
+', NULL, NULL, NULL, NULL),
+  ('2026-09-08 (forty-first session)', 'FEAT-010 tracker: CRUD routes wired into `api/index.php` + 17 new HTTP regression tests; admin UI, `App.tsx`/`ProfileScreen.tsx` wiring, and full frontend re-verification still not started', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-08 (forty-first session) — FEAT-010 tracker: CRUD routes wired into `api/index.php` + 17 new HTTP regression tests; admin UI, `App.tsx`/`ProfileScreen.tsx` wiring, and full frontend re-verification still not started".]
+
+## 2026-09-08 (forty-first session) — FEAT-010 tracker: CRUD routes wired into `api/index.php` + 17 new HTTP regression tests; admin UI, `App.tsx`/`ProfileScreen.tsx` wiring, and full frontend re-verification still not started
+
+**Trigger**: standing pipeline instruction (launch PHP+MariaDB locally, pull latest, read logs first, continue the previously-defined next task; reorganize bug/feature/tech-debt tracking behind an admin-visible, filterable, CRUD-able UI; then bugs → features by priority → technical debt, continuously logged, pushed before the token budget runs out). Mid-session — routes drafted (imports added to `api/index.php`) but not yet written — this session\'s context ended and had to hand off with nothing pushed; a follow-up turn resumed with the explicit instruction: bump the version, commit, and push.
+
+**Read first**: this file\'s own fortieth-session entry (hand-off: build the CRUD API + admin UI on top of `trackerRepo.php` and migration 005\'s seed data), and `docs/ROADMAP.md` item 12.
+
+**Security note (recurring — see every prior session\'s identical note)**: the same live GitHub PAT was pasted in plaintext directly in chat again this session, across two separate turns. Used only transiently for `git clone`/this session\'s push; never written to any log, commit, or this project\'s persistent memory. Repeating the standing recommendation once again: rotating it costs a few minutes and closes a growing, entirely avoidable exposure — this token has now been pasted in chat in essentially every session logged in this file.
+
+### Done this session
+
+1. **Local sandbox stood up** (PHP 8.3 + MariaDB 10.11; does not persist between sessions or even between separate tool calls within one sandbox session — same limitation every prior session has noted, re-confirmed again this session when the PHP dev server died between two tool calls and had to be restarted in the same call as whatever needed it running). Pulled latest — no new commits since the fortieth session\'s push; `2ce5ee9` was and remains the tip this session started from.
+2. **Read `docs/DEV_STATUS.md` (fortieth-session hand-off), `docs/ORIENTATIONS.md`, `docs/ROADMAP.md` item 12, `trackerRepo.php`, migration `004`, and the `/admin/annotations` block in `api/index.php`** (the explicitly-named pattern to mirror) before writing anything, per this project\'s own standing rule not to guess at conventions already settled elsewhere.
+3. **Established a real fresh-DB baseline before changing anything**, per the fortieth session\'s own explicit hand-off instruction to do this first: `migrate.php` (5/5 applied, idempotent on re-run) → `seed.php` → `smoke_test.php` **24/24** → `http_api_test.php` **65/65** (after correcting a local-only gap: `config.php` needs `migration_secret` set to the exact CI test value `tests/http_api_test.php` hardcodes, or all 8 `/migrate` tests fail with 501 — same class of local-config gotcha the thirtieth session flagged and documented; noting it again here since it cost real time to re-diagnose).
+4. **Wired all 7 tracker routes into `api/index.php`**: `GET /admin/tracker/next-code?prefix=`, `GET /admin/tracker/items` (list, `?status=`/`?type=`/`?priority=` filters), `POST /admin/tracker/items` (create), `GET /admin/tracker/items/:code` (detail + history), `PUT /admin/tracker/items/:code` (partial update), `DELETE /admin/tracker/items/:code`, `POST /admin/tracker/items/:code/updates` (log an update, optionally moving status). Every route: `requireDb` → `requirePermission(\'manage_tracker\')` → `requireCsrf()` on the mutating ones — copied structurally from the `/admin/annotations` block immediately above it in the file, including inlining the status/type/priority allowlists at the route layer rather than importing `trackerRepo.php`\'s `TRACKER_*` constants (matches how the annotations block inlines its own status list — this file\'s existing precedent). `php -l` clean.
+5. **Manually verified the full CRUD lifecycle end-to-end against a live server before writing a single automated test**: registered a fresh user (auto-bootstrapped as `administrateur`, confirmed `manage_tracker` present in its permission list), then by hand: listed the 13 seeded items, filtered by `type=bug` (2 results, correct), got a next-code suggestion (`TEST-001`), confirmed create is rejected without CSRF (403) and with a malformed code (400), created a real item, fetched it by code, updated its status, logged an update (confirmed it moved `status` and refreshed `comments` in one call, and appended to `updates`), deleted it, and confirmed both the 404 on re-fetch and the list returning to exactly 13 rows.
+6. **Added 17 new HTTP regression tests** to `tests/http_api_test.php`, immediately after the annotations block, covering everything verified by hand in step 5 plus the unauthenticated-401 and invalid-filter-400 cases. Re-ran the full suite fresh (fresh DB → migrate → seed → smoke → live server → HTTP): **24/24 smoke, 82/82 HTTP** (65 pre-existing + 17 new), zero failures.
+7. **Version bumped 5.1.14 → 5.2.0** (`src/frontend/package.json`, `package-lock.json` synced via `npm install --package-lock-only` — diff confirmed to touch only the two version fields, nothing else). **This deviates from this project\'s own established convention** ("no bump until something is user-reachable" — see the thirty-fourth-session CHANGELOG entry and every backend-only session since) since nothing built this session is reachable through any UI yet. Bumped anyway, on Mahdi\'s own direct instruction this turn ("bump version, commit, and push"), not by this session\'s own judgment call — recorded here and in `CHANGELOG.md` explicitly so this doesn\'t read as the convention itself having quietly changed.
+8. **Docs updated**: `CHANGELOG.md` (new 5.2.0 entry), `docs/ROADMAP.md` item 12 (header + a new dated update block), `docs/TEST_CHECKLIST.md` (new dated test-history entry), `SECURITY.md` (new entry confirming the tracker routes introduce no new gap — same prepared-statement/permission/CSRF/generic-error pattern as every other admin route, and the table itself holds only internal dev-process text, no PII).
+
+### NOT DONE — explicitly, not silently skipped
+
+- **No admin UI screen** — `AdminTrackerScreen.tsx` does not exist. Nothing built this session (or the fortieth session before it) is visible or usable by an actual admin yet; every verification above was direct API calls (`curl`), not a browser.
+- **`App.tsx`/`ProfileScreen.tsx` wiring** — not started, since there\'s no screen yet to wire in.
+- **Frontend build NOT re-verified this session** — `npm install` (no `node_modules` present in this sandbox at all), `tsc --noEmit`, `expo export --platform web --clear`, and `make build-deploy` were **not run**. Justification: no frontend source file changed this session, only `package.json`/`package-lock.json`\'s version fields. This is a real gap relative to this project\'s own "verify the actual build, don\'t infer from the diff" standard, not a silent skip — flagging it plainly rather than either running an expensive full install for a version-only change or quietly claiming the frontend is fine.
+- **No CI-confirmed green run yet** for this push — next step immediately after, standard practice in this log.
+- **No bugs fixed** (BUG-051/052 untouched), **no other tech debt touched** (`DEBT-001`–`004`, carried over five-plus sessions now — Mahdi\'s repeated point that this must not become permanent still stands, unchanged by this session), **no features started** (`FEAT-007`/`008`/`001`/`009`) — this session\'s entire scope was the tracker\'s backend routes and tests, per the standing tracker-first ordering Mahdi has stated repeatedly.
+- **No `FEAT-010` tracker row for this feature itself yet** — still pending, as the fortieth session\'s own hand-off noted; can be done through the new API directly once there\'s a session with spare budget for it.
+
+### Hand-off for the next developer
+
+1. **Build `AdminTrackerScreen.tsx`**: list with status/type/priority filters, detail view with the `updates` history in order (oldest first, per `getTrackerItemByCode`\'s own contract), create/edit/delete forms, a "log an update" action (`done`/`next`/optionally `status`). Mirror `AdminAnnotationsScreen.tsx` + `useAdminApi.ts` for the pattern — all 7 endpoints exist and are tested, so this can be built directly against a real, working API with no backend guesswork. Use a wide `ResponsiveContainer` `maxWidth` (~1100, matching `CalculationWizardScreen`) rather than the narrower cap already flagged as its own tech debt (`DEBT-002`) — no reason to bake that mistake into a brand-new screen.
+2. **Wire into `App.tsx`** (import + `RootStackParamList` + `Stack.Screen`) **and `ProfileScreen.tsx`** (nav button gated on `hasPermission(\'manage_tracker\')`) — the same three-file pattern every existing admin screen already follows.
+3. **Full frontend verification, first thing, before any of the above is trusted**: `npm install` (this sandbox has never had `node_modules` installed — first run will take real time), `npx tsc --noEmit`, `npx expo export --platform web --clear`, `make build-deploy`, `scripts/check-repo-hygiene.sh`. This session\'s version bump was not covered by any of these — don\'t assume 5.2.0 builds clean until this actually runs.
+4. **Add a `tracker_items` row for `FEAT-010` itself** once the UI exists, either via the API directly or a further seed migration.
+5. **Watch this session\'s push through a real GitHub Actions run** before trusting anything above as CI-confirmed.
+6. **Only after the tracker is fully live and confirmed**: bugs (`BUG-051`/`052`, both currently open, neither P0/P1), then features by priority (`FEAT-007`/`008`/`001`/`009`), then the rest of tech debt (`DEBT-001`–`004`) — Mahdi\'s own repeatedly-stated ordering.
+
+**Dependency / hand-off**: item 1 has no blocker — every endpoint it needs already exists and is tested. Item 2 depends on item 1. Item 3 is independent of 1–2 and should genuinely run first, not last, despite being listed third here — the routes are trustworthy (tested), the frontend build is not (unverified since before this session even started touching it). Item 4 depends on item 1. Item 5 is a pure verification step, independent of everything else. Item 6 depends on the whole tracker (1–5) being live and confirmed.
+', NULL, NULL, NULL, NULL),
+  ('2026-09-08 (forty-second session)', 'Fresh baseline re-confirmed (24/24 smoke, 82/82 HTTP) + the forty-first session\'s own hand-off item 3 (full frontend verification) CLOSED; `AdminTrackerScreen.tsx` reference material read but not yet written — no code changes this session', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-08 (forty-second session) — Fresh baseline re-confirmed (24/24 smoke, 82/82 HTTP) + the forty-first session\'s own hand-off item 3 (full frontend verification) CLOSED; `AdminTrackerScreen.tsx` reference material read but not yet written — no code changes this session".]
+
+## 2026-09-08 (forty-second session) — Fresh baseline re-confirmed (24/24 smoke, 82/82 HTTP) + the forty-first session\'s own hand-off item 3 (full frontend verification) CLOSED; `AdminTrackerScreen.tsx` reference material read but not yet written — no code changes this session
+
+**Trigger**: standing pipeline instruction (launch PHP+MariaDB locally, pull latest, read logs first, check the last five pushes for a forgotten next task, continue it; bugs → features by priority → technical debt, continuously logged, pushed before the token budget runs out). Read the forty-first session\'s hand-off and treated its own explicit ordering literally: hand-off item 3 (full frontend verification) says to run it "first thing, before any of the above is trusted," ahead of items 1/2 (building the screen itself) despite being numbered third — this session did exactly that, then ran out of turn budget partway into item 1 itself.
+
+**Read first**: this file\'s fortieth- and forty-first-session entries (hand-off), `docs/ORIENTATIONS.md` in full, `docs/ROADMAP.md` item 12, the last 5 commits (`d4bc493`, `2ce5ee9`, `f8e68e6`, `9630188`, `db12c54` — confirmed none had an unaddressed "next task" beyond what the forty-first session\'s hand-off already states).
+
+**Security note (recurring — see every prior session\'s identical note)**: the same live GitHub PAT was pasted in plaintext directly in chat again this session. Used only transiently for `git clone`/this session\'s push; never written to any log, commit, or this project\'s persistent memory. Repeating the standing recommendation again: this token has now been pasted in chat in essentially every session logged in this file — rotating it costs a few minutes and closes a real, growing exposure.
+
+### Done this session
+
+1. **Local sandbox stood up from scratch** (PHP 8.3 + MariaDB 10.11 installed fresh via `apt-get`; confirmed — again — that neither survives between separate tool calls within this sandbox, only within one, so DB+server+test sequences must be chained in a single shell invocation, not split across calls). Pulled latest — no new commits since the forty-first session\'s push; `d4bc493` was and remains tip.
+2. **Re-established the fresh-DB baseline independently**: `migrate.php` (5/5 applied, idempotent on re-run) → `seed.php` → `smoke_test.php` **24/24** → live `php -S` → `http_api_test.php` **82/82** (65 pre-existing + 17 tracker tests). Confirms the forty-first session\'s own claimed numbers still hold — this project\'s standing rule is to re-run, not assume, and that held here.
+3. **Closed hand-off item 3 — full frontend verification, previously unrun since before the tracker work began**: `npm install` (this sandbox had never had `node_modules`; 516 packages, ~20s, 22 pre-existing vulnerabilities all pre-dating this session — not investigated, not in scope). `npx tsc --noEmit` clean. `npx expo export --platform web --clear` → **558 modules**, matching the last known-good count exactly. `make build-deploy` → all 4 deployment-artifact hygiene checks pass. `scripts/check-repo-hygiene.sh` → all 4 checks pass, secret-scan included. This confirms v5.2.0 (the tracker backend + version bump, forty-first session) builds clean on the frontend side too, not just the backend — the exact gap the forty-first session flagged as unverified.
+4. **Read the reference material item 1 of the hand-off calls for**, to avoid guessing at conventions already settled elsewhere: `AdminAnnotationsScreen.tsx` in full (list/filter/card/export pattern, `DangerButton`, token usage throughout), `useAdminApi.ts` in full (the `request()` wrapper, `AdminApiError`, the `Annotation` interface and its 5 methods as the shape to mirror), the complete `/admin/tracker/*` route block in `api/index.php` (all 7 routes\' exact request/response contracts), `trackerRepo.php` (confirms the camelCase field names `mapTrackerItemRow`/`mapTrackerUpdateRow` actually return — `code` is the string PK, not a numeric `id`; `updates` is attached only on the by-code detail fetch), `SegmentedPicker.tsx` and `StatusPill.tsx` (existing token-styled pickers/badges to reuse rather than rebuild), and the `ProfileScreen.tsx`/`App.tsx` three-file wiring pattern every existing admin screen follows. **`AdminTrackerScreen.tsx` itself was not written this session** — ran out of turn budget after the reading pass, before writing code.
+
+### NOT DONE — explicitly, not silently skipped
+
+- **`AdminTrackerScreen.tsx` does not exist yet** — same as the forty-first session left it. No code changes at all this session; the repository tree is byte-for-byte what the forty-first session pushed.
+- **No `App.tsx`/`ProfileScreen.tsx` wiring** — nothing to wire in yet.
+- **No further frontend verification needed beyond what\'s in point 3 above**, since no frontend source changed — but note this pass does NOT cover any future screen; whoever writes `AdminTrackerScreen.tsx` must re-run `tsc`/`expo export`/`make build-deploy` themselves before trusting it, per this project\'s own "verify the actual build, don\'t infer from the diff" standard.
+- **No bugs fixed** (`BUG-051`/`052` untouched), **no other tech debt touched** (`DEBT-001`–`004`, now carried six-plus sessions — Mahdi\'s repeated point that this must not become permanent still stands, unchanged by this session), **no features started** — this session\'s entire scope was re-verification plus reading ahead for the next write, per the standing tracker-first ordering.
+- **This is a docs-only push** — no `CHANGELOG.md` entry (nothing shipped, matching this project\'s own convention that docs-only verification sessions like the thirty-eighth session\'s `db12c54` don\'t bump the changelog either), no `SECURITY.md` entry (no new endpoint or stored data introduced).
+
+### Hand-off for the next developer
+
+1. **Write `AdminTrackerScreen.tsx`** — every reference file needed is already re-confirmed current as of this session (point 4 above), so this can start directly from a design, not a reading pass: list with status/type/priority `SegmentedPicker` filters, detail view with the `updates` history in order (oldest first, per `getTrackerItemByCode`\'s own contract), create/edit forms (fields: `code` immutable after creation, `type` immutable after creation, `title`, `userDescription`, `technicalDescription`, `status`, `priority`, `dependencies`, `testsToDo`, `comments` — `comments` is normally read-only/derived once "log an update" exists, per `trackerRepo.php`\'s own design note), delete (mirror `AdminAnnotationsScreen.tsx`\'s two-tap `DangerButton`), and a "log an update" action (`done` required, `next` optional, `status` optional). Add the matching `TrackerItem`/`TrackerUpdate` interfaces + 7 methods (`listTrackerItems`, `getTrackerItem`, `createTrackerItem`, `updateTrackerItem`, `deleteTrackerItem`, `addTrackerUpdate`, `suggestNextTrackerCode`) to `useAdminApi.ts`, mirroring the existing `Annotation` block\'s shape exactly. Use a wide `ResponsiveContainer` `maxWidth` (~1100, matching `CalculationWizardScreen`) per the forty-first session\'s own note — do not bake in `DEBT-002`\'s narrow-width mistake on a brand-new screen.
+2. **Wire into `App.tsx`** (import + `RootStackParamList` + `Stack.Screen`, `title: "Suivi bugs/fonctionnalités"` or similar) **and `ProfileScreen.tsx`** (new button in the existing "Administration" card, gated on `hasPermission(\'manage_tracker\')`, alongside the existing `manage_users`/`manage_roles`/`manage_annotations` buttons — same `testID` convention, e.g. `profile-admin-tracker-button`).
+3. **Full frontend verification after writing the above** — this session\'s pass (point 3) only confirms the pre-UI baseline; it does not cover a file that doesn\'t exist yet. Re-run `npx tsc --noEmit`, `npx expo export --platform web --clear` (expect the module count to increase by roughly 1 for the new screen), `make build-deploy`, `scripts/check-repo-hygiene.sh` before trusting any of it.
+4. **Add a `tracker_items` row for `FEAT-010` itself** once the UI exists, either via the new API directly (now easiest to do from a live-tested UI) or a further seed migration.
+5. **Only after the tracker is fully live and confirmed**: bugs (`BUG-051`/`052`, both open, neither P0/P1), then features by priority (`FEAT-007`/`008`/`001`/`009`), then the rest of tech debt (`DEBT-001`–`004`) — Mahdi\'s own repeatedly-stated ordering, now six sessions running without any of it being touched; flagging again, per instruction, that this must not become the new normal.
+
+**Dependency / hand-off**: item 1 has no blocker — every endpoint and reference file it needs is read and current. Item 2 depends on item 1. Item 3 depends on 1–2 (there\'s nothing new to verify until they exist). Item 4 depends on item 1. Item 5 depends on the whole tracker (1–4) being live and confirmed.
+', NULL, NULL, NULL, NULL),
+  ('2026-09-08 (forty-third session)', '`useAdminApi.ts` tracker types/methods added (typecheck-clean); `AdminTrackerScreen.tsx` still NOT written — pushing mid-flight per Mahdi\'s explicit instruction so the next session doesn\'t redo this reading/typing pass', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-08 (forty-third session) — `useAdminApi.ts` tracker types/methods added (typecheck-clean); `AdminTrackerScreen.tsx` still NOT written — pushing mid-flight per Mahdi\'s explicit instruction so the next session doesn\'t redo this reading/typing pass".]
+
+## 2026-09-08 (forty-third session) — `useAdminApi.ts` tracker types/methods added (typecheck-clean); `AdminTrackerScreen.tsx` still NOT written — pushing mid-flight per Mahdi\'s explicit instruction so the next session doesn\'t redo this reading/typing pass
+
+**Trigger**: standing pipeline instruction (launch PHP+MariaDB locally, pull latest, read logs first, continue the work; bugs → features by priority → technical debt, continuously logged, pushed before token budget runs out). Continued directly from the forty-second session\'s hand-off item 1. Ran out of turn budget partway through item 1 itself (client-side plumbing done, screen component not started); Mahdi explicitly said to push what exists now and record exactly what\'s left for the next dev, rather than hold the diff back until it\'s complete.
+
+**Read first**: the forty-second session\'s entry above in full (hand-off items 1–5) — nothing else new since that push (`d3b9176` was and remains tip at the start of this session).
+
+**Security note (recurring — see every prior session\'s identical note)**: the same live GitHub PAT was pasted in plaintext directly in chat again this session. Used only transiently for `git clone`/this session\'s push; never written to any log, commit, or this project\'s persistent memory. Repeating the standing recommendation again, now for the fourth-plus consecutive session: rotating this token costs a few minutes and closes a real, growing exposure.
+
+### Done this session
+
+1. **Local sandbox stood up from scratch** (PHP 8.3 + MariaDB 10.11 via `apt-get`; same non-persistence caveats as every prior session — MariaDB daemon and any backgrounded `php -S` do not survive between separate tool calls, only within one chained shell invocation). Pulled latest — no new commits since the forty-second session\'s push.
+2. **Re-established the fresh-DB baseline independently, on a genuinely fresh DB** (dropped and recreated the schema first — the previous same-session attempt against a reused DB reproduced this project\'s own documented "first-ever registrant" test-fixture gotcha: 47/82 with cascading 403s, not a real regression, exactly as the thirty-eighth session\'s entry already describes for the identical symptom): `migrate.php` (5/5 applied, idempotent on re-run) → `seed.php` → `smoke_test.php` **24/24** → live `php -S` → `http_api_test.php` **82/82**. Confirms the forty-second session\'s numbers still hold.
+3. **Read the same reference material the forty-second session flagged** (`AdminAnnotationsScreen.tsx` in full, `useAdminApi.ts` in full, the complete `/admin/tracker/*` route block in `api/index.php`, `trackerRepo.php` in full, `SegmentedPicker.tsx`, `StatusPill.tsx` — note: `StatusPill.tsx` turned out to be the health-check dot in the app header, not a generic status-badge component; there is no existing reusable badge component for tracker status/type/priority pills, so whoever writes the screen will need a small one-off pill, same "duplicated rather than shared" precedent `AdminAnnotationsScreen.tsx`\'s own `DangerButton` already set), `App.tsx`\'s route registration block, `ProfileScreen.tsx`\'s Administration-card block.
+4. **Added `TrackerItem`/`TrackerUpdate` interfaces and all 7 methods to `useAdminApi.ts`** (`listTrackerItems` with optional status/type/priority filters, `getTrackerItem`, `createTrackerItem`, `updateTrackerItem` — deliberately typed without `code`/`type` to match `trackerRepo.php`\'s own immutable-after-creation rule — `deleteTrackerItem`, `addTrackerUpdate`, `suggestNextTrackerCode`), mirroring the existing `Annotation` block\'s shape and the `request()` helper exactly. **`npx tsc --noEmit` clean** against the full frontend tree (fresh `npm install`, 22 pre-existing vulnerabilities, same count the forty-second session logged, still not investigated/in scope).
+5. **`expo export` / `make build-deploy` / `check-repo-hygiene.sh` NOT re-run this session** — no screen exists yet to export, and re-running the full build pass for a types-only, unused-by-any-screen change would not catch anything `tsc` didn\'t already catch. Whoever writes the screen must run all of these before trusting it (see hand-off item 3 below, unchanged from the forty-second session\'s own item 3).
+
+### NOT DONE — explicitly, not silently skipped
+
+- **`AdminTrackerScreen.tsx` does not exist yet.** This session\'s only frontend change is the new types/methods in `useAdminApi.ts` — dead code with zero runtime effect until a screen calls it (same "dead code" caveat the fortieth session logged for `trackerRepo.php` itself before it was wired into routes).
+- **No `App.tsx`/`ProfileScreen.tsx` wiring** — nothing to wire in yet.
+- **No bugs fixed** (`BUG-051`/`052` untouched), **no other tech debt touched** (`DEBT-001`–`004`, now carried seven-plus sessions — flagging again, per repeated instruction, that this must not become the new normal), **no features started** beyond this partial tracker-frontend step.
+- **This is effectively still a pre-UI step, not a shippable increment** — no `CHANGELOG.md` entry (nothing user-visible or API-visible shipped; matches this project\'s own convention of not bumping the changelog for dead-code/types-only groundwork), no `SECURITY.md` entry (no new endpoint or stored data introduced this session — the routes and table already existed).
+
+### Hand-off for the next developer
+
+1. **Write `AdminTrackerScreen.tsx`** — same design brief the forty-second session already laid out, still fully current: list with status/type/priority `SegmentedPicker` filters, detail view with `updates` history in order (oldest first), create/edit forms (`code`+`type` immutable after creation; `comments` normally read-only/derived once "log an update" exists), delete (mirror `AdminAnnotationsScreen.tsx`\'s two-tap `DangerButton`), and a "log an update" action (`done` required, `next` optional, `status` optional). All 7 client methods it needs are now live in `useAdminApi.ts` (point 4 above) — this can start directly from a design, no further reading pass needed. Use a wide `ResponsiveContainer` `maxWidth` (~1100, matching `CalculationWizardScreen`), not `AdminAnnotationsScreen`\'s narrower 800. Build a small one-off status/priority/type pill component inline in the screen file — nothing existing to reuse for this (point 3 above).
+2. **Wire into `App.tsx`** (import + `RootStackParamList` + `Stack.Screen`, e.g. `title: "Suivi bugs/fonctionnalités"`) **and `ProfileScreen.tsx`** (new button in the Administration card, gated on `hasPermission(\'manage_tracker\')`, `testID="profile-admin-tracker-button"`, alongside the existing three admin buttons).
+3. **Full frontend verification after writing the above**: `npx tsc --noEmit`, `npx expo export --platform web --clear` (expect module count to increase by ~1–2 from the current 558 baseline), `make build-deploy`, `scripts/check-repo-hygiene.sh` — none of this has been re-run since the screen doesn\'t exist yet.
+4. **Add a `tracker_items` row for `FEAT-010` itself** once the UI exists, via the new API directly.
+5. **Only after the tracker is fully live and confirmed**: bugs (`BUG-051`/`052`, both open, neither P0/P1), then features by priority (`FEAT-007`/`008`/`001`/`009`), then the rest of tech debt (`DEBT-001`–`004`) — now carried seven-plus sessions without being touched; this keeps recurring in every hand-off and still hasn\'t moved.
+
+**Dependency / hand-off**: item 1 has no blocker — every client method and reference file it needs is in place. Item 2 depends on item 1. Item 3 depends on 1–2. Item 4 depends on item 1. Item 5 depends on the whole tracker (1–4) being live and confirmed, same standing order as every prior session\'s hand-off in this file.
+', NULL, NULL, NULL, NULL),
+  ('2026-09-08 (forty-fourth session)', '`AdminTrackerScreen.tsx` written and wired in; full frontend verification passed (559 modules); the tracker is now genuinely usable by an admin — version bumped 5.2.0 → 5.3.0 following the normal (not exceptional) convention', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-08 (forty-fourth session) — `AdminTrackerScreen.tsx` written and wired in; full frontend verification passed (559 modules); the tracker is now genuinely usable by an admin — version bumped 5.2.0 → 5.3.0 following the normal (not exceptional) convention".]
+
+## 2026-09-08 (forty-fourth session) — `AdminTrackerScreen.tsx` written and wired in; full frontend verification passed (559 modules); the tracker is now genuinely usable by an admin — version bumped 5.2.0 → 5.3.0 following the normal (not exceptional) convention
+
+**Trigger**: standing pipeline instruction (launch PHP+MariaDB locally, pull latest, read logs first, continue the work; bugs → features by priority → technical debt, continuously logged, pushed before the token budget runs out — with explicit emphasis this session that technical debt must not keep being deferred indefinitely). Continued directly from the forty-third session\'s hand-off item 1. Ran out of turn budget partway through hand-off item 4 (the FEAT-010 self-referential tracker row); Mahdi\'s next message was a one-word "Push !" — this entry, the commit, and the push were written in that follow-up turn.
+
+**Read first**: the forty-second- and forty-third-session entries above (hand-off items 1–5, all still current as of this session\'s start), `docs/ROADMAP.md` item 12.
+
+**Security note (recurring — see every prior session\'s identical note)**: the same live GitHub PAT was pasted in plaintext directly in chat again this session. Used only transiently for `git clone`/this session\'s push; never written to any log, commit, or this project\'s persistent memory. Repeating the standing recommendation again, now for the fifth-plus consecutive session: rotating this token costs a few minutes and closes a real, growing exposure.
+
+### Done this session
+
+1. **Local sandbox stood up from scratch** (PHP 8.3 + MariaDB 10.11 via `apt-get`; same non-persistence caveats as every prior session — the MariaDB daemon and any backgrounded `php -S` do not survive between separate tool calls, only within one chained shell invocation, and this tripped the FEAT-010-row attempt below more than once). Pulled latest — no new commits since the forty-third session\'s push (`f8c904f` was and remained tip for the entire session).
+2. **Re-established the fresh-DB baseline independently before touching anything**: `migrate.php` (5/5 applied, idempotent on re-run) → `seed.php` → `smoke_test.php` **24/24** → live `php -S` (started correctly this time via `src/backend/api` + `index.php` as the router script, per the Makefile\'s own `test-http` target — not `-t .` from `src/backend`, which 404s on `/health` since PHP\'s built-in server needs an explicit router script, not `.htaccess`-style rewriting) → `http_api_test.php` **82/82**. Also confirmed `npm install` (516 packages, 22 pre-existing vulnerabilities — same count every session has logged, still not investigated/in scope) and `npx tsc --noEmit` clean before writing any new code, per this project\'s own "verify the actual build, don\'t infer from the diff" standard.
+3. **Wrote `src/frontend/src/screens/AdminTrackerScreen.tsx`** per the design brief the forty-second session laid out and the forty-third session\'s hand-off restated: list view with status/type/priority `SegmentedPicker` filters, a two-column layout (list + detail panel) rather than a single scrolling list, a detail panel showing `userDescription`/`technicalDescription`/`dependencies`/`testsToDo`/`comments` (each rendered only when non-null), editable status/priority pickers that call `updateTrackerItem` directly on change, the `updates` history rendered oldest-first exactly matching `getTrackerItemByCode`\'s own contract, a "log an update" form (`done` required, `next` optional, `status` optional — all three in one `addTrackerUpdate` call), an inline create form (type picker, code field with a "Suggérer" button wired to `suggestNextTrackerCode`, title, optional priority), and two-tap delete mirroring `AdminAnnotationsScreen.tsx`\'s `DangerButton` pattern (duplicated inline rather than shared, matching that screen\'s own precedent — no common component for it exists yet, unchanged scope). Built a small one-off `Pill` component for status/type/priority badges (color-mapped via `theme/tokens`\'s existing semantic surface/foreground pairs — `info`/`warning`/`success`/`error`/neutral) since, as the forty-third session\'s own reading pass confirmed, `StatusPill.tsx` is actually the health-check dot in the app header and not reusable for this.
+4. **Used `maxWidth={1100}` deliberately**, not `AdminAnnotationsScreen`\'s narrower 800 — per DEBT-002\'s own note (and every hand-off since) that the narrow-desktop-column choice on the admin screens is a known mistake; no reason to bake it into a brand-new screen.
+5. **Wired into `App.tsx`** (import, `AdminTracker: undefined` added to `RootStackParamList`, `<Stack.Screen name="AdminTracker" .../>` registered immediately after `AdminAnnotations`) **and `ProfileScreen.tsx`** (Administration card\'s visibility check extended to include `manage_tracker`, new button `onPress={() => navigation.navigate("AdminTracker")}` with `testID="profile-admin-tracker-button"`, placed after the annotations button) — the same three-file pattern every existing admin screen already follows, confirmed by grep before writing rather than assumed.
+6. **Full frontend verification, fresh, immediately after writing the code**: `npx tsc --noEmit` clean on the first pass (no type errors to fix — the `useAdminApi.ts` plumbing from the forty-third session matched what the screen needed exactly). `npx expo export --platform web --clear` → **559 modules** (558 baseline + 1, exactly matching the forty-second session\'s own prediction — a genuinely satisfying confirmation that the module-count heuristic this project has used across many sessions is reliable). `make build-deploy` → all 4 deployment-artifact hygiene checks pass. `scripts/check-repo-hygiene.sh` → all 4 checks pass, secret-scan included.
+7. **Version bumped 5.2.0 → 5.3.0** (`package.json` + `package-lock.json` via `npm install --package-lock-only`, diff confirmed to touch only the two version fields). Unlike the forty-first session\'s 5.2.0 bump — explicitly flagged there as a deviation from the "no bump until user-reachable" convention — this one follows the convention normally: the tracker is now a real screen an admin can open, filter, and edit, not just API routes.
+8. **Docs updated**: `CHANGELOG.md` (new 5.3.0 entry), `docs/ROADMAP.md` item 12 (new dated update block, plus a correction — see point 9), `docs/TEST_CHECKLIST.md` (new dated test-history entry). No `SECURITY.md` entry: no new endpoint or stored data introduced this session (the routes and table already existed and were already reviewed there in the forty-first session).
+9. **Attempted hand-off item 4 (a `tracker_items` row for FEAT-010 itself) via the live API, and hit a real, worth-recording mechanism**: registered a fresh test user, hit an email-verification gate, verified it, then found the new user landed with the default `utilisateur` role instead of `administrateur` — meaning it had no `manage_tracker` permission and couldn\'t create the row. Investigated rather than guessing: `userRepo.php`\'s `countActiveUsersWithRole()` shows registration only auto-bootstraps a new user as `administrateur` when **zero active administrateurs exist yet**, not literally "only the first user ever." This session\'s DB already had one — the CI test suite\'s own registered admin, created by this same session\'s earlier `make test-http` run in step 2 — so the new test registrant correctly, not buggily, landed as `utilisateur`. Recorded precisely in `docs/ROADMAP.md` item 12 so the next session doesn\'t have to rediscover this. (Also: in an earlier attempt within this same session, a `SELECT email_verified FROM users` query failed with "Unknown column" — that was my own mistake, not a schema bug; the real column is `email_verified_at`, a nullable datetime, confirmed via `SHOW COLUMNS`. Noting the correction here since the prior turn\'s message to Mahdi flagged this as an open question — it wasn\'t one.)
+
+### NOT DONE — explicitly, not silently skipped
+
+- **No `tracker_items` row for FEAT-010 itself** — see point 9 above for exactly why, and exactly what the next session needs to do differently (either seed it via a migration directly, or grant the test user `manage_tracker` via `setUserRole`/a direct DB update before using the live API — don\'t re-attempt via a second registration in a DB that already has an active admin, it will land as `utilisateur` again).
+- **No live click-through from a real browser/device** — same standing sandbox limitation as every frontend feature in this project\'s history. Everything above is typecheck + build + hygiene verified, not behaviorally verified. `docs/TEST_CHECKLIST.md`\'s new entry names exactly what a real click-through should cover: create, log-update, status/priority edit, all three filters, two-tap delete.
+- **No automated frontend tests for this screen** — DEBT-004 (no frontend unit-test framework exists in this project yet) remains untouched and directly relevant here; this screen has zero test coverage beyond `tsc`.
+- **No bugs fixed** (`BUG-051`/`052` untouched), **no other tech debt touched** (`DEBT-001`/`002`/`004`, now carried eight-plus sessions without being touched — Mahdi\'s explicit emphasis this session that this must not become permanent is noted and unaddressed; flagging plainly rather than quietly repeating the same gap an ninth time). **No new features started** beyond finishing the tracker itself.
+- **No CI-confirmed green run yet** for this push — next step immediately after, standard practice in this log.
+
+### Hand-off for the next developer
+
+1. **Add the `tracker_items` row for FEAT-010 itself** — now that the mechanism gap from point 9 is understood, this should be quick: either a small seed migration (`006_seed_feat010_self.sql`, `INSERT IGNORE` pattern matching `005`), or grant an existing/new test user `manage_tracker` directly via SQL before using the live API. Either way, closes the last open item from this feature\'s own multi-session build.
+2. **Get a real live click-through from Mahdi** on `AdminTrackerScreen.tsx` — this is the first tracker session where there\'s finally something concrete to click through. `docs/TEST_CHECKLIST.md`\'s forty-fourth-session entry lists exactly what to exercise.
+3. **Watch this push\'s Actions run** before treating anything above as CI-confirmed — standard practice in this log.
+4. **Tech debt is now genuinely overdue, not just flagged** — `DEBT-002` (part 1, the `maxWidth` bump on `AdminRolesScreen`/`AdminUsersScreen`, is explicitly logged as "safe to do immediately," tsc-verifiable alone, no design decision needed) is the lowest-risk, fastest real progress available; `DEBT-001` (CI render-smoke-test) is scoped but needs a real session, not a bolt-on. Given Mahdi\'s repeated, now-escalating point that deferring this every session is itself the problem, the next session with spare budget after items 1–3 above should pick one of these rather than starting a new P1 feature — breaking the eight-plus-session pattern is worth more right now than another feature.
+5. **Only after that**: bugs (`BUG-051`/`052`, both open, neither P0/P1), then the rest of features by priority (`FEAT-007`/`008`/`001`/`009`), then the remaining tech debt (`DEBT-003`, and the second half of `DEBT-004` — frontend unit tests).
+
+**Dependency / hand-off**: item 1 has no blocker — the mechanism is understood, just needs executing. Item 2 is a pure verification step, independent of everything else. Item 3 is independent of 1–2. Item 4 has no blocker but attention — it keeps losing to feature work every session, which is precisely Mahdi\'s standing complaint. Item 5 depends on nothing above except being next in the stated order.
+', NULL, NULL, NULL, NULL),
+  ('2026-09-08 (forty-fifth session)', 'hand-off item 1 CLOSED: FEAT-010 tracker row seeded via migration; caught (and fixed) a stale-baseline test regression and a test-process mistake, both within the same session, before either reached a push', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-08 (forty-fifth session) — hand-off item 1 CLOSED: FEAT-010 tracker row seeded via migration; caught (and fixed) a stale-baseline test regression and a test-process mistake, both within the same session, before either reached a push".]
+
+## 2026-09-08 (forty-fifth session) — hand-off item 1 CLOSED: FEAT-010 tracker row seeded via migration; caught (and fixed) a stale-baseline test regression and a test-process mistake, both within the same session, before either reached a push
+
+**Trigger**: direct continuation of the forty-fourth session, same conversation, after that session\'s push. Mahdi\'s message was a single word — "Continue" — so this session picked the top of its own hand-off list rather than asking what to do next.
+
+**Read first**: the forty-fourth-session entry directly above (hand-off items 1–5), `docs/ROADMAP.md` item 12\'s forty-fourth-session update.
+
+**Security note**: same PAT, same transient use for this session\'s push, same standing recommendation to rotate it — now six-plus consecutive sessions repeating this note. Not filed anywhere persistent.
+
+### Done this session
+
+1. **Hand-off item 1 closed**: added `src/backend/db/migrations/006_seed_feat010_self.sql` — a single `INSERT IGNORE` seeding the `tracker_items` row (plus one `tracker_updates` history row) for FEAT-010 itself, matching migration `005`\'s own convention exactly. Chose this over the live-API path the forty-fourth session got stuck on, since the blocker there (a second registrant on a non-empty DB doesn\'t bootstrap as `administrateur`) is a real auth rule, not a bug to route around — a migration sidesteps it entirely rather than fighting it. `tracker_items` now has **14 rows**, confirmed via direct query after applying.
+2. **Applied and idempotency-checked**: `migrate.php` run twice, second run shows "Applied: 0 new, Skipped: 6" — clean.
+3. **Caught a real regression, not a false one, by actually re-running the full suite rather than assuming a migration this small couldn\'t affect it**: `make test-http` came back **47 passed, 35 failed** on the first attempt after applying migration 006. Read every failure rather than assuming the count-mismatch was the whole story — it wasn\'t the *cause*, it was one symptom among many. The actual root cause: this session had already run `make test-http` more than once earlier against the same database without resetting it in between (once during the initial baseline re-confirmation, again after applying the migration) — so by the time of that 35-failure run, the database already held leftover users from prior runs, and the suite\'s own test registrant landed as the default `utilisateur` role instead of `administrateur` (same underlying mechanism the forty-fourth session already documented in `ROADMAP.md` item 12), cascading into 403s across nearly every admin-gated test. **Recognized as test-environment staleness, not a code problem, before touching any source file to "fix" it** — this distinction mattered: fixing symptoms here (e.g. loosening a permission check) would have been actively wrong.
+4. **Made the identical mistake once while diagnosing it, then caught that too**: re-ran `make test-http` a second time to grep its output for `FAIL` lines, without realizing that re-run itself was against the now-further-polluted database — got the same 35-failure cascade again and, for a moment, nearly treated it as confirmation of a persistent bug rather than the same staleness compounding. Corrected before drawing any wrong conclusion: dropped and recreated the database from scratch (`DROP DATABASE` / `CREATE DATABASE`), re-ran `migrate.php` → `seed.php` → `smoke_test.php` fresh, then ran `http_api_test.php` **exactly once**, with its output captured to a file (`/tmp/http_test_result.txt`) rather than re-invoked live, specifically so grepping the result wouldn\'t require running the suite again.
+5. **That single clean run surfaced the real, narrow regression**: `80 passed, 2 failed` — both hardcoded `count === 13` assertions in `tests/http_api_test.php` (`GET /admin/tracker/items lists the 13 seeded items`, and the back-to-baseline-after-delete check), stale against the new 14-row baseline migration 006 legitimately created. Same category as the forty-first session\'s permission-count-6-to-7 fix — a test expectation that needed updating alongside a legitimate data change, not a code bug. Both updated to 14.
+6. **Final verification, one more clean pass, fresh DB, output captured**: `migrate.php` (6/6, idempotent) → `seed.php` → `smoke_test.php` **24/24** → live `php -S` → `http_api_test.php` **82/82**, zero failures. This is the number that actually matters and the one recorded everywhere else in this session\'s docs.
+7. **Docs updated**: `docs/ROADMAP.md` item 12 (new dated update, hand-off item 1 marked closed), `CHANGELOG.md` (new entry, explicitly no version bump — reasoning given inline), `docs/TEST_CHECKLIST.md` (new dated entry). No `SECURITY.md` entry (no new endpoint, no new stored-data category — one more row in an already-reviewed table). No frontend files touched this session, so no frontend re-verification performed or claimed.
+
+### NOT DONE — explicitly, not silently skipped
+
+- **No live click-through** — same standing limitation, now true for the tracker\'s data as well as its UI.
+- **No tech debt touched** (`DEBT-001`–`004`, now carried nine-plus sessions). This session\'s entire budget went to closing out FEAT-010 properly and to a testing-process problem that came up along the way rather than being ignored — a defensible use of the time, but it means the tech-debt gap Mahdi flagged explicitly two sessions ago is still exactly where it was. Saying this plainly rather than letting the FEAT-010 close-out read as if the debt concern was addressed by proxy — it wasn\'t.
+- **No bugs fixed** (`BUG-051`/`052` untouched), **no new features started**.
+
+### Hand-off for the next developer
+
+1. **Tech debt, actually, this time** — `DEBT-002` part 1 (the `AdminRolesScreen`/`AdminUsersScreen` `maxWidth` bump) remains the lowest-risk, fastest concrete progress available: no design decision needed, `tsc`-verifiable alone, explicitly logged as safe. This is now the second consecutive session\'s hand-off to say this; a third would mean the exact pattern Mahdi is trying to break repeats a third time.
+2. **Get a real live click-through from Mahdi** on `AdminTrackerScreen.tsx` — nothing has changed about this need since the forty-fourth session\'s hand-off, just restating it since it\'s still the biggest verification gap on FEAT-010 as a whole.
+3. **Watch this push\'s Actions run** before treating anything above as CI-confirmed.
+4. **A process note worth carrying forward, not just this session\'s own recovery**: `make test-http` (and the raw `http_api_test.php` script) assume a freshly migrated+seeded database and register their own first user expecting to land as admin. Running it more than once against the same database without a `DROP DATABASE`/recreate in between will produce a large, misleading failure cascade that looks like a real regression but isn\'t. Reset the database before every single invocation, not just the first one in a session — this session needed to learn that twice before it stuck.
+5. **Bugs then remaining features by priority**, unchanged from the forty-fourth session\'s ordering: `BUG-051`/`052`, then `FEAT-007`/`008`/`001`/`009`, then `DEBT-003` and the second half of `DEBT-004`.
+
+**Dependency / hand-off**: item 1 has no blocker and no design decision pending — purely a matter of a session choosing to spend budget on it instead of a new feature. Item 2 is independent, needs Mahdi not a dev session. Item 3 is independent. Item 4 is a standing process note, not a task with a completion state. Item 5 depends on nothing above except being next in the stated order.
+', NULL, NULL, NULL, NULL),
+  ('2026-09-09 (forty-sixth session)', 'DEBT-002 part 1 CLOSED (the maxWidth bump, flagged as this session\'s easiest concrete progress for two sessions running — this time actually done); BUG-051 investigated and narrowed, still not closed; environment-setup findings recorded for the next cold-start session', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-09 (forty-sixth session) — DEBT-002 part 1 CLOSED (the maxWidth bump, flagged as this session\'s easiest concrete progress for two sessions running — this time actually done); BUG-051 investigated and narrowed, still not closed; environment-setup findings recorded for the next cold-start session".]
+
+## 2026-09-09 (forty-sixth session) — DEBT-002 part 1 CLOSED (the maxWidth bump, flagged as this session\'s easiest concrete progress for two sessions running — this time actually done); BUG-051 investigated and narrowed, still not closed; environment-setup findings recorded for the next cold-start session
+
+**Trigger**: Mahdi\'s message restated the same standing instruction quoted verbatim at the top of the twenty-first session\'s log — read logs, continue, fix bugs, then features by priority, and stop deferring technical debt. Same GitHub PAT pasted directly in chat again — now well past a dozen sessions repeating this note; still not fixable from inside a dev session, only by Mahdi changing his own workflow.
+
+**Read first**: the forty-fifth-session entry directly above (hand-off items 1–5).
+
+**Environment note — new information, worth carrying forward**: this was the first sandbox session in recent memory to provision PHP + MariaDB from a completely bare container rather than continuing one already set up. Confirmed explicitly, for the first time, that the standing limitation previously documented only for `php -S` (twenty-first session: "background process doesn\'t survive between tool calls") **also applies to `mysqld`** — `service mariadb start`/`mysqld_safe` reports success and the daemon is gone by the next separate command. Not a new bug, just a broader instance of an already-known constraint. Worked around with a single consolidated script (`reset_and_test.sh`, sandbox-local, not part of the repo) that starts MariaDB, drops/recreates the DB, migrates, seeds, runs both test suites, and tears the server down — all inside one shell invocation, mirroring the pattern `make test-http` already uses for the `php -S` half of the same problem. Next cold-start session: don\'t rediscover this — wrap the whole migrate→seed→smoke→serve→http-test→kill sequence in one shell command from the start.
+
+One local-setup-only false alarm worth recording so it isn\'t rediscovered: `config.php`\'s `migration_secret` defaults to `\'\'` per `config.example.php`, and `http_api_test.php` hardcodes `ci-test-migrate-secret-do-not-use-in-prod` — leaving the default produces 8 failing `/migrate` tests that look like a real regression but are pure local-config mismatch. Set the secret to that exact value in any fresh local `config.php` before trusting an HTTP regression run.
+
+### Done this session
+
+1. **Full baseline reconfirmed from a cold environment**: PHP 8.3 + php-curl, MariaDB 10.11 installed fresh; `migrate.php` **6/6 applied**, `seed.php`, `smoke_test.php` **24/24**, `http_api_test.php` **82/82** — identical to the forty-fifth session\'s numbers, zero drift, independently re-derived rather than assumed.
+2. **`DEBT-002` part 1 CLOSED** — the low-risk half explicitly flagged as "safe to do immediately" for two consecutive sessions (forty-fourth implicitly via its own note not to repeat the mistake, forty-fifth explicitly twice). `AdminRolesScreen.tsx` and `AdminUsersScreen.tsx` both bumped from `ResponsiveContainer maxWidth={800}` to `1100`, matching `AdminTrackerScreen`/`CalculationWizardScreen`\'s existing convention. Both screens\' loading-state wrapper left at `640` — a bare centered spinner has no reason to be wide, same choice `AdminTrackerScreen` already made for its own loading state. No internal card/row layout needed touching: both screens already use `flexDirection`/`flexWrap` layouts with no fixed pixel widths that would clash with more breathing room — they just gained it. **Part 2 (the actual tabs-per-role vs. permissions-matrix redesign) is untouched** — still needs a real design decision, this was only ever the quick half. Full verification, fresh: `tsc --noEmit` clean, `expo export --platform web --clear` → **559 modules** (unchanged from the forty-fourth session\'s baseline — no new dependency, two width literals only), `make build-deploy` 4/4, `check-repo-hygiene.sh` 4/4. Backend baseline unaffected (frontend-only change, confirmed via item 1\'s numbers above, captured before this edit and not invalidated by it since nothing backend-side changed).
+3. **`BUG-051` investigated, NOT closed — found the bug is narrower than its own title.** Read `ErrorBoundary.tsx` and `App.tsx` closely rather than taking the tracker item\'s framing ("does nothing visible... never actually recovers") at face value. The button handler unconditionally runs `this.setState({ error: null })` *before* invoking `onGoHome` on any platform — and since `ErrorBoundary` wraps the entire app (`ToastProvider` → `AuthGate` → `AuthProvider` → `NavigationContainer` → `Stack.Navigator`, plus `VersionFooter`, all as `this.props.children`), that `setState` alone force-remounts the whole tree, including a brand-new `NavigationContainer` instance. Grepped `App.tsx` for `initialState`/`AsyncStorage`/`linking` — none exist, so this project persists no navigation state across a remount. A fresh `NavigationContainer` with nothing to restore therefore lands on its own default initial route, not back on whatever screen just crashed. **Conclusion**: for the common case — a route-specific, data-dependent crash (e.g. old saved JSON missing a field a screen now reads unconditionally, the exact scenario `ErrorBoundary`\'s own doc-comment names) — native already recovers today, contrary to the tracker item\'s description. The real, narrower gap: a **deterministic/structural crash**, one that doesn\'t depend on which screen is active and would therefore recur immediately on remount — exactly BUG-048\'s own historical failure mode (a component miswired regardless of route) before its root cause was removed. Only a true reload — resetting module-level JS state, not just React component state — fixes that narrower class, and the only way to get one on native is `expo-updates` (or an equivalent), which is a new native dependency this repo has zero trace of today (no package, no EAS config anywhere in the tree) and which the tracker item\'s own comment already flagged as needing a decision, not a code fix. Given BUG-051 is P2, the actual risk surface is narrower than originally scoped, and the only currently-shipped target is web (where `window.location.reload()` already fully covers this) — **left as a recommendation rather than unilaterally adding the dependency.** No code changed for this item; nothing to verify.
+
+### NOT DONE — explicitly, not silently skipped
+
+- **`BUG-051` not closed** — investigated and narrowed (see above), a decision is still needed: either add `expo-updates` now, or explicitly accept the narrowed native-crash risk given no native build currently ships. No code written.
+- **`BUG-052` untouched** — still blocked on Mahdi clarifying which total the "this total is useless" annotation meant (screenshot or re-annotate). Nothing to do without that; not re-investigated this session since the thirty-eighth session\'s investigation already exhausted what\'s determinable without it.
+- **`DEBT-002` part 2, `DEBT-003`, `DEBT-004`** — untouched. Closing part 1 doesn\'t clear the tech-debt category: three items remain, and `DEBT-004` is still explicitly flagged (per the forty-fifth session, and every session before it back to the thirty-sixth) as needing its own dedicated session, not a bolt-on.
+- **No `FEAT-*` work started** — environment setup from a bare container took longer than a warm-started session would, and the remaining budget went to the tech-debt closure and the bug investigation above rather than reaching the P1 feature queue.
+- **No live click-through** — same standing sandbox limitation as every prior session, now also true for the two admin screens\' new width: nothing here confirms it actually *reads* well at 1100px on a real desktop, only that it builds, typechecks, and passes the automated hygiene checks.
+
+### Hand-off for the next developer
+
+1. **`BUG-051` needs a decision, not more investigation.** The analysis above is the complete picture — don\'t re-derive it. Either answer (add `expo-updates`, or explicitly accept the narrowed risk) closes this cleanly.
+2. **`BUG-052`** — still needs Mahdi\'s clarification (screenshot or re-annotate which total, on the live app). Nothing a dev session can do without it.
+3. **Bugs are now effectively exhausted for a dev session to act on alone** — both remaining open bugs are blocked on a human decision or clarification, not on more code investigation. Per the standing instruction ("fix bugs, then features by priority once bugs are solved"), treat this as satisfied and move to the P1 feature queue next: **`FEAT-007`, `FEAT-008`, `FEAT-001`, `FEAT-009`, then `DEBT-003`/`DEBT-004`\'s second half** — same ordering the forty-fifth session already handed off, unchanged because nothing this session touched it.
+4. **`DEBT-002` part 2** (tabs-per-role vs. permissions-matrix redesign) is now the only remaining piece of that item, but needs a design decision before code — don\'t start it blind.
+5. **Environment tooling for a future cold-start sandbox session**: see this session\'s environment note above — wrap the entire migrate→seed→smoke→serve→http-test→kill sequence in one shell invocation from the first attempt, and set `migration_secret` in `config.php` to match `http_api_test.php`\'s hardcoded value before trusting an HTTP regression run.
+
+**Dependency / hand-off**: items 1 and 2 both need a human, neither blocks the other or anything else. Item 3 (start the P1 feature queue) has no blocker. Item 4 needs a design decision before it can start. Item 5 is a process note, not a task with a completion state.
+
+**CI confirmation, real not assumed**: pushed as commit `2b6c589`, watched the triggered run rather than treating the local sandbox verification as sufficient — GitHub Actions run `34310657180` completed **success, all 24 steps green**, including "Assemble deployment artifact", "Deployment artifact content check", and "Publish deployment artifact" to `macerti/duration_calculator`. Confirmed via the GitHub Actions API, same method prior sessions have used.
+', NULL, NULL, NULL, NULL),
+  ('2026-09-09 (forty-seventh session)', 'tracker search filter (backend only, NOT wired to UI); large multi-part request scoped down mid-session and pushed early per Mahdi\'s explicit "push now" — most of the request is still open, see hand-off', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-09 (forty-seventh session) — tracker search filter (backend only, NOT wired to UI); large multi-part request scoped down mid-session and pushed early per Mahdi\'s explicit "push now" — most of the request is still open, see hand-off".]
+
+## 2026-09-09 (forty-seventh session) — tracker search filter (backend only, NOT wired to UI); large multi-part request scoped down mid-session and pushed early per Mahdi\'s explicit "push now" — most of the request is still open, see hand-off
+
+**Trigger**: Mahdi\'s message asked for a large chunk of work in one go: (1) mark `fixed_unverified` ("awaiting your validation") items clearly in `AdminTrackerScreen.tsx`, (2) improve that screen\'s list layout, (3) add filters/search, (4) merge annotations into the same list so triage happens in one place, (5) archive **all** `.md` files and fully extract `BUGLOG.md`/`ROADMAP.md`/etc. into the tracker DB, (6) fix bugs then build features by priority, (7) keep chipping at technical debt, (8) push before the token budget runs out with a clear log either way. Mid-session, before most of this was built, Mahdi sent a bare "Push !" — treated as literal and immediate: stop, verify what exists, commit, push, log honestly what is and isn\'t done. **This entry is that push\'s log, not a completed-feature log.**
+
+**Read first**: the forty-sixth session\'s entry directly above. Also read this session\'s own investigation below before assuming any of items 1–7 above are done — only a small slice of item 3 is.
+
+**Security note (recurring — see every prior session\'s identical note)**: a live GitHub PAT was again pasted in plaintext directly in chat this session. Used only transiently for `git clone`/this push; never written to any log, commit, or this project\'s persistent memory. Now pasted in chat in plaintext across essentially every session in this log.
+
+### Investigation done this session (no code yet)
+
+Before writing anything, read `AdminTrackerScreen.tsx`, `AdminAnnotationsScreen.tsx`, `useAdminApi.ts`, `trackerRepo.php`, `annotationRepo.php`, the tracker/annotation route blocks in `api/index.php`, and queried the live seeded data directly. Findings that shape the hand-off below:
+
+- **The "two bugs awaiting validation" Mahdi referred to are `FEAT-006` and `FEAT-010`** — both `status = fixed_unverified`. Confirmed by direct query, not assumed. Neither is actually a bug (both are features pending Mahdi\'s own live click-through) — worth Mahdi knowing the tracker already calls this out under "Corrigé (non vérifié)" in the status filter, just not visually distinctly from `in_progress` today (both currently render with the same "warning" pill tone — this is the concrete gap item 1 above is asking to close).
+- **Item 5 (archive all `.md`, extract everything into the DB) directly reverses an explicit, documented decision from two earlier migrations.** Migration `005_seed_tracker_backlog.sql`\'s own header states it "deliberately does NOT bulk-migrate closed/historical bugs (BUG-001 through BUG-050 are all otherwise closed) — BUGLOG.md remains the permanent historical archive for those." `REPOSITORY_ARCHITECTURE.md` separately establishes "`archive/` must not be a dumping ground — delete and keep only a concise document" as a standing project rule (already followed by `docs/archive/AUDIT_APP_LEGACY.md`/`AUDIT_ENGINE_LEGACY.md`). Neither is a reason to refuse item 5 — Mahdi is the one who can change his own project\'s convention, and did, explicitly, in this message — but it means item 5 is a real architectural reversal, not a small addition, and shouldn\'t be done half-attentively under a "push now" instruction. **Not attempted this session** — flagging the reversal here so the next session doesn\'t redo this reading and can go straight to execution.
+- **`docs/BUGLOG.md` has exactly 50 bug entries (`BUG-001`–`BUG-050`), each a rich Detected/Cause/Fix/Process-fix/Fixed-in narrative** — this is not simple structured data; a mechanical parse (split on `### BUG-NNN` headers, everything until the next header is that bug\'s full body) is the only realistic way to extract 50 of these without hand-transcription, then load each as one `tracker_items` row (`type=\'bug\'`, `status=\'closed\'`, full body verbatim in `technical_description`) plus one `tracker_updates` row. Not written yet.
+- **`docs/ROADMAP.md` is structurally messier**: a numbered P1/P2 priority queue (mostly redundant with what\'s already in the tracker) plus separate detailed spec sections for `FEAT-001`/`FEAT-002`/`FEAT-004`/`FEAT-006` (full acceptance criteria, security requirements etc. — genuinely valuable, not yet in any tracker row\'s `technical_description`), an "Ideas / not yet requested (parked)" section (not yet tracked anywhere), and a "Decisions already made" section that is settled architectural reference material, not a trackable work item — that section belongs in `ORIENTATIONS.md`, not the bug tracker, when this gets done. None of this has been written to migrations yet.
+- **`DEV_STATUS.md`, `CHANGELOG.md`, and `SESSION_LOG_*.md` are a different category from `BUGLOG.md`/`ROADMAP.md`** — they\'re the dev-to-dev narrative hand-off mechanism Mahdi\'s own standing instruction relies on ("each dev does a chunk with enough log updates... continuity is assured"), not bug/feature status tracking. Archiving those away would remove the exact mechanism this very entry is an instance of. Recommend keeping them out of scope for item 5 even once it\'s executed, and said so back to Mahdi rather than silently deciding it alone.
+
+### Done this session (small, verified)
+
+1. **`trackerRepo.php`: `listTrackerItems()` takes a new `?string $search` param** — case-insensitive substring match across `code`/`title`/`user_description`/`technical_description`/`comments`, `%`/`_` escaped before the `LIKE`. Combines with existing status/type/priority filters (`AND`, not `OR`).
+2. **`api/index.php`: `GET /admin/tracker/items` now accepts `?search=`**, 200-char length cap returning 400 over that, wired straight through to the repo function above.
+3. **6 new HTTP regression tests** in `tests/http_api_test.php` covering: match-by-code, match-by-title-substring, case-insensitivity, no-match-returns-empty, combines-with-type-filter, and the length-cap rejection.
+4. **Full fresh-environment baseline reconfirmed, not assumed**: PHP 8.3 + MariaDB 10.11 provisioned cold, `migrate.php` 6/6, `seed.php`, `smoke_test.php` **24/24**, `http_api_test.php` **88/88** (82 baseline + 6 new) — zero failures, zero drift on the pre-existing 82.
+
+### NOT DONE — explicitly, this is most of what was asked
+
+- **No frontend changes at all.** `AdminTrackerScreen.tsx` is completely untouched — the new `?search=` param has no UI to call it yet. Items 1 (validation marking), 2 (list layout), 3\'s frontend half (search box), and 4 (merging annotations into the same screen) are **all still to build**, not partially built.
+- **Item 5 (archive `.md`, extract into DB) not started at all** — see the investigation notes above for the concrete plan; nothing written.
+- **No bugs fixed.** Per the forty-sixth session\'s own hand-off (still accurate — not re-verified this session): both open bugs (`BUG-051`, `BUG-052`) are blocked on a human decision/clarification, not on more code investigation.
+- **No `FEAT-*` work started.**
+- **No tech debt touched** (`DEBT-001`, `DEBT-002` part 2, `DEBT-003`, `DEBT-004` all untouched).
+- **No frontend verification run** (`tsc`, `expo export`, `make build-deploy`, `check-repo-hygiene.sh`) — correctly so, since zero frontend files changed this session; nothing to verify.
+- **No `CHANGELOG.md` entry / no version bump** — a backend-only filter param with no UI caller isn\'t user-reachable functionality, per this project\'s own normal convention (the forty-first session\'s bump was an explicit, flagged exception, not the default).
+
+### Hand-off for the next developer
+
+1. **Start with the frontend, not the `.md` extraction** — items 1–4 are smaller, self-contained, and directly requested with the most specificity. Concretely, in `AdminTrackerScreen.tsx`:
+   - Give `fixed_unverified` its own pill tone (currently shares "warning" with `in_progress` — visually identical, which is the actual gap behind Mahdi\'s "clearly marked" ask) and add a small top-of-screen banner/count when `fixed_unverified` items exist, since that\'s a *Mahdi-action* queue distinct from normal dev-priority ordering — don\'t change the existing status-priority `ORDER BY` in `trackerRepo.php` to achieve this, that ordering was a deliberate prior decision.
+   - Wire a search `TextInput` (debounced) to the new `?search=` param — `useAdminApi.ts`\'s `listTrackerItems()` needs a `search` key added to its filters object and querystring building first (not done this session).
+   - For merging annotations in: `CreateItemCard` in `AdminTrackerScreen.tsx` currently has no `userDescription` field in its form at all (only type/code/title/priority) — add one. Then a new "untriaged annotations" panel (fetch `listAnnotations(\'open\')`, same screen) with a "promote" action that pre-fills the create form from the annotation\'s `comment`/`screen`/`elementRef` and, on successful creation, calls `updateAnnotationStatus(id, \'actioned\')`. No new backend route needed — this composes two endpoints that already exist.
+2. **`.md` extraction (item 5)**: write a small script (Python, not by hand) to split `docs/BUGLOG.md` on `### BUG-NNN` headers and generate one `INSERT IGNORE` per bug into a new migration (`007_...`) — `type=\'bug\'`, `status=\'closed\'`, full original body in `technical_description`. Separately, enrich the *already-seeded* `FEAT-001`/`FEAT-002`/`FEAT-004`/`FEAT-006` rows\' `technical_description` with their fuller spec sections from `ROADMAP.md` via idempotent `UPDATE ... WHERE technical_description NOT LIKE \'%<marker>%\'` (append-once guard, not `INSERT IGNORE` since the rows already exist). Move "Decisions already made" into `ORIENTATIONS.md` instead of the tracker — it\'s settled reference material, not a work item. Only once all of that is verified (fresh migrate, row counts, spot-checked content) should `docs/BUGLOG.md`/`docs/ROADMAP.md` be replaced with a short pointer note in `docs/archive/`, per `REPOSITORY_ARCHITECTURE.md`\'s own "no dumping ground" rule — grep the whole repo for references to both filenames first (`README.md`, `CONTRIBUTING.md`, this screen\'s own header comment, `scripts/check-repo-hygiene.sh` are the likely hits) and update them. **Recommend explicitly re-confirming with Mahdi that `DEV_STATUS.md`/`CHANGELOG.md`/`SESSION_LOG_*.md` stay out of this — they\'re the continuity mechanism, not status tracking — rather than silently assuming it.**
+3. **Bugs/features/tech-debt (items 6/7)**: unchanged from the forty-sixth session\'s hand-off — both bugs are human-blocked, so the P1 feature queue (`FEAT-007`, `FEAT-008`, `FEAT-001`, `FEAT-009`) is next once 1/2/4 above are done, or tech debt (`DEBT-001`/`003`/`004`) if a session wants a smaller, self-contained chunk instead.
+
+**Dependency / hand-off**: item 1 (frontend) has no blocker and is the most directly-requested piece — start there. Item 2 (`.md` extraction) is independent of item 1 but larger; do it as its own focused chunk, not bolted onto item 1. Items 3 (bugs) still need Mahdi. Item 4 (features/debt) is unblocked but only worth starting once 1 and 2 are further along, per Mahdi\'s own explicit ordering ("start fixing bugs if all bugs solved then start building features... take care of technical debt").
+
+**Push, not yet CI-confirmed at entry-write time**: about to commit and push this small, fully-tested slice (search backend + tests) rather than hold it pending the much larger unfinished work above — per Mahdi\'s explicit "Push !".
+', NULL, NULL, NULL, NULL),
+  ('2026-09-09 (forty-eighth session)', '`.md`→DB consolidation, part 1: `session_log` table built (this project\'s "table 1"), all 50 `BUGLOG.md` bugs archived into `tracker_items` ("table 2" already existed); `ROADMAP.md` seeding + either file\'s actual archival still NOT done — see hand-off', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-09 (forty-eighth session) — `.md`→DB consolidation, part 1: `session_log` table built (this project\'s "table 1"), all 50 `BUGLOG.md` bugs archived into `tracker_items` ("table 2" already existed); `ROADMAP.md` seeding + either file\'s actual archival still NOT done — see hand-off".]
+
+## 2026-09-09 (forty-eighth session) — `.md`→DB consolidation, part 1: `session_log` table built (this project\'s "table 1"), all 50 `BUGLOG.md` bugs archived into `tracker_items` ("table 2" already existed); `ROADMAP.md` seeding + either file\'s actual archival still NOT done — see hand-off
+
+**Trigger**: Mahdi asked for a large chunk in one message: launch the local PHP+MariaDB environment, pull latest, read the logs (tests + results), fix bugs then build features by priority, "take care of technical debt", and — the part that ended up dominating this session — explicitly consolidate `.md`-based bug/feature/log tracking into the database: "we can create the two tables one for logs, every action done... And the other for features, bugs". Mid-session, Mahdi sent a bare "Push" — treated the same way the forty-seventh session treated "Push !": stop expanding scope, verify, commit, push, log honestly.
+
+**Security note (recurring — see every prior session\'s identical note)**: a live GitHub PAT was again pasted in plaintext directly in chat this session. Used only transiently for `git clone`/this push; never written to any log, commit, or this project\'s persistent memory.
+
+**Read first**: the forty-seventh session\'s entry directly above — this session picks up exactly where its investigation left off (same two files, same plan), and does NOT re-derive that investigation.
+
+### Environment notes for the next cold-start session (two new gotchas, not previously documented)
+
+1. **`dc_user`@`localhost` ≠ `dc_user`@`127.0.0.1` to MySQL\'s grant table**, even on the same machine — `config.php`\'s `db.host` here is `127.0.0.1` (TCP), so a grant only issued for `\'dc_user\'@\'localhost\'` silently fails auth (surfaces as the app\'s own generic "Database not configured/available" 503, not a connection-refused error — looks exactly like the app is broken). Fix: grant the same user to both `@\'localhost\'` and `@\'127.0.0.1\'` in a fresh sandbox.
+2. **`config.php` needs an explicit `app_url`** (e.g. `http://127.0.0.1:8080`, matching whatever `http_api_test.php`\'s base-URL argument is) **or the mail-log verify-link HTTP test fails** — not a code regression, `Mailer.php` correctly builds a relative link when `app_url` is unset/empty, but the test\'s link-matching regex requires an absolute `http(s)://` URL. This cost real investigation time this session (first baseline run showed 87/88, looked like a genuine regression since every prior session logged clean 88/88, until traced to this single missing config key).
+3. **MariaDB\'s background process does not survive between separate tool-call turns in this sandbox** — this is NOT new; the forty-sixth session\'s `docs/TEST_CHECKLIST.md` entry already documented this exact limitation for `mysqld` (having first found it for `php -S` in the twenty-first session). It still cost real time this session anyway, rediscovered live rather than recalled from the doc — worth flagging as its own small lesson: this session read `docs/ORIENTATIONS.md`/`docs/DEV_STATUS.md` before acting, per the standing protocol, but not `docs/TEST_CHECKLIST.md`\'s own scattered environment notes, and paid for that gap directly. A `mysqladmin ping || (restart sequence)` guard at the start of every fresh-baseline shell chain avoids losing the time twice; whether that note belongs somewhere more prominent than `TEST_CHECKLIST.md`\'s dated-entry format (item 3 in this session\'s hand-off) is a fair question for whoever writes it up.
+
+The first two are genuinely new and not written into `docs/DEPLOY.md` or any onboarding doc yet — flagging here so the next session doesn\'t re-lose the same time. The third is already documented (see above) but evidently not prominently enough to have been read/applied before it recurred.
+
+### Done this session (verified, not assumed)
+
+1. **`session_log` table (migration `007_add_session_log.sql`)** — this is "table 1" of Mahdi\'s two-table ask; "table 2" (`tracker_items`/`tracker_updates`) already existed and has been live since migration `004` (2026-09-07) — worth Mahdi knowing explicitly, since his message read as if neither existed yet. Columns: `session_label`, `summary`, `trigger_text`, `done_text`, `not_done_text`, `handoff_text`, `commit_hash`, `ci_status`, `created_at`. Deliberately append-only — no `PUT`/`DELETE` route exists or is planned (see the migration\'s own comment for the reasoning, mirrored from `tracker_updates`\' own append-only philosophy).
+2. **`db/sessionLogRepo.php`** (new) — `listSessionLog(?limit)` and `createSessionLogEntry(array)` only, same validate-and-throw-`\\RuntimeException`-with-a-French-message pattern as `trackerRepo.php`.
+3. **Two new routes in `api/index.php`**: `GET /admin/session-log` (optional `?limit=`) and `POST /admin/session-log`, both gated by the existing `manage_tracker` permission (deliberately not a new permission — see migration comment). Manually verified the full lifecycle end-to-end with `curl` (empty list → 403 without CSRF → 201 create → 400 blank summary → 400 non-hex commit hash → list reflects it → `?limit=1` honoured → 401 unauthenticated) before writing a single automated test, same discipline this project has used since its earliest sessions.
+4. **8 new HTTP regression tests** covering all of the above.
+5. **`docs/BUGLOG.md`\'s all 50 closed bug entries mechanically extracted into `tracker_items`/`tracker_updates`** (migration `008_extract_buglog_history.sql`, generated by a one-off script, not committed — the exact split rule is documented in the migration\'s own header comment for reproducibility). `type=\'bug\'`, `status=\'closed\'` for all 50 (this file only ever documented fixed bugs — the two still-open bugs, `BUG-051`/`BUG-052`, were already seeded by migration `005`). Full original prose preserved verbatim in `technical_description`, per this project\'s own standing rule against rewriting past narrative.
+6. **Caught a real parser bug before trusting the output, not after**: the first parse pass silently dropped `BUG-024` — its heading is `### BUG-024 (not a bug — recorded UX decision) — Replaced...`, an extra parenthetical the first regex didn\'t anticipate, so the line simply failed to match and both the heading and its body vanished into no-entry, no-error. Caught by diffing the full set of `### BUG-` headings in the file against the parsed output\'s codes — not by trusting the row count alone (49 vs. 50 wasn\'t itself the tell; a 49-vs-49 miscount in a different pair of entries would have passed that check silently). Fixed the regex to capture the parenthetical into the title instead of losing the entry, regenerated, re-diffed clean.
+7. **Fixed 3 now-stale hard-coded test assertions** that migration 008 would otherwise have silently broken (`GET /admin/tracker/items` expected count 14→64; `?type=bug` expected count 2→52; post-delete-baseline 14→64) — the same "stale baseline" class of issue a few prior sessions have hit (e.g. the forty-fifth session\'s "fix stale 13->14 test baseline").
+8. **Full fresh-environment baseline reconfirmed clean, multiple times, not assumed**: PHP 8.3 + MariaDB 10.11 provisioned cold in the sandbox; final confirmed numbers — `migrate.php` **8/8**, `seed.php` OK, `smoke_test.php` **24/24**, `http_api_test.php` **96/96** (88 prior baseline + 8 new session-log tests), zero failures, zero unexplained drift.
+
+### NOT DONE — explicitly, most of the consolidation is still open
+
+- **`docs/ROADMAP.md`\'s still-uncoded open items are NOT yet seeded into `tracker_items`.** Checked carefully against the 14 already-seeded codes before considering archival (exactly the risk the forty-seventh session flagged): the P1 queue\'s items are all already covered by an existing code EXCEPT the P2 "For Later" list (rate limiting, Global Case List, Extension-Site toggle, pull-to-refresh animation, DB backup automation, tighten CORS — 6 items) and 3 of the 4 "Ideas / not yet requested (parked)" items (the 4th, dossier-reference codification, duplicates `FEAT-008`) and item 9\'s "local accounts + RBAC — pending Mahdi\'s live click-through" (functionally done, but that verification step has no row anywhere). **None of these 10 items have been written to a migration yet.**
+- **"Decisions already made" section of `ROADMAP.md` has NOT been moved into `ORIENTATIONS.md`** — it\'s settled reference material, not a trackable work item; the forty-seventh session already identified this, still not done.
+- **`FEAT-001`/`FEAT-002`/`FEAT-004`/`FEAT-006`\'s existing tracker rows have NOT been enriched** with their fuller spec sections (acceptance criteria, security requirements etc.) still sitting only in `ROADMAP.md`.
+- **`docs/BUGLOG.md` and `docs/ROADMAP.md` have NOT been archived or deleted.** Deliberately — doing so before the two points above are finished would silently lose real open backlog items, the exact mistake this whole consolidation effort needs to avoid. **Do not archive either file until a migration seeding the 10 items above exists and has been verified.**
+- **No `AdminSessionLogScreen` (or equivalent UI) built.** The new table/API has no frontend caller yet — same backend-first pattern `FEAT-010` itself followed across several sessions before its own screen landed.
+- **No `CHANGELOG.md` entry / no version bump** — backend-only, no UI caller yet, per this project\'s normal convention (bump only when something becomes user-reachable).
+- **`BUG-051`/`BUG-052` not re-verified this session** — carrying forward the forty-sixth/forty-seventh sessions\' finding (both human-blocked) without re-deriving it fresh.
+- **No `FEAT-*` work started, no tech debt (`DEBT-001`/`003`/`004`) touched** — this session\'s time went entirely to the consolidation work Mahdi\'s message made the clear top priority; the standing "bugs, then features by priority, then debt" ordering resumes once the consolidation above is actually finished.
+
+### Hand-off for the next developer
+
+1. **Finish the consolidation before starting anything else** — it\'s roughly two-thirds done, not a fresh start. Write migration `009`: `INSERT IGNORE` the 10 still-uncoded `ROADMAP.md` items identified above (type/priority per their existing P2/parked categorization), move "Decisions already made" into `ORIENTATIONS.md`, and (optional, lower priority than the other two) enrich `FEAT-001`/`002`/`004`/`006` via idempotent `UPDATE ... WHERE technical_description NOT LIKE \'%<marker>%\'`. Verify with a fresh migrate + row-count + spot-check, the same discipline this session used for migration 008. **Only then** replace `docs/BUGLOG.md`/`docs/ROADMAP.md` with short pointer notes in `docs/archive/` — grep the whole repo for references to both filenames first (`README.md`, `CONTRIBUTING.md`, `scripts/check-repo-hygiene.sh` are the likely hits) and update them.
+2. **`docs/DEV_STATUS.md`/`CHANGELOG.md`/`SESSION_LOG_*.md` stay out of scope** — confirmed again this session, same reasoning as the forty-seventh session\'s: they\'re the dev-to-dev continuity mechanism (this very entry is an instance of it), not status tracking, and Mahdi\'s own message this session explicitly conceded keeping "one [file] to help the devs... ensuring continuity."
+3. **Write the three environment gotchas above into `docs/DEPLOY.md` or a new local-sandbox-setup note** — not done this session, purely lost time otherwise for whoever provisions a cold sandbox next.
+4. **Once the consolidation is finished**: bugs are still human-blocked pending Mahdi (re-verify fresh, don\'t assume); P1 feature queue unchanged from prior hand-offs (`FEAT-007`, `FEAT-008`, `FEAT-001`, `FEAT-009`, then `DEBT-003`/`DEBT-004`\'s remainder).
+
+**Dependency / hand-off**: item 1 (finish consolidation) has no blocker and should come first — it\'s what Mahdi has now asked for across two consecutive sessions. Item 2 needs no action, just continued restraint. Item 3 is small and independent, good filler if item 1 is blocked for any reason. Item 4 is fully unblocked but deliberately sequenced last, per Mahdi\'s own repeated ordering.
+
+**Push, CI confirmed real, not assumed — first push was NOT clean**: commit `29dffd6` pushed the verified slice above (session_log table + BUGLOG.md archival + their tests, 96/96 clean locally) and its triggered CI run (`34412124241`) came back **failure** — at the very first gate, `scripts/check-repo-hygiene.sh`\'s "stale pre-restructure path references" check, which everything after it (migrations, tests, frontend build, artifact publish) never even ran to reach. Root cause: that check exempts `.md` files from flagging old path names like `audit-app/` because several docs (including `docs/BUGLOG.md` itself) legitimately narrate them as history — migration `008` moved that exact exempted text into a `.sql` file, which the check had no reason yet to also exempt. Reproduced the failure locally first (running the same script against the exact pushed tree, not guessing from the CI conclusion alone — the raw log itself was unreachable, its `blob.core.windows.net` redirect target isn\'t on this sandbox\'s allowed network list), fixed by adding the one file to the script\'s existing named-exception list with a comment explaining why, confirmed 4/4 hygiene checks locally, pushed as commit `64a8d42`. **That run (`34412124241`\'s successor) was polled to completion and every one of its 24 steps confirmed `success`** — hygiene, migrations, smoke tests, HTTP regression, frontend typecheck, Expo build, deployment-artifact assembly and content check, and publish to `macerti/duration_calculator`, all individually verified, not inferred from the overall run conclusion alone. **Lesson for next time, stated plainly**: this session ran its own full backend baseline repeatedly but never ran `scripts/check-repo-hygiene.sh` locally before the first push, despite it being step 1 of this exact CI pipeline and a two-second command to run — that gap is what caused the failed run, not anything wrong with the actual feature work. Run it locally before every push from here on, the same way `migrate`/`seed`/`smoke`/`http` already are.
+', NULL, NULL, NULL, NULL),
+  ('2026-09-10 (forty-ninth session)', 'investigation + full merge/UI design only, zero code shipped; pushed on Mahdi\'s bare "Push !" per standing convention', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-10 (forty-ninth session) — investigation + full merge/UI design only, zero code shipped; pushed on Mahdi\'s bare "Push !" per standing convention".]
+
+## 2026-09-10 (forty-ninth session) — investigation + full merge/UI design only, zero code shipped; pushed on Mahdi\'s bare "Push !" per standing convention
+
+**Trigger**: Mahdi asked, in one message: launch local PHP+MariaDB, pull latest, read the logs first, then (1) rebuild `AdminTrackerScreen.tsx`\'s filters as collapsible multiselect + a collapsible search bar, defaulting to "everything not closed" (not literal "all"), (2) merge annotations into the tracker — "annotations are just user_description of bugs and features so why have two lists" — with the flow being the user creates a row directly in the DB and a dev fills the NULL fields in later, (3) find out where the UI for "the second append-only table" is, (4) then bugs → features by priority → technical debt, continuously, (5) push before the token budget runs out with an honest log either way, even with zero code changed. Mid-session, before (1)/(2)/(4) were built, Mahdi sent a bare **"Push !"** — treated exactly as the forty-seventh/forty-eighth sessions treated the same instruction: stop, verify, commit, push, log honestly. **This entry is that push\'s log. No `git diff` exists for this session — everything below is investigation and a ready-to-execute design, not shipped code.**
+
+**Security note (recurring — see every prior session\'s identical note)**: a live GitHub PAT was again pasted in plaintext directly in chat this session. Used only transiently for `git clone`/this push; never written to any log, commit, or this project\'s persistent memory.
+
+**Read first**: the forty-seventh session\'s entry (its own annotations-merge investigation, a *different, lighter* design than this session\'s — see the divergence noted below, needs a decision) and the forty-eighth session\'s "Environment notes" subsection (this session re-hit gotcha #2 there — app_url — cold, see below; should not have).
+
+### Environment — baseline reconfirmed clean, one already-documented gotcha re-hit
+
+PHP 8.3 + MariaDB 10.11 provisioned cold (`apt-get install php php-cli php-mysql php-mbstring php-xml php-curl mariadb-server mariadb-client`; MariaDB and the PHP dev server both need re-starting at the top of every fresh shell invocation in this sandbox — confirmed again, third time this\'s been logged). `migrate.php` 8/8, `seed.php` OK, `smoke_test.php` **24/24**, `http_api_test.php` **96/96** — zero failures, zero drift from the forty-eighth session\'s own confirmed baseline.
+
+**Self-critique, stated plainly**: hit the forty-eighth session\'s already-documented gotcha #2 (`config.php` needs an explicit local `app_url`, or the mail-log verify-link test fails) completely cold — first `http_api_test.php` run came back 31 passed / 65 failed, looked like a severe regression, cost real time tracing it back to two config keys (`app_url`, and `migration_secret` not matching the test\'s hardcoded CI value) before finding this exact issue already written up one entry above. Same lesson the forty-eighth session logged about itself re: `TEST_CHECKLIST.md` — read the *whole* environment-notes trail before running anything, not just the top of this file. Flagging again, a third time: whoever eventually builds `docs/DEPLOY.md`\'s local-sandbox-setup note (still not done, three sessions running) should make `config.php`\'s `app_url`/`migration_secret` a one-line copy-pasteable snippet right at the top, since it\'s now cost three separate sessions real time.
+
+### Investigation done this session (no code)
+
+Read `docs/DEV_STATUS.md` in full (not just the top), `AdminTrackerScreen.tsx`, `AdminAnnotationsScreen.tsx`, `AnnotationCapture.tsx`, `useAdminApi.ts`, `trackerRepo.php`, `annotationRepo.php`, `sessionLogRepo.php`, migrations `003`/`004`/`007`, and queried the fresh local schema directly.
+
+**Mahdi\'s question 3 answered directly, not guessed**: the "second append-only table" is `session_log` (migration `007`, forty-eighth session). It has a backend (`sessionLogRepo.php`, `GET`/`POST /admin/session-log`, 8 passing tests) but **no UI — confirmed, `docs/DEV_STATUS.md`\'s own forty-eighth-session entry already says so explicitly**, nothing new found here. Worth Mahdi also knowing: **nobody has actually written a row to it yet, including the session that built it** — `grep -l "INSERT INTO session_log" db/migrations/*.sql` returns nothing, and every session since (forty-eighth, this one) has kept logging by hand in this file instead of via the table its own migration comment says should replace that. The table exists but the practice hasn\'t changed. Worth a decision: either build the UI so writing a row is actually easier than editing this file, or stop treating the table as the intended replacement.
+
+**Mahdi\'s question 2 (why two lists) — confirmed the overlap is real, not just apparent**: `annotations` (migration `003`, FEAT-006) — `screen`, `element_ref`, `x`, `y`, `comment`, `app_version`, `created_by`, `status` open/actioned/dismissed. `tracker_items` (migration `004`, FEAT-010) — `code` PK, `type`, `title`, `user_description`, `technical_description`, `status` (5-value enum), `priority`, `dependencies`, `tests_to_do`, `comments`. `annotations.comment` and `tracker_items.user_description` are the same concept under two names, exactly as Mahdi said.
+
+**Design for the merge (full detail, so the next session can implement without re-deriving it)** — **note this diverges from the forty-seventh session\'s own annotations-merge plan** (that one kept both tables and added a "promote annotation → tracker item" UI button, no schema change, no new route). This session\'s design instead does a full schema merge, because Mahdi\'s exact words this time — "making user create an annotation **directly in db**" — read as one write path, not two tables bridged by a manual promote step. **Whoever implements should pick one of these two designs explicitly, not blend them.** This session\'s fuller design:
+1. Migration `009`: `ALTER TABLE tracker_items ADD COLUMN screen VARCHAR(150) NULL, element_ref VARCHAR(150) NULL, x DECIMAL(10,2) NULL, y DECIMAL(10,2) NULL, app_version VARCHAR(30) NULL, created_by INT UNSIGNED NULL, source_annotation_id INT UNSIGNED NULL` (`created_by` FK → `users(id) ON DELETE SET NULL`; `source_annotation_id` is a plain traceability pointer, not a real FK, since `annotations` is being deprecated not kept authoritative — mirrors `tracker_updates.dependencies`\' own plain-text-over-FK precedent in migration 004\'s rationale).
+2. `trackerRepo.php`: add `\'annotation\'` to `TRACKER_TYPES`. This becomes the placeholder type a quick pinned comment is created with — everything except `code`/`title`/`user_description`/`status`(\'open\')/the new capture columns stays `NULL`, which is exactly the "dev fills the NULL fields in later" workflow Mahdi asked for. New function `createAnnotationTrackerItem(screen, elementRef, x, y, comment, appVersion, createdBy)`: auto-generates the next `ANN-NNN` code via the existing `suggestNextTrackerCode(\'ANN\')`, `title` = comment truncated to 197 chars + "…" if longer (same rule migration 008 already used for `BUG-050`\'s overlong heading — don\'t reinvent it), `user_description` = full comment, `status=\'open\'`, rest `NULL`.
+3. New route `POST /admin/tracker/annotations` (same shape as the old `POST /admin/annotations` body: `screen`/`elementRef`/`x`/`y`/`comment`/`appVersion`), gated by `manage_tracker` (not `manage_annotations` — see point 5). Returns a `TrackerItem`, not an `Annotation`.
+4. Frontend: `AnnotationCapture.tsx`\'s `submit()` calls the new route instead of `api.createAnnotation(...)`; its `enabled` check becomes `hasPermission("manage_tracker")`. `AdminTrackerScreen.tsx` gets the multiselect-filter/collapsible-search rework (see below) plus a `userDescription` field already exists in its detail view — no new field needed there, `CreateItemCard`\'s manual-creation form is a separate path from the pin-tool and doesn\'t need to change.
+5. `AdminAnnotationsScreen.tsx` and its `App.tsx`/`ProfileScreen.tsx` nav entries get removed — one screen, one list, per Mahdi\'s actual ask. `manage_annotations` (the permission) is **not deleted** (permissions are cheap to leave; both it and `manage_tracker` are only ever granted to `administrateur` today anyway per migrations 003/004\'s own text, so nothing actually loses access) — it just stops being checked anywhere, same "unlinked, not deleted" precedent as the Google SSO button.
+6. **Existing `annotations` table rows**: migration `009` copies them into `tracker_items` (`type=\'annotation\'`, code `ANN-NNN` via `ROW_NUMBER() OVER (ORDER BY id)`, status mapped `open→open` / `actioned→in_progress` / `dismissed→closed` — this mapping is a judgment call, not exact, flagging it explicitly rather than silently picking it) but **does NOT `DROP TABLE annotations`** — this sandbox has no access to the real production `annotations` rows (the "first real live-annotation batch" the forty-eighth session\'s `BUG-050` archival referenced was exported-and-archived from a `.md` file, not deleted from the live table, so production almost certainly still has old rows sitting there that would get re-copied into `tracker_items` as duplicates of `BUG-050`\'s content by a blind copy). **This needs a human data check on the real production DB before this part of migration 009 is trusted** — the schema-and-code changes (points 1–5) are safe to build and test now regardless; the data-copy half of point 6 is not safe to run against production sight-unseen.
+7. Backend `POST /admin/annotations` (old create route) should be removed once point 4 ships (nothing should write to the deprecated table anymore); `GET`/`PUT`/`DELETE`/`export` on `annotations` can stay as read-only historical access for now rather than being torn out alongside working tests for no functional gain.
+
+**Design for the tracker UI filters/search** (not built): replace `AdminTrackerScreen.tsx`\'s three `SegmentedPicker`s (single-select) with a new multiselect component (no existing one in `src/frontend/src/components/` — nearest precedents are `SegmentedPicker.tsx` for styling tokens and `NaceSearchField.tsx` for a debounced search-input pattern, neither does multiselect today) wrapped in a new collapsible-section component (also doesn\'t exist yet — check with a fresh `ls` before building, in case another session added one). Default filter state should be "every status except `closed`" (i.e. `[\'open\',\'in_progress\',\'fixed_unverified\',\'verified\']` pre-checked), not the current literal `"all"`. `useAdminApi.ts`\'s `listTrackerItems()` needs `status`/`type`/`priority` to accept arrays (joined as repeated query params or CSV — either works, `trackerRepo.php`\'s `listTrackerItems()` needs the matching `IN (...)` change server-side, currently single-value `=` only) and a `search` key wired to the backend `?search=` param that\'s existed, unused, since the forty-seventh session.
+
+### NOT DONE — explicitly, this entire session was investigation + design
+
+- **Zero files changed in this repo.** No migration, no PHP, no TSX. `git status` is clean.
+- Filters/search UI: not built.
+- Annotations/tracker merge: not built (see the two-designs note above — needs a decision, not just implementation time).
+- `AdminSessionLogScreen`: still doesn\'t exist.
+- **No bugs touched.** `BUG-051`/`BUG-052` not re-verified this session — carrying forward the forty-sixth/forty-seventh sessions\' "both human-blocked" finding without re-deriving it fresh, per this project\'s own stated convention for unverified carry-forwards.
+- **No `FEAT-*` work, no tech debt** (`DEBT-001`, `DEBT-002` part 2, `DEBT-003`, `DEBT-004` all untouched).
+- No frontend verification run (`tsc`, `expo export`) — correctly so, zero frontend files touched.
+- No `CHANGELOG.md` entry / no version bump — nothing user-reachable changed.
+
+### Hand-off for the next developer
+
+1. **Decide the merge design first** (5 minutes, not a rebuild) — this session\'s full-schema-merge plan above, or the forty-seventh session\'s lighter "promote" plan. Recommend confirming with Mahdi directly given his literal "directly in db" wording this session, but don\'t silently pick one without saying so, the way both prior annotations-merge investigations (forty-seventh, this one) have now each proposed a different shape without shipping either.
+2. **Then build in this order** (smallest, most-directly-requested first, same principle the forty-seventh session\'s hand-off used): (a) multiselect filters + collapsible search + default-not-closed on `AdminTrackerScreen.tsx` — fully self-contained, no schema change, no design decision blocking it, start here; (b) whichever merge design was picked in step 1; (c) `AdminSessionLogScreen` — small, same list/card pattern as `AdminTrackerScreen`, no design ambiguity, good filler if (a)/(b) are ever blocked.
+3. **Bugs/features/debt**: unchanged from every prior hand-off since the forty-sixth session — `BUG-051`/`BUG-052` need Mahdi, not more investigation; `FEAT-007`/`008`/`001`/`009` then `DEBT-001`/`003`/`004` once (a)/(b) above are further along.
+
+**Dependency / hand-off**: item 2a has no blocker at all — start there regardless of what else is decided. Item 2b is blocked only on the design decision in item 1, which takes minutes, not sessions — don\'t let it stall another full session the way this exact ask has now stalled two in a row (forty-seventh, this one) without either design shipping. Item 2c is fully independent. Item 3 is unchanged and still needs Mahdi.
+
+**Push**: nothing to push except this log entry — `git status` was clean before this edit. Committing and pushing this file alone, per Mahdi\'s explicit "Push !", so the next session starts from a ready-to-execute plan instead of re-reading `annotationRepo.php`/`trackerRepo.php` cold a third time.
+', NULL, NULL, NULL, NULL),
+  ('2026-09-10 (fiftieth session)', 'annotations/tracker merge + multiselect filters, backend half only: migration 009, `trackerRepo.php`, `api/index.php`, 11 new tests, 24/24 + 107/107 clean; frontend not started', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-10 (fiftieth session) — annotations/tracker merge + multiselect filters, backend half only: migration 009, `trackerRepo.php`, `api/index.php`, 11 new tests, 24/24 + 107/107 clean; frontend not started".]
+
+## 2026-09-10 (fiftieth session) — annotations/tracker merge + multiselect filters, backend half only: migration 009, `trackerRepo.php`, `api/index.php`, 11 new tests, 24/24 + 107/107 clean; frontend not started
+
+**Trigger**: Mahdi said "Continue" (picking up the forty-ninth session\'s design-only hand-off), then mid-session, before any frontend work started, sent a bare **"Push"** — same standing convention as every prior mid-flight push in this log: stop, verify, commit, push, log honestly.
+
+**Decision made** (per the forty-ninth session\'s own flagged fork): went with **this project\'s fuller schema-merge design**, not the forty-seventh session\'s lighter "promote annotation" design — Mahdi\'s literal "directly in db" wording from the triggering message was the deciding factor, stated here rather than picked silently, per the forty-ninth session\'s own explicit request not to repeat that.
+
+**Security note (recurring — see every prior session\'s identical note)**: a live GitHub PAT was again pasted in plaintext directly in chat this session. Used only transiently for `git clone`/this push; never written to any log, commit, or this project\'s persistent memory.
+
+### Done this session (backend only, fully tested)
+
+1. **Migration `009_annotations_tracker_merge.sql`**: adds `screen`/`element_ref`/`x`/`y`/`app_version`/`created_by`/`source_annotation_id` to `tracker_items` (all NULL-able), `created_by` FK `ON DELETE SET NULL` (deliberately not `CASCADE` like `annotations.created_by` — a tracker item is now permanent record, not a disposable personal note; see the migration\'s own design-note 2), and a one-time idempotent copy of any existing `annotations` rows into `tracker_items` (`type=\'annotation\'`, status mapped open→open/actioned→in_progress/dismissed→closed, stated as a judgment call not a certainty). Does **not** drop `annotations` or touch its existing routes — see the migration\'s own header comment for the production-duplicate-risk reasoning (this sandbox can\'t see real prod data, so the data-copy step is verified-safe here but flagged for a human spot-check there).
+   - **Caught a real bug in my own migration before it shipped, by actually testing it, not just reading it back**: the first version computed `ROW_NUMBER() OVER (ORDER BY a.id)` *inside* the same query as the `WHERE NOT EXISTS` idempotency filter — SQL evaluates `WHERE` before window functions, so on a simulated upgrade (3 pre-existing `annotations` rows migrated, then a 4th added later), re-running the file tried to renumber the lone remaining row back to `ANN-001`, colliding with the real `ANN-001`. Fixed by computing `ROW_NUMBER()` over the full unfiltered table in a derived subquery first, then filtering in the outer query. Verified three ways before trusting it: fresh install, manual re-run of the raw file (true no-op), and the incremental-new-row case above (correctly produced `ANN-004` only, second time).
+2. **`trackerRepo.php`**: `TRACKER_TYPES` gains `\'annotation\'`; `mapTrackerItemRow()` carries the 7 new columns; `listTrackerItems()` now accepts an array (or a single string, kept working) for `$status`/`$type`/`$priority` — built for `AdminTrackerScreen.tsx`\'s upcoming multiselect filters, translates to a SQL `IN (...)` per filter; new `createAnnotationTrackerItem()` — the pin tool\'s new single write path, auto-codes `ANN-NNN` via the existing `suggestNextTrackerCode()`, sets `type=\'annotation\'`/`status=\'open\'`/the 6 capture fields, leaves `technicalDescription`/`priority`/`dependencies`/`testsToDo` NULL for a dev to fill in — this is the literal workflow Mahdi asked for, not an approximation of it.
+3. **`api/index.php`**: `GET /admin/tracker/items` parses `status`/`type`/`priority` as comma-separated lists now (a bare single value still works unchanged); new `POST /admin/tracker/annotations` route, gated by `manage_tracker` (not `manage_annotations` — both are only ever granted to `administrateur` today, so nothing loses access; see migration 009\'s comment).
+   - **Hit and fixed one real bug here too, caught immediately rather than shipped blind**: forgot this file\'s own explicit-`use function`-per-call convention (every `AuditEngine\\*` function used here is individually imported, no blanket namespace use) — the new route 500\'d with "Call to undefined function" until `use function AuditEngine\\createAnnotationTrackerItem;` was added. Found in under a minute by flipping local `config.php`\'s `debug` to `true` to see the real exception instead of the generic 500 message, then flipped back to `false` before committing (that key is gitignored either way, but the discipline matters for the next local dev who inherits this sandbox\'s habits).
+4. **11 new HTTP regression tests**: 4 for the multiselect filters (comma-separated status/type both work, an invalid value inside a multiselect list is still rejected, a bare single value still works unchanged) and 7 walking the actual merge workflow end-to-end — no session → 401, no CSRF → 403, blank comment → 400, successful create returns `type=\'annotation\'`/`technicalDescription`+`priority` both NULL/code starts `ANN-`, the created item shows up under `GET ?type=annotation` (one merged list), a `PUT` afterwards fills the NULL `technicalDescription`/`priority` in exactly like any other tracker item, cleanup delete. That last sequence is the actual "user creates directly, dev fills NULL fields later" workflow, tested as a sequence, not just as isolated field checks.
+5. **Full fresh-environment baseline reconfirmed clean**: PHP 8.3 + MariaDB 10.11 cold; `migrate.php` **9/9** (including the new migration, tested fresh-install/idempotent-rerun/upgrade-path as described above); `smoke_test.php` **24/24**; `http_api_test.php` **107/107** (96 prior baseline + 11 new) — zero failures, zero drift on the pre-existing 96.
+
+### NOT DONE — the entire frontend half
+
+- **`AdminTrackerScreen.tsx` untouched.** Still 3 single-select `SegmentedPicker`s, no search box, default filter still literal `"all"` not "everything but closed." The backend now supports everything this needs (`listTrackerItems` takes arrays, `?search=` has existed since the forty-seventh session) — this is now purely frontend work with no blocker.
+- **`AnnotationCapture.tsx` untouched** — still calls the old `api.createAnnotation(...)` (`POST /admin/annotations`, `manage_annotations` permission), not the new merged `POST /admin/tracker/annotations`. Until this changes, the merge isn\'t actually live for anyone using the app — the backend capability exists but nothing calls it yet.
+- **`AdminAnnotationsScreen.tsx` and its `App.tsx`/`ProfileScreen.tsx` nav entries untouched** — still a second, separate screen. Per the forty-ninth session\'s design, this should be removed once `AnnotationCapture.tsx` is repointed (a `manage_annotations`-gated button pointing at a screen nothing writes into anymore is worse than either finishing or not starting).
+- **No `MultiSelectFilter`/`CollapsibleSection` components exist yet** — checked, nothing in `src/frontend/src/components/` does either today; both need to be built, not found and reused.
+- **No `useAdminApi.ts` changes** — `listTrackerItems()`\'s filter object still takes single values only; needs `status`/`type`/`priority` typed as arrays and joined with `,` before the change above is reachable from any screen; also needs a new `createAnnotationItem()` method for the new route.
+- **No `CHANGELOG.md` entry, no version bump** — correctly so, per this project\'s own standing convention (see the forty-seventh session\'s own identical note): nothing user-reachable shipped this session, since no UI calls either backend change yet.
+- **`AdminSessionLogScreen`, `BUG-051`/`BUG-052`, `FEAT-*`, remaining `DEBT-*`**: all unchanged, unstarted, same as every hand-off since the forty-sixth session.
+
+### Hand-off for the next developer
+
+1. **Finish what this session started, don\'t restart it**: the backend is done and tested — build directly on it rather than re-deriving the API shape. Concretely: (a) `useAdminApi.ts` — change `listTrackerItems()`\'s filter params to arrays, add `createAnnotationItem()`; (b) build `MultiSelectFilter.tsx` (check `SegmentedPicker.tsx` for the styling tokens to match) and a `CollapsibleSection.tsx` wrapper (neither exists — confirmed this session, re-confirm with a fresh `ls` in case another session added one first); (c) rework `AdminTrackerScreen.tsx`\'s filters row with both, default status selection = every status except `closed`, wire a debounced search box to `?search=` (`NaceSearchField.tsx` is the nearest existing debounced-input pattern to copy from); (d) repoint `AnnotationCapture.tsx`\'s `submit()` to the new `createAnnotationItem()` call and its `enabled` check to `hasPermission("manage_tracker")`; (e) remove `AdminAnnotationsScreen.tsx` and its two nav wiring points (`App.tsx` lines ~18/45/223, `ProfileScreen.tsx` lines ~255-264 — exact lines as of this commit, re-check before editing since line numbers drift).
+2. **Run `tsc`/`expo export` once the frontend changes land** — none were needed this session since zero `.tsx`/`.ts` files changed, but they will be needed next session.
+3. **Bugs/features/debt**: still unchanged from every hand-off since the forty-sixth session.
+
+**Dependency**: none of 1(a)-(e) block each other in a strict order except (c) needing (a)/(b) first and (d) needing (a) first — reasonable to split across two sessions at the (a)+(b) / (c)+(d)+(e) boundary if one session doesn\'t have room for all of it.
+
+**Push**: committing migration `009_annotations_tracker_merge.sql`, `trackerRepo.php`, `api/index.php`, and the 11 new tests in `http_api_test.php` — a complete, fully-tested backend slice, safe to ship even though the frontend that calls it doesn\'t exist yet (every new route is additive; nothing existing changed shape). Per Mahdi\'s "Push".
+', NULL, NULL, NULL, NULL),
+  ('2026-09-10 (fifty-first session)', '5.4.0 — finished what the fiftieth session started: frontend half of the filter rework + annotations/tracker merge, `tsc` clean, backend baseline reconfirmed', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-10 (fifty-first session) — 5.4.0 — finished what the fiftieth session started: frontend half of the filter rework + annotations/tracker merge, `tsc` clean, backend baseline reconfirmed".]
+
+## 2026-09-10 (fifty-first session) — 5.4.0 — finished what the fiftieth session started: frontend half of the filter rework + annotations/tracker merge, `tsc` clean, backend baseline reconfirmed
+
+**Trigger**: Mahdi said "Continue" (picking up the fiftieth session\'s backend-only hand-off), then several more bare "Push"/"Continue" messages mid-session as work progressed — same standing convention as every prior one in this log, applied repeatedly this session without incident (one tool-call retry needed after a malformed edit, not a real conflict — noted here only because "retry, don\'t panic" is itself a useful pattern to log).
+
+**Security note (recurring — see every prior session\'s identical note)**: a live GitHub PAT was again pasted in plaintext directly in chat this session (start of this multi-session thread, still live in this conversation\'s context). Used only transiently for `git`/this push; never written to any log, commit, or this project\'s persistent memory.
+
+### Done this session
+
+1. **`useAdminApi.ts`**: `TrackerItem` type gains the 7 capture columns + `"annotation"` as a valid `type`. `listTrackerItems()`\'s `status`/`type`/`priority` now each accept an array (comma-joined on the wire, matching last session\'s backend parsing) or a single value (kept working). New `search` param. New `createAnnotationItem()` calling last session\'s `POST /admin/tracker/annotations`.
+2. **Two new components** (checked `src/frontend/src/components/` first — neither existed): `MultiSelectFilter.tsx` (mirrors `SegmentedPicker.tsx`\'s visual style deliberately, multi-select instead of single) and `CollapsibleSection.tsx` (generic, not tracker-specific — header shows a summary line whether expanded or collapsed, so collapsing never hides *that* something is filtered).
+3. **`AdminTrackerScreen.tsx` filter rework**: the three `SegmentedPicker`s → `MultiSelectFilter`s inside one `CollapsibleSection` alongside a debounced (300ms, matching `NaceSearchField.tsx`\'s own timing) search box. Default status selection = every status except `closed` (Mahdi\'s literal wording: "always defaultly set to show all what\'s not closed"). Unchecking every value in a filter group means "no filter on that field" (shows everything), not "show nothing" — stated explicitly in code comments since it\'s a real, easy-to-get-backwards design choice, not obvious from the code alone. `refreshList()`\'s optimistic in-place-update matching logic updated for array membership instead of equality. Also added: when a tracker item has `screen` set (i.e. it originated from the pin tool), the detail panel now shows screen/element/position/app-version — directly useful for the dev who\'s about to fill in its NULL `technicalDescription`/`priority`.
+4. **Annotations merge, frontend half**: `AnnotationCapture.tsx` now calls `createAnnotationItem()` instead of the old `createAnnotation()`, gated by `manage_tracker` instead of `manage_annotations`. `AdminAnnotationsScreen.tsx` deleted; unwired from `App.tsx` (import, `RootStackParamList` entry, `Stack.Screen`) and `ProfileScreen.tsx` (its nav button removed).
+   - **Caught and fixed one leftover bug from my own edit, not shipped blind**: removing that nav button left the "Administration" section-header visibility check in `ProfileScreen.tsx` still `|| hasPermission("manage_annotations")` — stale now that nothing under that permission remains there. Harmless in practice (that permission is only ever granted alongside others today) but a real leftover condition, not a hypothetical — removed rather than left "probably fine."
+5. **Version bump 5.3.0 → 5.4.0** (`package.json` + `package-lock.json`, kept in sync via `npm install --package-lock-only` rather than hand-editing both) — this is the first session where either backend change (multiselect filters, the merge) is actually reachable by anyone using the app, so the standing "bump when user-reachable" convention applies cleanly, same as the forty-fourth session\'s own 5.3.0 bump for the tracker screen\'s first UI. `CHANGELOG.md` entry written to match.
+6. **Full verification, nothing assumed**: `npx tsc --noEmit` clean after every change (checked incrementally, not just once at the end — the `TYPE_LABELS` Record-missing-a-key error from adding `\'annotation\'` to the union surfaced immediately after the very first `useAdminApi.ts` edit, well before the rest of the rework compounded on top of it). Backend baseline re-run from a fresh DB as a sanity check even though nothing backend changed this session: `smoke_test.php` **24/24**, `http_api_test.php` **107/107**, unchanged from the fiftieth session\'s own numbers. No `npx expo export`/live click-through — same standing sandbox limitation noted in every prior frontend session in this log; nothing in this sandbox can render a screen to look at, only compile it.
+
+### NOT DONE
+
+- **No live click-through anywhere in this project\'s history** (standing limitation, not new to this session) — the multiselect chips, the collapsible panel\'s default collapsed/expanded feel, and the debounce\'s actual responsiveness are all unverified by eye, only by type-checking and code review. Worth a real device/browser check before calling this fully done, not just compiled-clean.
+- **`AdminSessionLogScreen`**: still doesn\'t exist — third session running where this is flagged as the smallest, most self-contained remaining item.
+- **`BUG-051`/`BUG-052`, `FEAT-007`/`008`/`001`/`009`, `DEBT-001`/`003`/`004`**: all untouched, same as every hand-off since the forty-sixth session. This multi-session thread (forty-seventh through fifty-first, all triggered by variations of the same original request) has now fully delivered the filter/search UI and the annotations merge Mahdi asked for — but has not yet reached bugs, features, or tech debt at all. Worth Mahdi knowing plainly: five sessions on one request, zero on the rest of the original ask.
+
+### Hand-off for the next developer
+
+1. **A real device/browser click-through of this session\'s UI work** would be more valuable right now than starting new scope — nothing here has been seen rendered, only compiled.
+2. **`AdminSessionLogScreen`** — same shape as `AdminTrackerScreen`, no design ambiguity, smallest remaining item.
+3. **Then, finally, bugs → features → tech debt**, per every hand-off since the forty-sixth session: `BUG-051`/`052` need Mahdi\'s input, not more investigation; `FEAT-007`/`008`/`001`/`009` by priority; `DEBT-001`/`003`/`004`.
+
+**Push**: committing `useAdminApi.ts`, the two new components, `AdminTrackerScreen.tsx`, `AnnotationCapture.tsx`, `App.tsx`, `ProfileScreen.tsx`, the deleted `AdminAnnotationsScreen.tsx`, `package.json`/`package-lock.json`\'s version bump, `CHANGELOG.md`, and this entry — the complete frontend half, `tsc`-clean, backend baseline reconfirmed. Per Mahdi\'s "Push"/"Continue".
+', NULL, NULL, NULL, NULL),
+  ('2026-09-11 (fifty-second session)', '5.5.0 — FEAT-007 built and build-verified: in-app Guided Test Mode (all 73 `docs/TEST_CHECKLIST.md` scenarios) with Markdown/JSON report export', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-11 (fifty-second session) — 5.5.0 — FEAT-007 built and build-verified: in-app Guided Test Mode (all 73 `docs/TEST_CHECKLIST.md` scenarios) with Markdown/JSON report export".]
+
+## 2026-09-11 (fifty-second session) — 5.5.0 — FEAT-007 built and build-verified: in-app Guided Test Mode (all 73 `docs/TEST_CHECKLIST.md` scenarios) with Markdown/JSON report export
+
+**Trigger**: Mahdi, fresh conversation: launch PHP+MariaDB locally, pull latest, read the logs (tests done, results gotten), fix bugs if any, then build features by priority, then tech debt — explicit standing instruction to log continuously and push before running out of budget so no work is silently lost, "even the slightest advancements count." A GitHub PAT was pasted in plaintext directly in chat (same recurring pattern flagged in this project\'s own memory across sessions) — used only transiently for `git`/this push, never written to any log, commit, or persistent memory.
+
+### Environment provisioning (bare container, same as the forty-sixth session\'s own first-time setup)
+
+- PHP 8.3 + MariaDB 10.11 installed via `apt-get`. **Confirmed independently, live, before reading that this was already documented**: `mysqld` (and any other background daemon started via `service start`) does **not** survive between separate tool-call invocations in this sandbox — each call appears to run in its own process scope that gets torn down when the call returns. Every DB-dependent step in this session restarts `mariadb` at the top of its own single consolidated shell command, matching the forty-sixth/forty-eighth sessions\' own documented workaround.
+- **Real gotcha hit blind, then found already documented**: a fresh DB after running migrations showed `/health` returning `dbConnected: true` but `dbBackedParameters: false`, and every DB-backed route 503\'d with "Database not configured/available." Root cause: `seed.php` (which creates the active `parameter_sets` row `requireDb()` actually gates on) hadn\'t been run — `docs/DEPLOY.md` already documents this exact symptom verbatim. Worth a sharper error message on `requireDb()`\'s own 503 someday (distinguish "DB unreachable" from "DB reachable but unseeded") — noted as a small DEBT candidate, not filed as its own tracker row since it\'s minor and not blocking anything.
+- Also lost time to a **red herring**: the very first `http_api_test.php` run showed 99/107 failing with 503s that looked identical to the seeding gap above, but was actually just MariaDB not being fully ready 1-2 seconds after `service mariadb start` before the PHP dev server\'s first requests landed — a plain timing/sequencing issue in this sandbox, not a real bug. Increasing the sleep before starting the PHP server resolved it. Recorded here specifically so a future session doesn\'t waste time re-diagnosing the same red herring as if it were new.
+- `migration_secret` in the local `config.php` must match `http_api_test.php`\'s own hardcoded fixture (`ci-test-migrate-secret-do-not-use-in-prod`) or the 8 `/migrate`-route tests false-fail with 401 — not a bug, just a local-config detail worth stating plainly since it cost a full extra test cycle to notice.
+
+### Backend/frontend baseline read and reconfirmed BEFORE any code changes
+
+- Fresh-DB `migrate.php` (**9/9** applied, idempotent) → `seed.php` → `smoke_test.php` **24/24** → live `php -S` → `http_api_test.php` **107/107** — exactly matching the fifty-first session\'s own claimed baseline, zero regressions found.
+- `npx tsc --noEmit` clean on the pre-existing frontend, confirming the fifty-first session\'s unverified frontend work (filters/annotations merge) actually compiles — first time this was checked since that session wrote it.
+
+### Bugs — read, not touched (confirmed still correctly blocked)
+
+- `BUG-051`/`BUG-052` both still open, p2, and — per direct query against the live `tracker_items` table, not just markdown — both still explicitly blocked on **Mahdi\'s own decision/clarification**, not on more dev investigation (BUG-051: add `expo-updates` or accept the narrowed native-crash risk; BUG-052: which "total" an old annotation meant). Left untouched, correctly, per every session since the forty-sixth\'s own finding.
+
+### Done this session — FEAT-007 built
+
+1. **`src/frontend/src/data/acceptanceTests.ts`** (new): structured transcription of all 73 scenarios currently in `docs/TEST_CHECKLIST.md` across its 14 sections, original stable IDs (`HOME-01` etc.) preserved verbatim as the cross-reference key bug reports and the markdown\'s own Test History log already use. Deliberately preserves the source file\'s own pre-existing 12→14→13 section-number ordering quirk rather than silently renumbering — see the data file\'s own header comment for why. Explicitly documented as a **snapshot, not a live sync**: `docs/TEST_CHECKLIST.md` stays canonical; this file needs a manual update if the source ever changes.
+2. **`src/frontend/src/screens/GuidedTestRunnerScreen.tsx`** (new): the actual guided walkthrough. Per-scenario pass/fail/skip via `SegmentedPicker`, with a note field that only appears for fail/skip (matching the markdown\'s own "✅ pass, ❌ fail — describe, ⏭️ skip — note why" convention rather than always showing a rarely-needed field). Sections rendered via the existing `CollapsibleSection` component with a live per-section progress summary. "Générer le rapport" produces either: (a) Markdown in the **exact shape already used by `TEST_CHECKLIST.md`\'s own Test History entries** (version/date header, failure/pass/skip counts, per-section detail, a dedicated failure-details block) — paste-ready, closing the actual gap FEAT-007 was approved for ("readable by both human and AI developers, to update logs without manual transcript synthesis"); or (b) structured JSON for programmatic consumption. Export actions (Copier/Partager/Télécharger) are a direct reuse of the **exact working pattern** the now-deleted `AdminAnnotationsScreen.tsx` used before its deletion last session (checked via `git show 2e5e889^:...` rather than reinventing it) — timestamped filenames (the real fix for BUG-049), real OS-level share/download instead of manual text selection (the real fix for BUG-050 #7). A "Réinitialiser la session de test" action uses the same two-tap armed-confirm pattern as every destructive action elsewhere in this app.
+3. **Scope decision, stated plainly rather than left implicit**: results live only in this screen\'s React state for v1 — no backend table, no persistence of an in-progress run across app restarts, no auto-filing of a `tracker_items` row per failure. All three are reasonable follow-ups (flagged in the hand-off below) but none were part of FEAT-007\'s actually-approved scope (see the tracker\'s own `technical_description`/`comments` for that item, queried directly from the live DB before starting) — adding them uninvited would have meaningfully grown this session\'s chunk for a feature Mahdi hasn\'t asked for yet.
+4. **Permission gating**: reused the existing `manage_tracker` permission (same population already responsible for the bug/feature/tech-debt tracker) rather than adding a new permission + its own migration + admin-role UI wiring for a purely dev/tester-facing tool.
+5. **Wired in**: `App.tsx` (`GuidedTestRunner` route + `RootStackParamList` entry) and `ProfileScreen.tsx` (new button next to the existing tracker button, same `manage_tracker` gate, same `testID` convention).
+6. **Version bump 5.4.0 → 5.5.0** (`package.json` + `package-lock.json` via `npm install --package-lock-only`, same convention as every prior user-reachable-feature bump) — `CHANGELOG.md` entry written to match.
+7. **Migration `010_feat007_status.sql`**: updates the `FEAT-007` `tracker_items` row to `fixed_unverified` with a full `tracker_updates` history entry, mirroring migration `006`\'s own self-tracking pattern for FEAT-010. Applied locally and confirmed idempotent (re-running `migrate.php` shows `0 new, 10 skipped`).
+8. **Full verification, nothing assumed**: `npx tsc --noEmit` clean after every edit. `npx expo export --platform web --clear` → **562 modules** — genuinely the first successful export run since the forty-fourth session\'s **559** baseline; every session from the forty-seventh through the fifty-first (filters rework, annotations merge, two new components, a screen deletion) shipped on `tsc`-clean-only verification per their own hand-offs, so this run is also the first confirmation that all of that accumulated work actually builds together, not just typechecks. It does — no surprises, no errors. `make build-deploy` 4/4 (deployment-artifact hygiene: allowlist, no forbidden files, no vendored `node_modules`, every `require`/`require_once` resolves). `scripts/check-repo-hygiene.sh` 4/4. Backend baseline re-run from a fresh DB one final time after all frontend changes: `smoke_test.php` **24/24**, `http_api_test.php` **107/107**, unchanged.
+
+### NOT DONE
+
+- **No live click-through anywhere in this project\'s history** (standing limitation, unchanged) — the pass/fail/skip controls, the note field\'s conditional show/hide, the per-section progress summary, and all three export actions are unverified by eye, only by type-check/build/code-review. This is now true of FEAT-007 itself, same as every frontend feature before it.
+- **`AdminSessionLogScreen`**: still doesn\'t exist — same smallest-remaining-item flag as every hand-off since the forty-eighth session, still not picked up (this session prioritized the explicitly-requested bugs→features→debt order over it).
+- **`FEAT-008`/`FEAT-001`/`FEAT-009`, `DEBT-001`/`002`/`003`/`004`**: all still untouched. `DEBT-002` remains part-1-closed-only (the forty-sixth session\'s `maxWidth` bump) — part 2 (tabs-per-role vs. permissions-matrix redesign) still needs a design decision before any session can pick it up.
+- **`acceptanceTests.ts` vs `TEST_CHECKLIST.md` drift risk**: real and stated plainly in the data file\'s own header — there is no automated sync. If `TEST_CHECKLIST.md` changes, someone has to remember to update the TS file by hand. Worth a small DEBT item of its own if this bites in practice (e.g. a script that diffs scenario IDs between the two) — not filed yet since it hasn\'t actually drifted, only could.
+
+### Hand-off for the next developer
+
+1. **A real device/browser click-through of FEAT-007** would be the single most valuable next step — same standing recommendation every frontend session has carried, now also true of this session\'s own work specifically.
+2. **`BUG-051`/`052` still need Mahdi**, not more investigation — unchanged finding, now confirmed for the sixth-plus session running.
+3. **Then, by priority**: `FEAT-008` (Parameter Admin UI & Dossier Reference Codification), `FEAT-001` (Synthèse per-site tabs), `FEAT-009` (PDF export) — in that order per the tracker\'s own `p1` queue — then `DEBT-001`/`002`(part 2)/`003`/`004`.
+4. **Smallest independently-doable item still on the board**: `AdminSessionLogScreen` (same shape as `AdminTrackerScreen`, `session_log` table and its 8 HTTP-tested routes have existed since the forty-eighth session with zero UI on top).
+
+**Push**: committing `src/frontend/src/data/acceptanceTests.ts` (new), `src/frontend/src/screens/GuidedTestRunnerScreen.tsx` (new), `App.tsx`, `ProfileScreen.tsx`, `package.json`/`package-lock.json`\'s version bump, `src/backend/db/migrations/010_feat007_status.sql` (new), `CHANGELOG.md`, and this entry — a complete, fully build-verified feature slice (`tsc` clean, `expo export` 562 modules, `make build-deploy` 4/4, `check-repo-hygiene.sh` 4/4, backend baseline unchanged 24/24 + 107/107). Per Mahdi\'s explicit "Push."
+', NULL, NULL, NULL, NULL),
+  ('2026-09-11 (fifty-third session)', 'no version bump — FEAT-008 split into two slices; slice 1 (dossier reference codification, backend only) built and fully HTTP-test-verified', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-11 (fifty-third session) — no version bump — FEAT-008 split into two slices; slice 1 (dossier reference codification, backend only) built and fully HTTP-test-verified".]
+
+## 2026-09-11 (fifty-third session) — no version bump — FEAT-008 split into two slices; slice 1 (dossier reference codification, backend only) built and fully HTTP-test-verified
+
+**Trigger**: Mahdi, fresh conversation, essentially identical instruction to the fifty-second session\'s own trigger: launch PHP+MariaDB locally, pull latest, read the logs (tests done, results gotten), fix bugs if any, then build features by priority, then tech debt — explicit standing instruction to log continuously and push before running out of budget so no work is silently lost, "even the slightest advancements count." A GitHub PAT was pasted in plaintext directly in chat again (now confirmed as a recurring pattern across at least two consecutive sessions\' own trigger text, not a one-off) — used only transiently for `git`/this push, scrubbed from every displayed command output, never written to any log, commit, or persistent memory.
+
+### Environment provisioning — one gotcha not previously documented
+
+- PHP 8.3 + MariaDB 10.11 via `apt-get`, same as prior sessions. **New finding this session**: a single `apt-get install` covering both PHP *and* `mariadb-server` together exceeds this sandbox\'s 300s per-command tool limit and is killed with no output captured. Backgrounding it with `nohup ... &` does **not** help — confirmed that, like `php -S`/`mysqld`, a bare backgrounded process does not survive past the end of the tool call that started it (broader than the already-documented `mysqld`-specific case; this looks like a general property of this sandbox, not something specific to database daemons). **Working fix**: split into two sequential synchronous `apt-get install` calls (PHP+extensions first, `mariadb-server`+`mariadb-client` second) — each finished comfortably inside the limit alone. Worth remembering directly rather than rediscovering: don\'t background a long install, just split it.
+- `mysqld` still does not survive between tool calls (unchanged, confirmed again) — every DB-dependent step restarts `service mariadb` at the top of its own consolidated shell command, same as every session since the forty-sixth\'s.
+- **Re-hit the forty-fourth session\'s own documented issue, this time from the other direction**: this session\'s *first* baseline-reconfirmation run (before any code changes) passed 107/107 cleanly. Running the full suite a *second* time afterward (to validate this session\'s own new migration) then failed 56/107 — not a regression, but `http_api_test.php`\'s "first-ever registrant is bootstrapped as administrateur" check, which only holds on a genuinely empty `users` table; the first run\'s own registrant was still sitting in the DB. Confirms the forty-fourth session\'s finding applies just as much to *re-running the suite yourself within one session* as to a DB inherited from a previous one. **Fix**: `DROP DATABASE`/`CREATE DATABASE` (then re-`migrate`/`seed`) before any second-or-later verification run in the same session — cheap, and removes the ambiguity entirely rather than trying to reason about exactly what state a partial rerun left behind.
+
+### Backend/frontend baseline read and reconfirmed BEFORE any code changes
+
+- Cloned fresh; HEAD was the fifty-second session\'s own `46b613f` (FEAT-007, v5.5.0), nothing further pushed since. Fresh-DB `migrate.php` (**10/10** applied) → `seed.php` → `smoke_test.php` **24/24** → live `php -S` → `http_api_test.php` **107/107** — exactly matching the fifty-second session\'s claimed end state, zero drift, confirming the docs (`DEV_STATUS.md`/`CHANGELOG.md`/`ROADMAP.md`/live tracker) and the actual repo agree before starting.
+- Queried `tracker_items` directly (not just markdown) for the current open queue: `BUG-051`/`052` both still open/p2/blocked-on-Mahdi (unchanged); `FEAT-008` next per the fifty-second session\'s own stated priority order (`FEAT-008` → `FEAT-001` → `FEAT-009` → `DEBT-001`/`002`(part 2)/`003`/`004`).
+
+### Bugs — read, not touched (confirmed still correctly blocked)
+
+- `BUG-051`/`BUG-052`: unchanged, still both open/p2/blocked on Mahdi\'s own decision, not more investigation. Same finding for the seventh-plus session running.
+
+### Done this session — FEAT-008 split into two slices; slice 1 built
+
+1. **Scoping decision, stated plainly**: `FEAT-008`\'s own tracker title bundles two genuinely separable pieces — a parameter-catalogue admin UI (editing IAF/MD5/MD1/MD11 tables and the factor catalogue from a browser) and dossier-reference auto-numbering. The catalogue-editing half has real open architectural questions the tracker\'s own `tests_to_do` field already flagged (NAE formula editability, data-driven vs hardcoded engine parameters, auth as a hard prerequisite) that deserve a real design pass, not a rushed one within an already-multi-part session. The numbering half has none of that ambiguity and is fully self-contained, so this session built **only** that slice, end to end, rather than half-building both. **Investigated the "data-driven vs hardcoded" question directly while scoping**: `parameter_sets` (schema + `db/parameterSetRepo.php`) is already a versioned, JSON-backed, DB-driven store with an `is_active` flag and a `parameter_change_log` audit table — the storage layer for the catalogue-editing half likely already exists; what\'s missing is purely the admin-facing read/write API + UI on top of it, not a data-model rebuild. Recorded here so the next session doesn\'t have to re-derive this.
+2. **Migration `011_dossier_ref_codification.sql`** (new): `dossier_ref_config` — a single-row (`id=1`) settings table (`enabled`, `prefix`, `suffix`, `date_format` — a PHP `date()` format string, `counter_digits`, `reset_period` [`never`/`yearly`/`monthly`], `next_counter`, `last_period_key`). Seeded **disabled by default** (`enabled=0`), so this migration is purely additive — every existing deployment keeps today\'s manual free-text `dossierRef` entry verbatim until an admin explicitly turns this on. New `manage_parameters` permission, granted to `administrateur` only — **deliberately not** reusing `manage_tracker` (unlike the session_log/migration-007 precedent) since editing calculation parameters/numbering is a materially higher-stakes, more separable capability than the tracker/annotations/session-log group already sharing one permission — see the migration\'s own header for the full rationale.
+3. **`src/backend/db/dossierRefRepo.php`** (new): `getDossierRefConfig()`/`saveDossierRefConfig()` (partial update; deliberately never accepts `nextCounter`/`lastPeriodKey` from a caller, so an admin editing the pattern can never rewind or skip the sequence) and `generateNextDossierRef()` — transactional (`SELECT ... FOR UPDATE` on the single row, same shape as `parameterSetRepo.php`\'s `saveParameterSet()`), so two concurrent case-creations can never collide on the same reference. Handles the `never`/`yearly`/`monthly` reset policies by comparing a stored `last_period_key` against `date(\'Y\')`/`date(\'Y-m\')` computed fresh each call.
+4. **Wired into `api/index.php`**: `GET`/`PUT /admin/dossier-ref-config` (gated `manage_parameters` + CSRF on the mutating route, mirroring every other `/admin/*` block). `POST /cases` now calls `generateNextDossierRef()` when the caller leaves `dossierRef` blank/absent **and** the config\'s `enabled` flag is on — otherwise completely inert, so every pre-existing case-creation path (which always supplies its own `dossierRef`, per the frontend wizard\'s existing `DRAFT-<timestamp>` fallback) is provably unaffected.
+5. **10 new HTTP tests** (config CRUD with auth/CSRF gating, a `previewSample` field that shows the next reference without consuming the counter, two auto-generated refs proven distinct, an explicitly supplied `dossierRef` proven never overridden, config restored to migration defaults at the end of the test run) plus one **updated** existing assertion (`GET /admin/permissions` count `8` → `9`, since this migration adds a ninth permission — same one-line bump every prior permission-adding migration has required here). **117/117** on a fresh DB (107 previous baseline + 10 new), `smoke_test.php` unchanged **24/24**, `migrate.php` **12/12**, `scripts/check-repo-hygiene.sh` **4/4**.
+6. **Migration `012_feat008_slice1_status.sql`** (new): updates the `FEAT-008` `tracker_items` row to `in_progress` (not `fixed_unverified` — the item as originally scoped names both slices, and only one is done) with a full `tracker_updates` history entry, mirroring migration `010`\'s FEAT-007 self-tracking pattern.
+7. **`docs/ROADMAP.md`** item 2 ("Parameter Admin UI & Dossier Reference Codification"): appended an `UPDATE 2026-09-11 (fifty-third session)` line documenting exactly what\'s built vs. still open, matching this file\'s own established inline-update convention (see item 10\'s history for the precedent).
+8. **No version bump** — same convention as the forty-eighth session\'s `session_log` work: a new admin-only table/API with no frontend caller yet changes nothing an end user or admin can currently see or do. No `package.json` change.
+9. **No frontend changes this session** — `npx tsc --noEmit`/`expo export`/`make build-deploy` were **not** re-run since nothing frontend-facing was touched; the fifty-second session\'s own `562`-module export remains the last confirmed frontend build state. Flagging this explicitly rather than claiming a verification that didn\'t happen.
+
+### NOT DONE
+
+- **Parameter admin UI (FEAT-008 slice 2)**: fully unstarted. Needs a real design pass on the open questions in point 1 above before a future session starts building — this session deliberately scoped that out rather than rushing a half-designed editor for IAF/MD5/MD1/MD11 tables.
+- **Slice 1\'s own settings-screen UI**: also not built — an admin can only change the numbering pattern via direct HTTP calls to `/admin/dossier-ref-config` right now, not from any screen. A small, independently-doable frontend follow-up, separate from slice 2\'s bigger open questions.
+- **`AdminSessionLogScreen`**: still doesn\'t exist — same standing smallest-remaining-item flag as every hand-off since the forty-eighth session, still not picked up (this session again prioritized the explicitly-requested bugs→features→debt order over it).
+- **`FEAT-001`/`FEAT-009`, `DEBT-001`/`002`(part 2)/`003`/`004`**: all still untouched.
+- **`BUG-051`/`052`**: still both blocked on Mahdi, unchanged.
+
+### Hand-off for the next developer
+
+1. **FEAT-008 slice 2 (parameter admin UI)** is the natural next step on the tracker\'s own priority order, but start with the design questions in "Done this session" point 1 — the storage layer (`parameter_sets`) very likely already exists, so this may be a smaller lift than the tracker\'s own `tests_to_do` field (written before this session\'s investigation) implies. Confirm, then build.
+2. **Slice 1\'s settings-screen UI** is a smaller, independently-doable alternative if a design pass on slice 2 isn\'t practical this session — the backend is complete and tested; this would purely be a form calling the two already-working routes.
+3. **`BUG-051`/`052` still need Mahdi**, not more investigation — unchanged finding, now the seventh-plus session running.
+4. **Then, by priority, after FEAT-008 (either or both remaining pieces)**: `FEAT-001` (Synthèse per-site tabs), `FEAT-009` (PDF export), then `DEBT-001`/`002`(part 2)/`003`/`004`.
+5. **Smallest independently-doable item still on the board, unchanged**: `AdminSessionLogScreen`.
+6. **Environment note for whoever provisions next**: split the `apt-get install` into PHP-then-MariaDB (two calls), and `DROP`/`CREATE DATABASE` before any second verification run within the same session — see this session\'s own "Environment provisioning" section above for why both matter.
+
+**Push**: committing `src/backend/db/migrations/011_dossier_ref_codification.sql` (new), `src/backend/db/migrations/012_feat008_slice1_status.sql` (new), `src/backend/db/dossierRefRepo.php` (new), `src/backend/api/index.php`, `src/backend/tests/http_api_test.php`, `docs/ROADMAP.md`, `CHANGELOG.md`, and this entry — a complete, fully HTTP-test-verified backend slice (117/117, 24/24, migrate 12/12, hygiene 4/4; no frontend changes, no version bump per the backend-only convention). Per Mahdi\'s explicit "push."
+', NULL, NULL, NULL, NULL),
+  ('2026-09-12 (fifty-fourth session)', '5.6.0 — `BUG-051`/`BUG-052` fixed per Mahdi\'s direct decisions; `AdminSessionLogScreen` built', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-12 (fifty-fourth session) — 5.6.0 — `BUG-051`/`BUG-052` fixed per Mahdi\'s direct decisions; `AdminSessionLogScreen` built".]
+
+## 2026-09-12 (fifty-fourth session) — 5.6.0 — `BUG-051`/`BUG-052` fixed per Mahdi\'s direct decisions; `AdminSessionLogScreen` built
+
+**Trigger**: Mahdi, fresh conversation: launch PHP+MariaDB locally, pull latest, read the logs (tests done, results gotten), fix bugs if any, then build features by priority, then tech debt — explicit standing instruction to log continuously and push before running out of budget, "even the slightest advancements count," with unusually strong emphasis this time on not letting technical debt keep getting silently deferred from session to session. A GitHub PAT was pasted in plaintext directly in chat again (now confirmed as a recurring pattern across at least four consecutive sessions\' own trigger text) — used only transiently for `git`/this push, flagged back to Mahdi as something worth rotating, never written to any log, commit, or persistent memory.
+
+Mid-session, after an initial investigation-and-hand-off turn that ran out of budget before pushing, Mahdi sent the two clarifications this project\'s tracker had been waiting on for seven-plus sessions: **"Update log bug 51 add the fix / Bug 52 the total of 03 years the grand total."**
+
+### Environment — baseline reconfirmed clean, one new gotcha hit and documented
+
+PHP 8.3 + MariaDB 10.11 + `npm install` (516 packages) provisioned cold. Fresh-DB `migrate.php` **12/12** → `seed.php` → `smoke_test.php` **24/24** → `http_api_test.php` **117/117** — exactly matching the fifty-third session\'s own claimed end state, zero drift, before any code changes.
+
+**New finding this session**: re-hit the already-documented "second `http_api_test.php` run without a fresh DB" issue (the fifty-third session\'s own note) completely live — running the suite a second time later in this same session, without `DROP`/`CREATE DATABASE` first, came back 54 passed / 63 failed. Not a regression — traced immediately to the "first-ever registrant is bootstrapped as `administrateur`" check failing because the first run\'s own test registrant was still sitting in the `users` table. Re-ran with a fresh DB and got the expected 117/117. Restating the fifty-third session\'s own fix plainly since it clearly wasn\'t internalized well enough by this session either on the first pass: **`DROP`/`CREATE DATABASE` before every verification run, not just the first one in a session.**
+
+### `BUG-051` — fixed (native `ErrorBoundary` recovery)
+
+Mahdi\'s decision: **"add the fix"** — i.e., don\'t just accept the native crash-recovery risk, actually implement a real reload equivalent.
+
+**What shipped**: `App.tsx` gained an `errorResetKey` state (`useState(0)`), used as the root `<ErrorBoundary>`\'s `key` prop. On native, `onGoHome` now calls `setErrorResetKey(k => k + 1)` instead of doing nothing; on web, the existing `window.location.reload()` path is unchanged. Changing a `key` forces React to fully unmount and recreate everything below it — `ErrorBoundary`\'s own class-instance state included — which is the same practical effect as a page reload: total state discard, fresh mount, no way to re-hit a state-dependent crash by re-rendering the identical tree (see the `navigationRef` comment already in `App.tsx`, describing exactly that failure mode from `BUG-048`).
+
+**Deliberately not `expo-updates`** (the option this bug\'s own tracker entry had floated as "the" fix): `Updates.reloadAsync()` is a native module that requires the app to actually be built via EAS with `expo-updates` configured (`app.json`, `runtimeVersion`, etc.) to do anything at all — in Expo Go or an unconfigured build it\'s either absent or throws. This project\'s deployable artifact today is *only* the Expo web export (see `REPOSITORY_ARCHITECTURE.md`) — no native binary is built or shipped — so adding `expo-updates` now would add a dependency on a build pipeline that doesn\'t exist yet, for behavior this sandbox has no way to verify either way. The `key`-remount approach fixes the identical underlying problem, on native, today, with zero new dependencies, and is at least as thorough a recovery as a page reload. Flagged in the migration/code comments as worth revisiting *if* a real native build ever ships.
+
+**Verification**: `npx tsc --noEmit` clean. `npx expo export --platform web --clear` → 563 modules, no errors. Backend baseline unaffected (this is a frontend-only change touching no calculation or API code): `smoke_test.php` 24/24, `http_api_test.php` 117/117. **Not verified**: an actual native crash-and-recover cycle on a real device/build — same standing "no live click-through anywhere in this project\'s history" limitation as every other frontend claim in this log. Status set to `fixed_unverified`, not `verified`/`closed`.
+
+### `BUG-052` — fixed (removed the confirmed-useless total)
+
+Mahdi\'s decision: **"the total of 03 years the grand total"** — resolving the tracker\'s own two-candidate ambiguity (per-year `Récapitulatif annuel` breakdown vs. the site/standard/year-blended `finalTotalBox` below it) in favor of the second: the box labeled "Durée totale à auditer".
+
+**Investigated before touching anything** (this is an audit-duration calculator; the tracker\'s own prior entry explicitly warned against guessing at calculation-adjacent UI without confirmation): traced `finalTotal`\'s definition in `CalculationWizardScreen.tsx` — it sums `stage1Days`/`stage2Days`/every year\'s `onSiteDurationFinal`/`reportWritingFinal` across **every site and every standard**, not just one site\'s three years. Confirmed via `grep` that `finalTotal` is read nowhere else — not persisted to the saved case, not passed to or read by `CalculationReportScreen.tsx` — so it is purely a display value with no other consumer. This matters for an audit tool specifically because each cycle year (Stage 1+2, Surveillance 1, Surveillance 2) is planned, conducted, and reported as its own separate visit — a blended sum across all of them, and across every site/standard combination in a multi-site case, doesn\'t correspond to any figure an auditor actually reports or uses, which is consistent with Mahdi\'s own "useless" wording on the original annotation and now his direct confirmation of which box that was.
+
+**What shipped**: removed the `finalTotalBox` JSX block, the `finalTotal` computation, and its three now-unused styles (`finalTotalBox`/`finalTotalLabel`/`finalTotalValue`) from `CalculationWizardScreen.tsx`. Removed rather than relabeled, per the "useless" wording rather than a "confusing label" reading — the per-year `Récapitulatif annuel` breakdown directly above it already shows the one figure that\'s actually meaningful (each year\'s own total). No calculation or stored-case data is affected; this is a display-only change.
+
+**Verification**: same as above — `tsc` clean, `expo export` clean (563 modules), backend baseline unaffected (24/24, 117/117). **Not verified**: an actual look at the rendered Synthèse tab to confirm spacing/layout reads cleanly with the box gone. Status `fixed_unverified`.
+
+### `AdminSessionLogScreen` — built (smallest deferred item, six-plus sessions running)
+
+The `session_log` table and its backend (`sessionLogRepo.php`, `GET`/`POST /admin/session-log`, 8 HTTP tests) have existed since the forty-eighth session with zero UI caller, flagged as the smallest independently-doable remaining item in every hand-off since — never picked up because feature work kept taking priority. Built this session as a deliberate correction to that pattern, alongside the two bug fixes, rather than starting a new feature slice.
+
+**What shipped**: `useAdminApi.ts` gained `SessionLogEntry` (matching `sessionLogRepo.php`\'s `mapSessionLogRow()`) and `listSessionLog(limit?)`/`createSessionLogEntry(fields)`. New `src/frontend/src/screens/AdminSessionLogScreen.tsx` — read + append only (no edit/delete anywhere, matching the backend\'s own GET/POST-only routes and `session_log`\'s append-only-by-design rationale from migration 007): a list of entries (most recent first, capped at 100) each showing label/date/summary/commit+CI pills, with trigger/done/not-done/handoff tucked into a `CollapsibleSection` per entry so the list stays scannable; a "+ Nouvelle entrée" form covering all eight fields (`sessionLabel`/`summary` required, the rest optional). Wired into `App.tsx` (new `AdminSessionLog` route) and `ProfileScreen.tsx` (new button, gated by the existing `manage_tracker` permission — same permission `session_log`\'s own backend routes already use, no new permission needed). Visual pattern mirrors `AdminTrackerScreen.tsx` (list/card shape, `ResponsiveContainer` maxWidth 1100 — not `AdminAnnotationsScreen`\'s narrower 800, per `DEBT-002`\'s own finding).
+
+**Verification**: `tsc` clean, included in the same 563-module export above. **Not verified**: live click-through (standing limitation, unchanged) — nobody has looked at this screen rendered, only compiled.
+
+### Version bump — 5.5.0 → 5.6.0
+
+First session where any of this session\'s three changes are reachable by a real user: the new screen is a genuinely new user-facing surface, and both bug fixes change actual runtime behavior (one changes error-recovery behavior, the other removes a displayed number). `package.json`/`package-lock.json` bumped via direct edit + `npm install --package-lock-only` (matching the established convention), `src/generated/versionInfo.ts` regenerated to match. `CHANGELOG.md` entry written.
+
+### Full verification, nothing assumed
+
+`npx tsc --noEmit` clean after every edit, not just once at the end. `npx expo export --platform web --clear` → **563 modules** (up from the fifty-second session\'s confirmed 562 — the one new screen file, no other module-count surprises). `migrate.php` **13/13** (includes migration `013_bug051_bug052_fixed.sql`, confirmed idempotent — re-run showed `0 new, 13 skipped`). `smoke_test.php` **24/24**, `http_api_test.php` **117/117** on a properly fresh DB (unchanged from the fifty-third session\'s own baseline — migration 013 is a data-only update, no new routes or tests). `scripts/check-repo-hygiene.sh` **4/4**.
+
+### NOT DONE
+
+- **No live device/browser click-through for any of this session\'s three changes** — same standing limitation as every frontend change in this project\'s history. Worth stating plainly for a change like `BUG-051` specifically: the fix is architecturally sound and compiles/bundles clean, but "does tapping the button actually recover the app after a real crash" has literally never been observed, only reasoned about.
+- **`FEAT-008` slice 2 (parameter admin UI)**: still fully unstarted, same open design questions as the fifty-third session left it.
+- **`FEAT-001`, `FEAT-009`**: untouched.
+- **`DEBT-001`/`002`(part 2)/`003`/`004`**: all still untouched. This session\'s chunk deliberately went to closing out two long-blocked bugs and the longest-deferred small UI gap instead — a real dent in the "keeps getting deferred" pattern Mahdi flagged this session, but tech debt itself (as distinct from the bug/UI backlog) still didn\'t get a chunk this time. Worth a session dedicated specifically to `DEBT-004`\'s mechanical half (relocating `src/backend/tests/` → `tests/backend/` — no design decision needed, purely mechanical) as a concrete next step toward that, separate from any new feature work.
+- **`FEAT-008` slice 1\'s own settings-screen UI**: still not built (backend complete since the fifty-third session).
+
+### Hand-off for the next developer
+
+1. **`BUG-051`/`BUG-052` need a live click-through**, not more code — both are architecturally done and fully build-verified. If Mahdi (or anyone) gets real device/browser time, confirming the recovery flow and the Synthèse layout would let both move to `verified`/`closed`.
+2. **`DEBT-004`\'s mechanical half** (`src/backend/tests/` → `tests/backend/`, per `REPOSITORY_ARCHITECTURE.md`\'s intended layout) is a good next tech-debt target specifically *because* it has zero design ambiguity — pure relocation + path fixes in `Makefile`/CI — and this exact item has been flagged as deferred across four-plus sessions per its own tracker entry.
+3. **Then, by priority, unchanged**: `FEAT-008` slice 2 (needs the design pass described in the fifty-third session\'s entry first), `FEAT-001`, `FEAT-009`, then the rest of `DEBT-002`(part 2)/`003`.
+4. **`FEAT-008` slice 1\'s settings-screen UI** remains a smaller, fully independent alternative if the slice-2 design pass isn\'t practical in a given session.
+
+**Dependency / hand-off**: item 1 needs Mahdi\'s own eyes/device, not more dev time — nothing blocks starting item 2 in parallel or instead. Item 3 is unchanged from every prior hand-off. Item 4 is fully independent of everything else.
+
+**Push**: committing `App.tsx`, `src/frontend/src/screens/CalculationWizardScreen.tsx`, `src/frontend/src/screens/AdminSessionLogScreen.tsx` (new), `src/frontend/src/hooks/useAdminApi.ts`, `src/frontend/src/screens/ProfileScreen.tsx`, `package.json`/`package-lock.json`\'s version bump, `src/generated/versionInfo.ts`, `src/backend/db/migrations/013_bug051_bug052_fixed.sql` (new), `CHANGELOG.md`, and this entry — a complete, fully verified slice (`tsc` clean, `expo export` 563 modules, backend baseline 24/24 + 117/117, hygiene 4/4). Per Mahdi\'s explicit request to push before the token budget runs out.
+', NULL, NULL, NULL, NULL),
+  ('2026-09-12 (fifty-fourth session, continued)', 'no version bump — `dev-export` live tracker snapshot system', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-12 (fifty-fourth session, continued) — no version bump — `dev-export` live tracker snapshot system".]
+
+## 2026-09-12 (fifty-fourth session, continued) — no version bump — `dev-export` live tracker snapshot system
+
+**Trigger**: after the BUG-051/BUG-052/`AdminSessionLogScreen` work above was pushed, Mahdi asked me to check bug/feature/annotation edits he\'d made live in the app. What followed exposed a real gap worth fixing properly rather than working around once:
+
+1. I clarified that bugs/features/annotations live in the production database, not in Git — re-cloning the repo gets code, never live data.
+2. Mahdi pasted a GitHub PAT again (third time this project\'s history), then — when asked for another way to check his edits — pasted the **production database password directly in chat**, framed as "I\'ll change it after."
+3. I flagged the DB password as materially more serious than the PAT (it unlocks all client audit data, not just code) and explained why I couldn\'t use it regardless: this sandbox\'s outbound network is a fixed allowlist that doesn\'t include arbitrary external hosts on port 3306 — true of every session in this environment, not a one-off restriction.
+4. Mahdi\'s response, verbatim in spirit: frustration that "days and sessions and dev time" went into building bug/feature tracking in the database, only to find "devs" (meaning AI sessions in this project) can\'t access it. His actual ask: **"how can we always allow AI developers when pulling the repo, to also obtain the problems in the db"** — explicitly wanting something durable and sustainable, implemented and pushed this session, not just discussed.
+
+**Important reassurance given directly in chat, worth repeating here**: none of the days of work building `tracker_items`/`tracker_updates`/`session_log` were wasted or misdirected. Every session\'s own verification has always run against a fresh local seeded database inside this sandbox, never against live production data — this was true of the very first session that built `tracker_items` (migration `004`) and every session since. Live production access has only ever gone through the normal path (a real DB client, SSH, the app\'s own admin UI) — never through a Claude session\'s sandbox. The gap Mahdi hit is specific to *this session inspecting his live edits*, not a flaw in what was built or shipped.
+
+### Design considered and rejected: granting live DB credentials to sessions
+
+Explicitly considered and rejected: no sandboxed AI session in this kind of environment should hold standing production database credentials, full stop — that\'s a security posture question, not a solvable engineering gap, and true regardless of which project this is. Checked whether any available MCP database connector (Supabase, PlanetScale, Neon, ClickHouse) could bridge this — none fit, since they\'re all for databases hosted on those specific managed platforms, and this project\'s database is self-hosted on Mahdi\'s own DirectAdmin host.
+
+### What was built instead: `GET /dev-export` + a scheduled snapshot into the repo
+
+The actual design: make the **live "problems" data ride inside the git repo itself**, refreshed automatically by something that legitimately *does* have real network access (a GitHub Actions runner), so `git clone`/`git pull` alone gets both code and a recent read of the database — no credentials of any kind handed to anyone pulling the repo, ever.
+
+**`GET /dev-export`** (`api/index.php`): read-only JSON snapshot of `tracker_items` + `tracker_updates` + `session_log`. Investigated the existing `/migrate` endpoint first specifically to mirror its established shared-secret convention rather than inventing a new one: `dev_export_secret` in `config.php` (new key, added to `config.example.php` with the same "set this by hand once, on the server" caveat `migration_secret` already carries), compared with `hash_equals()`, accepted via a custom `X-Dev-Export-Secret` header or a `?secret=` query param (same shared-hosting-strips-Authorization reasoning already documented on `/migrate`), rate-limited per IP via the existing `rateLimitCheck()`. GET only, genuinely read-only — no `apply`-style write path at all, simpler than `/migrate` in that respect since there is no mutation to gate. **Deliberately excludes `clients`/`cases`/`sites`/`users`** — this endpoint only ever returns dev/ops metadata, never client-confidential audit data, and that boundary is explicitly what makes exposing it this way defensible at all. Confirmed this by checking that `annotations` have lived inside `tracker_items` (`type=\'annotation\'`, migration `009`) already, so one export naturally covers all three categories Mahdi asked about (bugs, features, annotations) plus tech debt and session history, with nothing extra to build.
+
+**`scripts/generate-tracker-snapshot.php`**: takes the export JSON, renders readable Markdown — open items grouped by status (open → in_progress → fixed_unverified → verified → closed) then sorted by priority within each group, each with its reported/technical description, tests-to-do, dependencies, comments, and full `tracker_updates` history; closed items collapsed to a bare code list to keep the file from growing unbounded over time; most-recent 15 `session_log` entries at the end. Deliberately decoupled from the database/API — takes a JSON file as input — so it\'s testable against any saved fixture, not just a live call. Tested against a real export pulled from this session\'s own local seeded data; output confirmed readable and genuinely useful (this is not a hypothetical — the rendered file reads like a shorter, current, always-fresh cousin of `BUGLOG.md`).
+
+**`.github/workflows/dev-export-snapshot.yml`**: `cron: \'0 */6 * * *\'` plus `workflow_dispatch`. Checks whether `DEV_EXPORT_SECRET` is set first — if not, logs a `::warning::` and skips cleanly rather than failing the run, since the one-time manual setup (below) may not be done yet at any given point. When configured: `curl`s the live endpoint with the secret header, checks the HTTP status explicitly (fails loudly, printing the response body, on anything but 200 — rather than silently committing an error page), runs the formatter script, commits `docs/TRACKER_SNAPSHOT.json` + `.md` with `[skip ci]` in the message (so a docs-only refresh doesn\'t also re-trigger `build-test-publish.yml`\'s full rebuild-and-publish), pushes to `main` only if something actually changed (`git diff --cached --quiet` check, same pattern as `build-test-publish.yml`\'s own deploy-artifact commit step).
+
+**`docs/ORIENTATIONS.md`** updated: added `docs/TRACKER_SNAPSHOT.md` to the "read this at the start of a session" list right after the existing five standing files, with an explicit note that it will usually be more current than anything hand-transcribed into `DEV_STATUS.md`/`BUGLOG.md`, since those depend on a session remembering to update them and this doesn\'t.
+
+### Dogfooding: logged this session\'s own work in the tracker (migration `014`)
+
+- **`FEAT-012`** (this whole system) — `fixed_unverified`, `p1`. Fully tested locally end-to-end (unauthorized/wrong-secret/correct-secret paths on the live local endpoint, real JSON piped through the formatter to real Markdown). Explicitly NOT yet verified against the real production server — that needs Mahdi to complete the two manual secret-setup steps first (see below), and nothing in this sandbox can do that for him or verify it happened.
+- **`DEBT-005`** — `open`, `p3`. Noticed while editing `ORIENTATIONS.md`: its "Logging — five standing files" section never mentions `DEV_STATUS.md` at all (despite it being the most-used file in this entire log) and still describes `BUGLOG.md` as where bugs currently get tracked, when they\'ve lived in `tracker_items` since migration `008`. Logged rather than silently left, and rather than silently fixed as a driveby either — deciding whether `BUGLOG.md` should be formally archived or kept as a slower narrative complement is a real decision, not a typo fix, so it\'s flagged for a session that can make that call deliberately.
+
+Adding these two rows via `INSERT` pushed the seeded `tracker_items` count from 64 to 66, which broke two hard-coded count assertions in `tests/http_api_test.php` ("lists the 64 seeded items", "back to the 64 seeded rows after delete") — caught immediately on the first fresh-DB verification run after the migration, not a real regression. Both updated to 66 with corrected comments (`+ 2 from migration 014`).
+
+### Full verification, fresh
+
+`migrate.php` **14/14** (12 from before this session + `013` + `014`). `seed.php` OK. `smoke_test.php` **24/24**. `http_api_test.php` **117/117**, on a properly fresh DB, after the count-assertion fix above (first attempt before the fix: 115 passed / 2 failed, exactly the two count assertions, nothing else — confirming the fix was complete and correctly scoped). `scripts/check-repo-hygiene.sh` **4/4** (confirms, among other things, that the test-only `dev_export_secret` value used for local verification never leaked into a tracked file). `make build-deploy` → `scripts/check-deploy-artifact.sh` **4/4** — the new endpoint deploys cleanly as part of the existing `api/` copy step; `scripts/generate-tracker-snapshot.php` is correctly NOT part of the deploy artifact (it is a CI-time tool, never needed on the production server itself).
+
+### NOT DONE
+
+- **The scheduled Action has never run against the real `tools.macerti.com`.** Two manual, one-time steps remain, and only Mahdi can do them:
+  1. Add `dev_export_secret` (a long random value, e.g. `openssl rand -hex 32` — a **different** value than `migration_secret`) to the live server\'s `config.php`.
+  2. Add the exact same value as a `DEV_EXPORT_SECRET` repository secret on **`macerti/duration_calculator_source`** specifically (Settings → Secrets and variables → Actions) — not the deploy repo, since this workflow runs and pushes here.
+  Until both are done, the workflow runs on schedule, logs a warning, and skips — harmless, but also produces nothing. `docs/TRACKER_SNAPSHOT.md` will not exist in the repo until after the first successful run following that setup.
+- **DEBT-005 itself** — flagged, not fixed. Needs a real decision (archive `BUGLOG.md` formally, or keep it as a slower narrative log) before rewriting `ORIENTATIONS.md`\'s file list.
+- Everything from the earlier part of this session\'s own hand-off (`FEAT-008` slice 2, `FEAT-001`, `FEAT-009`, `DEBT-001`/`002`/`003`/`004`) remains exactly as it was — this second chunk was entirely process/tooling work, prompted by a new request mid-session, not a continuation of that queue.
+
+### Hand-off for the next developer
+
+1. **Ask Mahdi whether the two `dev_export_secret`/`DEV_EXPORT_SECRET` setup steps are done yet.** If yes, check whether `docs/TRACKER_SNAPSHOT.md` exists and is fresh (compare its `exportedAt` timestamp against "now") before falling back to `DEV_STATUS.md`/the DB tables directly. If no, the file won\'t exist — that\'s expected, not a bug, and there\'s nothing to fix in code; it just needs those two settings.
+2. Everything else — priority order unchanged from the first hand-off earlier in this same session\'s entry above (`BUG-051`/`052` need a live click-through; `DEBT-004`\'s mechanical half is a good next tech-debt target; then `FEAT-008` slice 2 → `FEAT-001` → `FEAT-009` → rest of `DEBT-002`/`003`).
+3. **New, from this chunk**: `DEBT-005` needs a real decision on `BUGLOG.md`\'s status before it can be closed, not more investigation — similar in shape to how `BUG-051`/`052` needed Mahdi\'s decision, not more code, for seven-plus sessions. Worth asking directly rather than letting it sit unresolved for that long again.
+
+**Push**: `api/index.php`, `config.example.php`, `scripts/generate-tracker-snapshot.php` (new), `.github/workflows/dev-export-snapshot.yml` (new), `docs/ORIENTATIONS.md`, `src/backend/db/migrations/014_dev_export_and_docs_debt.sql` (new), `tests/http_api_test.php` (count-assertion fix), `CHANGELOG.md`, and this entry.
+', NULL, NULL, NULL, NULL),
+  ('2026-09-12 (fifty-fifth session)', 'no version bump — fresh local verification (PHP+MariaDB set up from scratch), one new bug found and flagged, not fixed', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-12 (fifty-fifth session) — no version bump — fresh local verification (PHP+MariaDB set up from scratch), one new bug found and flagged, not fixed".]
+
+## 2026-09-12 (fifty-fifth session) — no version bump — fresh local verification (PHP+MariaDB set up from scratch), one new bug found and flagged, not fixed
+
+Set up `src/backend` locally from scratch (PHP 8.3, MariaDB 10.11 — neither pre-existed in this sandbox) per this README\'s own Quick Start, to re-verify the fifty-fourth session\'s hand-off before touching anything. `db/migrate.php` 14/14, `seed.php` OK, `tests/smoke_test.php` 24/24, `tests/http_api_test.php` 117/117 on a fresh DB (a first pass showed spurious failures from running the HTTP suite twice against the same non-reset DB — not a real regression, just a reminder the suite assumes a fresh DB same as CI does). Confirms the fifty-fourth session\'s baseline exactly: no regressions, 0 open `BUG-*` items.
+
+Also confirmed `FEAT-012` (dev-export snapshot) is now live end-to-end in production, not just sandbox-tested: `docs/TRACKER_SNAPSHOT.md`/`.json` in this checkout were generated ~20 minutes before this session started, by a real `.github/workflows/dev-export-snapshot.yml` run hitting `https://tools.macerti.com/duration_calculator/api/dev-export` — meaning Mahdi has completed both one-time manual steps (`dev_export_secret` in the live `config.php` + the `DEV_EXPORT_SECRET` repo secret) that the prior session\'s hand-off was still waiting on. Not yet formally moved to `verified` in `tracker_items` — that update itself wasn\'t made this session (see below), just noting the evidence here for whoever does.
+
+### New bug found — NOT fixed this session, flagged only
+
+Running `scripts/check-repo-hygiene.sh` locally (part of the standard pre-push verification, same as CI\'s own first step) surfaced a real, currently-live problem: **check 4 (stale pre-restructure path references) now FAILS on `docs/TRACKER_SNAPSHOT.json`**. That file is new (introduced by `FEAT-012`, same fifty-fourth session) and its `KNOWN_EXCEPTIONS` list in `check-repo-hygiene.sh` was never updated for it — the file legitimately contains old path names (`audit-app`, `audit-mobile`, `duration-calculator-php`, `audit-engine`) inside archived bug-history text (mirrored from `tracker_items`, itself populated by migration `008`\'s BUGLOG.md transcription), exactly the same "explaining history, not treating it as current" situation the script\'s own header already carves out an exception for re: `008_extract_buglog_history.sql`. `docs/TRACKER_SNAPSHOT.json` just wasn\'t added alongside it.
+
+**Impact**: `check-repo-hygiene.sh` is `build-test-publish.yml`\'s first step — this will fail the next push to `main` and block the entire build/deploy pipeline until fixed.
+
+**Fix scope (not attempted this session — flagged per explicit instruction to document only, not touch code or the DB tracker this pass)**: add `docs/TRACKER_SNAPSHOT.json` to `KNOWN_EXCEPTIONS` in `scripts/check-repo-hygiene.sh`, same one-line pattern as the existing `008_extract_buglog_history.sql` entry. Should be mechanical and low-risk, same shape as that prior fix (`64a8d42`).
+
+**Not yet logged in `tracker_items`** (deliberately, this session) — candidate code is **`BUG-053`** (next free code confirmed against the local DB; 66 tracker items exist as of this session). Whoever picks this up should insert it there with `status=\'open\'`, `priority` at least `p1` given it blocks CI/deploy, then fix and move it through `fixed_unverified` → `verified` the normal way.
+
+### NOT DONE
+
+- `BUG-053` fix itself (see above) — one-line, low-risk, ready to pick up.
+- Everything from the fifty-fourth session\'s hand-off queue (`DEBT-004` mechanical half, `FEAT-008` slice 2, `FEAT-001`, `FEAT-009`, rest of `DEBT-002`/`003`) — untouched this session, not a regression, just not this session\'s focus.
+- Moving `FEAT-012` to `verified` in `tracker_items` despite the production evidence noted above — needs an actual DB write, not done this session.
+
+### Hand-off for the next developer
+
+1. **Fix `BUG-053` first** — it blocks the next `main` push\'s CI. Add the exception, confirm `check-repo-hygiene.sh` passes locally, then push and confirm CI green before anything else.
+2. Log `BUG-053` in `tracker_items` (open → fixed_unverified once the fix above lands and is pushed), and consider moving `FEAT-012` to `verified` given the production evidence above.
+3. Then resume the fifty-fourth session\'s queue: `DEBT-004` mechanical half → `FEAT-008` slice 2 → `FEAT-001` → `FEAT-009` → rest of `DEBT-002`/`003`.
+
+**Push**: `docs/DEV_STATUS.md` only (this entry). No code changed this session.
+', NULL, NULL, NULL, NULL),
+  ('2026-09-12 (fifty-sixth session)', 'BUG-053 fixed; FEAT-012 moved to verified; full detail in `session_log` (migration 016), not here — per this project\'s own forty-eighth-session convention', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-12 (fifty-sixth session) — BUG-053 fixed; FEAT-012 moved to verified; full detail in `session_log` (migration 016), not here — per this project\'s own forty-eighth-session convention".]
+
+## 2026-09-12 (fifty-sixth session) — BUG-053 fixed; FEAT-012 moved to verified; full detail in `session_log` (migration 016), not here — per this project\'s own forty-eighth-session convention
+
+Short pointer only, per the standing instruction (migration `007`\'s own header, forty-eighth session) that this file\'s per-session sections should shrink to a pointer once `session_log` exists — that table has sat unused by every AI session since (no sandbox has live-API access to populate it), so this session seeds it via migration instead, same pattern already used for `tracker_items`.
+
+**Query `session_log` (or read migrations `016_fifty_sixth_session_log.sql`, `015_bug053_and_feat012_verified.sql` directly) for the full done/not-done/hand-off detail.** One-line summary: fixed `BUG-053` — took two attempts, not one. Commit `2784fd7` looked complete locally (4/4 hygiene, 24/24, 117/117) but CI failed anyway; root-caused via a temporary commit-comment debug step (GitHub\'s own log download is unreachable from this sandbox) to a self-inflicted second issue — migration 015\'s own text described the stale-path check by naming the very paths it looks for. Fixed for real in `4bed362`, confirmed via the GitHub Actions API: **all 20 CI steps green, artifact published.** Also moved `FEAT-012` to `verified`, seeded `session_log`\'s first-ever entry (`016`), fixed 6 total stale count assertions across two tables that new rows shifted (tracker_items 66→67/52→53, session_log 0→1/1→2 — same category as prior sessions\' count fixes). Bugs are now at 0 open. Next: the P1 feature queue (`FEAT-008` slice 2, `FEAT-001`, `FEAT-009`), then `DEBT-002` part 2/`003`/`004`/`005`.
+', NULL, NULL, NULL, NULL),
+  ('DEV_STATUS.md — SESSION_LOG_2026_09_03_21.md (stray root-level file, superseded by DEV_STATUS.m', 'SESSION_LOG_2026_09_03_21.md (stray root-level file, superseded by DEV_STATUS.md)', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "SESSION_LOG_2026_09_03_21.md (stray root-level file, superseded by DEV_STATUS.md)".]
+
+# Development Session Log — 2026-09-03 (twenty-first session)
+
+**Developer**: Claude (via Mahdi\'s platform)  
+**Session Start**: 2026-09-03T[timestamp] UTC  
+**Status**: IN PROGRESS  
+**Priority Focus**: FEAT-005 (automated database migration on push)
+
+## Session Objective
+
+Per Mahdi\'s explicit standing instruction (twentieth session):
+> "Focus on automatizing database migration it has been started continue it... then start fixing the bugs if all bugs solved then start building features by priority. You must take care of technical debt... each dev does a chunk with enough log updates and info transfer from dev to dev, continuity is assured... push you have to push at the end before your tokens are over"
+
+Current priorities in order:
+1. **FEAT-005** — automated database schema migration on push (IMMEDIATE, TOP OF QUEUE)
+2. Local email/password account creation (after migrations work)
+3. Technical Debt #6 (design-token migration) — 3/9 files done, continue opportunistically
+4. Bug fixes (if any new P0/P1 issues)
+
+## Investigation Phase — Current State
+
+**What exists today**:
+- `src/backend/db/schema.sql` — idempotent schema with guards (column-existence checks, FK existence checks)
+- Already uses `information_schema` queries to detect what\'s been applied
+- `seed.php` — seeds parameter set, must be run manually after schema
+- Manual deployment process: upload files → run phpMyAdmin → run seed.php → done
+- **Problem**: no automation between code push and DB update → next feature\'s schema changes require manual intervention
+
+**Current deployment workflow** (from DEPLOY.md):
+1. Developer pushes to source repo (`macerti/duration_calculator_source`)
+2. `.github/workflows/build-test-publish.yml` runs tests, builds artifact
+3. Publishes built artifact to `macerti/duration_calculator` (separate repo)
+4. That repo\'s own FTP workflow ships to `tools.macerti.com`
+5. **No DB migration step anywhere in this chain** ← THIS IS THE GAP
+
+**Constraints & Principles** (from ORIENTATIONS.md, DEPLOY.md):
+- Source repository must never be the deployable artifact (source/deployment separation)
+- schema.sql is the source of truth for DB structure
+- Must be idempotent (safe to run multiple times)
+- Must work against DirectAdmin shared hosting (no direct SSH to run custom scripts)
+- Existing idempotent pattern should be preserved, not replaced
+
+## Proposed Solution — FEAT-005 Design
+
+**Approach: Lightweight Migration Framework + GitHub Actions Automation**
+
+Migration system principles:
+- **Idempotent**: safe to run repeatedly
+- **Versioned**: track which migrations have been applied
+- **Declarative**: migrations are SQL files, not code
+- **Automatic**: GitHub Actions triggers after each successful deploy
+- **Reversible**: keep old schemas for rollback understanding (not live rollback, that\'s phase 2)
+
+### Design
+
+1. **New directory structure**:
+   ```
+   src/backend/db/
+     migrations/
+       001_initial_schema.sql
+       002_auth_tables.sql         (prepared for future FEAT-005b)
+       README.md                    (how to write new migrations)
+     schema.sql                      (LEGACY — kept for reference, not actively used)
+     migrate.php                     (NEW — migration runner)
+     Migrations.php                  (NEW — migration framework class)
+   ```
+
+2. **Database changes**:
+   - Add `migrations_metadata` table (tracks which migrations have been applied)
+   - Contains: `id`, `migration_name`, `applied_at`, `checksum` (for safety)
+
+3. **Migration runner** (`migrate.php`):
+   - Reads all `.sql` files in `migrations/` directory (alphabetically sorted)
+   - Checks `migrations_metadata` to see which have been applied
+   - Applies unapplied migrations in order
+   - Records each in the metadata table with timestamp + checksum
+   - Atomic per migration (one migration = one transaction)
+   - Idempotent: safe to run multiple times (won\'t re-apply already-applied migrations)
+
+4. **GitHub Actions integration**:
+   - After successful deploy to `macerti/duration_calculator`, trigger a migration job
+   - Job: use `curl` to call a new `/api/migrate` endpoint (or run via SSH if available)
+   - Alternative (for now): include migration command in the FTP deployment workflow
+
+5. **First migration** (`001_initial_schema.sql`):
+   - Move entire contents of current schema.sql into this file
+   - Wrapped in idempotent guards (same pattern already in schema.sql)
+   - Add metadata table bootstrap
+
+## Implementation Plan (This Session)
+
+**Phase 1: Local implementation & testing** (this session — sandbox)
+- [ ] Create `src/backend/db/migrations/` directory
+- [ ] Create `Migrations.php` framework class
+- [ ] Create `migrate.php` runner script
+- [ ] Create `001_initial_schema.sql` with full schema + metadata table setup
+- [ ] Test locally against real MariaDB (same dev environment as prior sessions)
+- [ ] Verify idempotence: run twice, confirm second run is a no-op
+- [ ] Verify no existing data loss on already-seeded DB
+
+**Phase 2: GitHub Actions integration** (next session or follow-up)
+- [ ] Create deployment workflow trigger
+- [ ] Test against staging database (if available)
+- [ ] Validate artifact completeness checks include new files
+
+**Phase 3: Documentation & hand-off** (this session)
+- [ ] Update `DEPLOY.md` with new migration step
+- [ ] Create `src/backend/db/migrations/README.md` (how to write new migrations)
+- [ ] Update `docs/DEV_STATUS.md` with implementation details & hand-off notes
+- [ ] Update `CHANGELOG.md`
+
+## Work Session - Implementation
+
+### Step 1: Create migration framework class
+
+Status: ✅ DONE
+- Created `src/backend/db/Migrations.php` (313 lines)
+- Idempotent migration framework with atomic transactions
+- Tracks applied migrations in `migrations_metadata` table
+- SQL statement splitting with comment/string handling
+- Methods: `run()`, `getStatus()`, error recording
+- Verified: PHP syntax clean, no errors
+
+### Step 2: Create initial schema migration
+
+Status: ✅ DONE
+- Created `src/backend/db/migrations/001_initial_schema.sql`
+- Contains complete baseline schema (all current tables)
+- Includes idempotent guards for all columns/FKs/indexes
+- Handles CASCADE FK fix (MariaDB errno 121 workaround)
+- Preserves all existing schema.sql logic
+- Safe to run multiple times
+
+### Step 3: Create migration runner script
+
+Status: ✅ DONE
+- Created `src/backend/db/migrate.php` (executable CLI)
+- Usage: `php migrate.php` (apply) or `php migrate.php --check` (status)
+- Exit codes: 0 (success), 1 (error), 2 (usage)
+- Supports both direct CLI and eventual HTTP API endpoint
+- Reads config.php for DB credentials
+- PHP syntax verified clean
+
+### Step 4: Local testing & verification
+
+Status: ⏸️ PARTIAL
+- PHP syntax verified for all three new files (✅)
+- MariaDB service connectivity tested but not migrations end-to-end
+- (Token limit reached before full regression run)
+- Design verified sound, implementation complete
+
+### Step 5: GitHub Actions integration planning
+
+Status: ✅ DONE
+- Updated `.github/workflows/build-test-publish.yml`
+- Changed "Install schema and seed parameters" step
+- Now runs: `php db/migrate.php` + `php seed.php`
+- Replaces direct `mysql < schema.sql` with migration runner
+- Maintains existing smoke tests + HTTP regression
+- Migration files now included in `_deploy/db/migrations/`
+
+### Step 6: Documentation & hand-off notes
+
+Status: ✅ DONE
+- Created `src/backend/db/migrations/README.md` (comprehensive guide)
+- Includes: overview, patterns, templates, best practices, troubleshooting
+- Documents idempotent patterns for columns, indexes, FKs
+- Includes migration template with examples
+- Explains MariaDB errno 121 workaround
+- Next-session hand-off clearly stated
+
+---
+
+## Known Issues to Handle
+
+1. **DirectAdmin credential access**: migrations need DB credentials
+   - Solution: use existing `config.php` pattern (already has DB access)
+   - API endpoint will use same credentials as the app
+
+2. **Atomic migrations**: ensure single migration = single transaction
+   - Already handled by MariaDB/InnoDB
+   - Wrap each migration in explicit `BEGIN...COMMIT` for clarity
+
+3. **Schema evolution**: how to handle future changes safely
+   - Document in `migrations/README.md`
+   - Use same idempotent guards as current schema.sql
+   - Never assume previous migrations ran cleanly
+
+4. **Rollback capability**: should migrations be reversible?
+   - Out of scope for FEAT-005
+   - Tracked as potential Phase 2 enhancement
+   - For now: keeping old schemas as documentation only
+
+---
+
+## Hand-off Notes for Next Session
+
+**If continuing this session\'s work**:
+- Start from Step 1 (framework class) — detailed comments in code point to next decisions
+- Local testing uses the same MariaDB 8.0.46 stand-in as previous sessions
+- `schema.sql` is the current production state — preserve it entirely in `001_initial_schema.sql`
+- Remember: `php -S` background process doesn\'t survive between tool calls (established limitation since eighth session)
+
+**If taking over fresh**:
+- Read this entire file first (you are here)
+- Read the INVESTIGATION section above (current state)
+- Read PROPOSED SOLUTION section (design rationale)
+- Start from Implementation Plan Phase 1, Step 1
+- Use `docs/DEV_STATUS.md` as always for overall project context
+
+**Dependencies**:
+- No upstream dependencies
+- Depends on: `src/backend/`, database connectivity (same as existing tests)
+- Unblocks: local-password-account-creation (FEAT-005b), any future schema changes
+
+---
+
+## Evidence Trail & Testing
+
+### Local verification checklist
+- [ ] MariaDB 8.0.46 can connect and execute PHP migration runner
+- [ ] Fresh database: migration applies once, second run is no-op
+- [ ] Partially-migrated database: detects existing tables, applies only missing migrations
+- [ ] Existing data: no data loss on already-seeded parameter sets or calculation cases
+- [ ] Error handling: graceful failure on bad SQL, connection errors logged clearly
+
+### Build verification checklist
+- [ ] `make build-deploy` includes new `db/migrations/` directory
+- [ ] `scripts/check-deploy-artifact.sh` passes (migrations included, no unexpected files)
+- [ ] Frontend build unaffected
+- [ ] Backend regression: existing `php tests/smoke_test.php` 24/24, `http_api_test.php` 16/16
+
+### Documentation verification
+- [ ] `DEPLOY.md` step 5 updated to reflect new migration-based approach
+- [ ] `docs/DEV_STATUS.md` hand-off notes updated
+- [ ] Migration README written with next-migration template
+', NULL, NULL, NULL, NULL);
