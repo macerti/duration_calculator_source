@@ -10,9 +10,9 @@
 -- sessions and never synced to the row migration 008 created. All 45
 -- other entries verified character-for-character identical (modulo a
 -- single trailing newline) and needed no update.
--- Migration: 018_sync_buglog_deltas_before_archive
+-- Migration: 019_sync_buglog_deltas_before_archive
 -- Created: 2026-09-13
--- Author: Claude (dev session, 2026-09-13, fifty-seventh session)
+-- Author: Claude (dev session, 2026-09-13, fifty-eighth session)
 --
 -- This migration exists specifically so docs/BUGLOG.md can be safely
 -- deleted afterward with zero content loss -- see this session's

@@ -34,7 +34,7 @@ This folder still keeps its own `CHANGELOG.md`, `ROADMAP.md`, `BUGLOG.md`
 from before the repository architecture consolidation (`audit-mobile/` →
 `src/frontend/`). They predate, and are not the same numbering sequence as,
 the canonical bug/feature records — see the warning headers in this folder's
-`BUGLOG.md`/`ROADMAP.md`. As of 2026-09-13 (fifty-seventh session), current,
+`BUGLOG.md`/`ROADMAP.md`. As of 2026-09-13 (fifty-eighth session), current,
 authoritative status lives in this repo's `tracker_items`/`session_log`
 database tables (query directly, or read the auto-generated
 `docs/TRACKER_SNAPSHOT.md`) — `docs/DEV_STATUS.md`/`docs/BUGLOG.md` at the

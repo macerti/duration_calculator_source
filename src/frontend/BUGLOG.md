@@ -21,7 +21,7 @@
 > | BUG-004 | `BUG-035` | Wizard save/autosave reliability — **partially open**, see BUG-035 for current status |
 >
 > **Cite `BUG-032`–`BUG-035` for all new work.** As of 2026-09-13
-> (fifty-seventh session), `docs/BUGLOG.md` itself has been fully archived
+> (fifty-eighth session), `docs/BUGLOG.md` itself has been fully archived
 > into the `tracker_items` database table (all content preserved verbatim,
 > including these four entries — see migration `008`) and deleted; query
 > `tracker_items` where `code` is `BUG-032`–`BUG-035`, or read

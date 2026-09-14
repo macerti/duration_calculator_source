@@ -111,7 +111,7 @@ where the actual development work and hand-offs happen. Whether
 team, not something this structural move decided.
 
 **Bug/feature/tech-debt status and dev-session history are not markdown
-files** — as of 2026-09-13 (fifty-seventh session) they live in this
+files** — as of 2026-09-13 (fifty-eighth session) they live in this
 database's `tracker_items`/`tracker_updates`/`session_log` tables, the
 single source of truth, replacing hand-maintained `docs/BUGLOG.md` and
 `docs/DEV_STATUS.md` (both archived into those tables via migrations

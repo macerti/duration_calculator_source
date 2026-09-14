@@ -1,16 +1,42 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../data/parameters.php';
-require_once __DIR__ . '/../engine/nae.php';
-require_once __DIR__ . '/../engine/duration.php';
-require_once __DIR__ . '/../engine/factors.php';
-require_once __DIR__ . '/../engine/synergy.php';
-require_once __DIR__ . '/../engine/cycle.php';
-require_once __DIR__ . '/../engine/orgRisk.php';
-require_once __DIR__ . '/../engine/standardDuration.php';
-require_once __DIR__ . '/../engine/case.php';
-require_once __DIR__ . '/../engine/nace.php';
+// Relocated 2026-09-12 (fifty-fourth session, DEBT-004): this file used to
+// live one level deeper (inside the backend's own tree), with these
+// requires pointing just one directory up. Now living at the repo's
+// top-level tests/backend/, two levels up to the repo root then back down
+// into the backend source tree — see this session's DEV_STATUS.md entry
+// for why this is safe to do now (only this file has any relative-path
+// coupling at all; http_api_test.php is a pure HTTP client with none).
+//
+// This file is used in two genuinely different locations with two
+// different real distances to data/engine, not just one: (1) here in the
+// repo, where data/engine live two levels up then back down into
+// src/backend/; (2) copied verbatim into the deploy artifact's own tests/
+// folder (Makefile's build-deploy target, unchanged by this session) where
+// data/engine are flat siblings only one level up. A single hardcoded
+// relative path cannot be correct in both places at once — resolved here
+// at runtime instead, so the identical file works in both without a
+// build-time rewrite step. Caught by testing the deploy artifact in true
+// isolation (copied out of this checkout entirely) rather than trusting
+// check-deploy-artifact.sh's require-resolves-somewhere check alone — that
+// check running from inside a full checkout can't tell "resolves inside
+// the self-contained artifact" apart from "resolves by accident because
+// the source tree happens to still be sitting right there too."
+$backendRoot = is_dir(__DIR__ . '/../../src/backend')
+    ? __DIR__ . '/../../src/backend'  // repo layout: tests/backend/ -> src/backend/
+    : __DIR__ . '/..';                 // deploy artifact: tests/ -> flat sibling dirs
+
+require_once $backendRoot . '/data/parameters.php';
+require_once $backendRoot . '/engine/nae.php';
+require_once $backendRoot . '/engine/duration.php';
+require_once $backendRoot . '/engine/factors.php';
+require_once $backendRoot . '/engine/synergy.php';
+require_once $backendRoot . '/engine/cycle.php';
+require_once $backendRoot . '/engine/orgRisk.php';
+require_once $backendRoot . '/engine/standardDuration.php';
+require_once $backendRoot . '/engine/case.php';
+require_once $backendRoot . '/engine/nace.php';
 
 use function AuditEngine\loadDefaultParameterSet;
 use function AuditEngine\calculateNae;

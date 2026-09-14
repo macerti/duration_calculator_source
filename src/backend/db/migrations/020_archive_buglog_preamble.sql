@@ -1,13 +1,13 @@
 -- Audit Duration Engine -- archive docs/BUGLOG.md's own preamble text
 -- (the numbering-collision note above its first ### BUG- entry) into
 -- session_log, the one piece of docs/BUGLOG.md content that migration
--- 008/018 (the per-bug tracker_items archival) does not cover.
--- Migration: 019_archive_buglog_preamble
+-- 008/019 (the per-bug tracker_items archival) does not cover.
+-- Migration: 020_archive_buglog_preamble
 -- Created: 2026-09-13
--- Author: Claude (dev session, 2026-09-13, fifty-seventh session)
+-- Author: Claude (dev session, 2026-09-13, fifty-eighth session)
 
 INSERT INTO session_log (session_label, summary, trigger_text, done_text, not_done_text, handoff_text, commit_hash, ci_status) VALUES
-  ('BUGLOG.md preamble (2026-09-02, eleventh session)', 'Numbering-collision note: src/frontend/BUGLOG.md\'s BUG-001-004 folded into this file\'s canonical sequence as BUG-032-035', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/BUGLOG.md\'s own preamble (the text before its first ### BUG- entry) by migration 019, part of the same log-unification pass as migrations 017/018. This is the only content in docs/BUGLOG.md that is not one of the 49 per-bug entries already fully covered by migration 008 (+018\'s 4 delta updates) -- so archiving it here is what allows docs/BUGLOG.md to be deleted with zero content loss.]
+  ('BUGLOG.md preamble (2026-09-02, eleventh session)', 'Numbering-collision note: src/frontend/BUGLOG.md\'s BUG-001-004 folded into this file\'s canonical sequence as BUG-032-035', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/BUGLOG.md\'s own preamble (the text before its first ### BUG- entry) by migration 020, part of the same log-unification pass as migrations 018/019. This is the only content in docs/BUGLOG.md that is not one of the 49 per-bug entries already fully covered by migration 008 (+019\'s 4 delta updates) -- so archiving it here is what allows docs/BUGLOG.md to be deleted with zero content loss.]
 
 # Bug Log — Audit Duration Calculator
 

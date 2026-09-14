@@ -2,9 +2,9 @@
 -- entries + front-matter conventions) and the stray root-level
 -- SESSION_LOG_2026_09_03_21.md into session_log (migration 007's table),
 -- verbatim, so both files can be safely deleted with zero content loss.
--- Migration: 017_archive_devstatus_into_session_log
+-- Migration: 018_archive_devstatus_into_session_log
 -- Created: 2026-09-13
--- Author: Claude (dev session, 2026-09-13, fifty-seventh session)
+-- Author: Claude (dev session, 2026-09-13, fifty-eighth session)
 --
 -- Mechanically generated from docs/DEV_STATUS.md by a one-off script
 -- (scripts_tmp/archive_md_logs.php, not committed -- same convention as
@@ -46,11 +46,11 @@
 -- session_log rows now hold DEV_STATUS.md's complete text too.
 
 INSERT INTO session_log (session_label, summary, trigger_text, done_text, not_done_text, handoff_text, commit_hash, ci_status) VALUES
-  ('DEV_STATUS.md — DEV_STATUS.md preamble (file title, before first section)', 'DEV_STATUS.md preamble (file title, before first section)', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "DEV_STATUS.md preamble (file title, before first section)".]
+  ('DEV_STATUS.md — DEV_STATUS.md preamble (file title, before first section)', 'DEV_STATUS.md preamble (file title, before first section)', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "DEV_STATUS.md preamble (file title, before first section)".]
 
 # CURRENT DELIVERY PRIORITY — 2026-09-01
 ', NULL, NULL, NULL, NULL),
-  ('DEV_STATUS.md — Mandatory pipeline', 'Mandatory pipeline', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "Mandatory pipeline".]
+  ('DEV_STATUS.md — Mandatory pipeline', 'Mandatory pipeline', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "Mandatory pipeline".]
 
 ## Mandatory pipeline
 
@@ -86,7 +86,7 @@ Do not use older roadmap priority wording as the active priority. This dated dec
 > Historical/reference-only code: none remaining as top-level trees — audit-engine and audit-app were both deleted 2026-09-01 (sixth session), with history notes at docs/archive/
 > Deployment artifact: separate macerti/duration_calculator repository
 ', NULL, NULL, NULL, NULL),
-  ('DEV_STATUS.md — How to use this file', 'How to use this file', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "How to use this file".]
+  ('DEV_STATUS.md — How to use this file', 'How to use this file', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "How to use this file".]
 
 ## How to use this file
 
@@ -99,7 +99,7 @@ For every work session, record four things:
 
 Do not turn an architectural hypothesis into a confirmed root cause. Record the evidence level explicitly.
 ', NULL, NULL, NULL, NULL),
-  ('DEV_STATUS.md — Current status (P0 / P1 / P2 Framework — 2026-09-02)', 'Current status (P0 / P1 / P2 Framework — 2026-09-02)', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "Current status (P0 / P1 / P2 Framework — 2026-09-02)".]
+  ('DEV_STATUS.md — Current status (P0 / P1 / P2 Framework — 2026-09-02)', 'Current status (P0 / P1 / P2 Framework — 2026-09-02)', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "Current status (P0 / P1 / P2 Framework — 2026-09-02)".]
 
 ## Current status (P0 / P1 / P2 Framework — 2026-09-02)
 
@@ -129,7 +129,7 @@ Do not turn an architectural hypothesis into a confirmed root cause. Record the 
 - Extension-site toggle in UI.
 - Custom pull-to-refresh animation.
 ', NULL, NULL, NULL, NULL),
-  ('DEV_STATUS.md — Concurrent work map', 'Concurrent work map', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "Concurrent work map".]
+  ('DEV_STATUS.md — Concurrent work map', 'Concurrent work map', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "Concurrent work map".]
 
 ## Concurrent work map
 
@@ -147,7 +147,7 @@ Do not turn an architectural hypothesis into a confirmed root cause. Record the 
 | **FEAT-004 / BUG-029 (Production Quality/SEO)** | **P2 (For Later)** | Backlog | Remove framework defaults, add branded 404, robots.txt, canonical metadata |
 | **Global Case List & Extension-Site Toggle** | **P2 (For Later)** | Backlog | Secondary UI enhancements once core workflows are mature |
 ', NULL, NULL, NULL, NULL),
-  ('DEV_STATUS.md — Standing test evidence', 'Standing test evidence', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "Standing test evidence".]
+  ('DEV_STATUS.md — Standing test evidence', 'Standing test evidence', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "Standing test evidence".]
 
 ## Standing test evidence
 
@@ -169,7 +169,7 @@ Use these exact meanings:
 - OPEN: not fixed or not classified.
 - BLOCKED: cannot currently be tested because of a stated tooling/environment limitation.
 ', NULL, NULL, NULL, NULL),
-  ('DEV_STATUS.md — Update rule', 'Update rule', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "Update rule".]
+  ('DEV_STATUS.md — Update rule', 'Update rule', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "Update rule".]
 
 ## Update rule
 
@@ -206,7 +206,7 @@ If a later developer disproves an earlier finding, append the new evidence rathe
 - If PUT fails, debug the exact HTTP response and database exception before changing frontend code.
 - Do not re-open the already verified minimal POST payload as the assumed root cause.
 ', NULL, NULL, NULL, NULL),
-  ('DEV_STATUS.md — Mandatory source/deployment separation', 'Mandatory source/deployment separation', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "Mandatory source/deployment separation".]
+  ('DEV_STATUS.md — Mandatory source/deployment separation', 'Mandatory source/deployment separation', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "Mandatory source/deployment separation".]
 
 ## Mandatory source/deployment separation
 
@@ -387,7 +387,7 @@ The current deployment was tested interactively and exposed three frontend consi
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-01 (second session)', 'BUG-025/026/027 source fixes: STATICALLY VERIFIED + BUILD-VERIFIED, not yet browser/device VERIFIED', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-01 (second session) — BUG-025/026/027 source fixes: STATICALLY VERIFIED + BUILD-VERIFIED, not yet browser/device VERIFIED".]
+  ('2026-09-01 (second session)', 'BUG-025/026/027 source fixes: STATICALLY VERIFIED + BUILD-VERIFIED, not yet browser/device VERIFIED', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-01 (second session) — BUG-025/026/027 source fixes: STATICALLY VERIFIED + BUILD-VERIFIED, not yet browser/device VERIFIED".]
 
 ## 2026-09-01 (second session) — BUG-025/026/027 source fixes: STATICALLY VERIFIED + BUILD-VERIFIED, not yet browser/device VERIFIED
 
@@ -422,7 +422,7 @@ The current deployment was tested interactively and exposed three frontend consi
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-01 (third session)', 'BUG-027 #1/#2/#3 all addressed: source-complete, still STATICALLY/BUILD-VERIFIED only', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-01 (third session) — BUG-027 #1/#2/#3 all addressed: source-complete, still STATICALLY/BUILD-VERIFIED only".]
+  ('2026-09-01 (third session)', 'BUG-027 #1/#2/#3 all addressed: source-complete, still STATICALLY/BUILD-VERIFIED only', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-01 (third session) — BUG-027 #1/#2/#3 all addressed: source-complete, still STATICALLY/BUILD-VERIFIED only".]
 
 ## 2026-09-01 (third session) — BUG-027 #1/#2/#3 all addressed: source-complete, still STATICALLY/BUILD-VERIFIED only
 
@@ -450,7 +450,7 @@ The current deployment was tested interactively and exposed three frontend consi
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-01 (fourth session)', 'Independent fresh-sandbox backend re-verification; no code changes; docs reconciled', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-01 (fourth session) — Independent fresh-sandbox backend re-verification; no code changes; docs reconciled".]
+  ('2026-09-01 (fourth session)', 'Independent fresh-sandbox backend re-verification; no code changes; docs reconciled', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-01 (fourth session) — Independent fresh-sandbox backend re-verification; no code changes; docs reconciled".]
 
 ## 2026-09-01 (fourth session) — Independent fresh-sandbox backend re-verification; no code changes; docs reconciled
 
@@ -522,7 +522,7 @@ Per the priority order, moved to the consolidation item next. Given the size/ris
 
 **Verification this step**: `git status` confirms only the `audit-engine/` → `docs/archive/...` rename plus the new `ARCHIVE_NOTE.md`; no other files touched. Since nothing in the active app or CI references the moved paths, no typecheck/build/test re-run was needed to prove behavior is unchanged for this specific slice — this is intentionally the safest possible starting move, not a claim that consolidation is complete.
 ', NULL, NULL, NULL, NULL),
-  ('DEV_STATUS.md — FEAT-004 / BUG-029 hand-off', 'FEAT-004 / BUG-029 hand-off', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "FEAT-004 / BUG-029 hand-off".]
+  ('DEV_STATUS.md — FEAT-004 / BUG-029 hand-off', 'FEAT-004 / BUG-029 hand-off', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "FEAT-004 / BUG-029 hand-off".]
 
 ## FEAT-004 / BUG-029 hand-off
 
@@ -530,7 +530,7 @@ A production-quality web/SEO/routing review is logged. It is intentionally defer
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-01 (sixth session)', 'Repository architecture consolidation step 2 (docs relocated, legacy apps archived); BUG-030 found and root-caused', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-01 (sixth session) — Repository architecture consolidation step 2 (docs relocated, legacy apps archived); BUG-030 found and root-caused".]
+  ('2026-09-01 (sixth session)', 'Repository architecture consolidation step 2 (docs relocated, legacy apps archived); BUG-030 found and root-caused', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-01 (sixth session) — Repository architecture consolidation step 2 (docs relocated, legacy apps archived); BUG-030 found and root-caused".]
 
 ## 2026-09-01 (sixth session) — Repository architecture consolidation step 2 (docs relocated, legacy apps archived); BUG-030 found and root-caused
 
@@ -598,7 +598,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-02 (seventh session)', 'BUG-030 fixed and verified; PUT/NACE routing contradiction reconciled', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-02 (seventh session) — BUG-030 fixed and verified; PUT/NACE routing contradiction reconciled".]
+  ('2026-09-02 (seventh session)', 'BUG-030 fixed and verified; PUT/NACE routing contradiction reconciled', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-02 (seventh session) — BUG-030 fixed and verified; PUT/NACE routing contradiction reconciled".]
 
 ## 2026-09-02 (seventh session) — BUG-030 fixed and verified; PUT/NACE routing contradiction reconciled
 
@@ -678,7 +678,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-02 (tenth session)', 'Work Package G (repository hygiene checks) completed', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-02 (tenth session) — Work Package G (repository hygiene checks) completed".]
+  ('2026-09-02 (tenth session)', 'Work Package G (repository hygiene checks) completed', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-02 (tenth session) — Work Package G (repository hygiene checks) completed".]
 
 ## 2026-09-02 (tenth session) — Work Package G (repository hygiene checks) completed
 
@@ -710,7 +710,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-02 (eleventh session)', 'Bug log collision resolution (BUG-032–035) & CalculationWizardScreen re-confirmation', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-02 (eleventh session) — Bug log collision resolution (BUG-032–035) & CalculationWizardScreen re-confirmation".]
+  ('2026-09-02 (eleventh session)', 'Bug log collision resolution (BUG-032–035) & CalculationWizardScreen re-confirmation', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-02 (eleventh session) — Bug log collision resolution (BUG-032–035) & CalculationWizardScreen re-confirmation".]
 
 ## 2026-09-02 (eleventh session) — Bug log collision resolution (BUG-032–035) & CalculationWizardScreen re-confirmation
 
@@ -724,7 +724,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-02 (twelfth session)', 'Archive completed roadmap/bug history & establish Top 10 upcoming action queue', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-02 (twelfth session) — Archive completed roadmap/bug history & establish Top 10 upcoming action queue".]
+  ('2026-09-02 (twelfth session)', 'Archive completed roadmap/bug history & establish Top 10 upcoming action queue', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-02 (twelfth session) — Archive completed roadmap/bug history & establish Top 10 upcoming action queue".]
 
 ## 2026-09-02 (twelfth session) — Archive completed roadmap/bug history & establish Top 10 upcoming action queue
 
@@ -742,7 +742,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-02 (thirteenth session)', 'BUG-031 confirmed resolved on live host & Built In-App Guided Acceptance Test Runner', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-02 (thirteenth session) — BUG-031 confirmed resolved on live host & Built In-App Guided Acceptance Test Runner".]
+  ('2026-09-02 (thirteenth session)', 'BUG-031 confirmed resolved on live host & Built In-App Guided Acceptance Test Runner', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-02 (thirteenth session) — BUG-031 confirmed resolved on live host & Built In-App Guided Acceptance Test Runner".]
 
 ## 2026-09-02 (thirteenth session) — BUG-031 confirmed resolved on live host & Built In-App Guided Acceptance Test Runner
 
@@ -775,7 +775,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-02 (fourteenth session)', 'BUG-036: found and fixed a full production outage hiding behind a reported "SSO returns 500"', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-02 (fourteenth session) — BUG-036: found and fixed a full production outage hiding behind a reported "SSO returns 500"".]
+  ('2026-09-02 (fourteenth session)', 'BUG-036: found and fixed a full production outage hiding behind a reported "SSO returns 500"', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-02 (fourteenth session) — BUG-036: found and fixed a full production outage hiding behind a reported "SSO returns 500"".]
 
 ## 2026-09-02 (fourteenth session) — BUG-036: found and fixed a full production outage hiding behind a reported "SSO returns 500"
 
@@ -808,7 +808,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-02 (fifteenth session)', 'BUG-037: fixed a frontend bug that was masking SSO\'s real failure; root cause still not identified, needs one piece of live evidence', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-02 (fifteenth session) — BUG-037: fixed a frontend bug that was masking SSO\'s real failure; root cause still not identified, needs one piece of live evidence".]
+  ('2026-09-02 (fifteenth session)', 'BUG-037: fixed a frontend bug that was masking SSO\'s real failure; root cause still not identified, needs one piece of live evidence', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-02 (fifteenth session) — BUG-037: fixed a frontend bug that was masking SSO\'s real failure; root cause still not identified, needs one piece of live evidence".]
 
 ## 2026-09-02 (fifteenth session) — BUG-037: fixed a frontend bug that was masking SSO\'s real failure; root cause still not identified, needs one piece of live evidence
 
@@ -832,7 +832,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-03 (sixteenth session)', 'BUG-038: the "invalid_request" banner was Microsoft\'s own error arriving correctly — fixed the real bug (we were discarding `error_description`, the only part that actually explains anything), root cause of the rejection itself still open', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-03 (sixteenth session) — BUG-038: the "invalid_request" banner was Microsoft\'s own error arriving correctly — fixed the real bug (we were discarding `error_description`, the only part that actually explains anything), root cause of the rejection itself still open".]
+  ('2026-09-03 (sixteenth session)', 'BUG-038: the "invalid_request" banner was Microsoft\'s own error arriving correctly — fixed the real bug (we were discarding `error_description`, the only part that actually explains anything), root cause of the rejection itself still open', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-03 (sixteenth session) — BUG-038: the "invalid_request" banner was Microsoft\'s own error arriving correctly — fixed the real bug (we were discarding `error_description`, the only part that actually explains anything), root cause of the rejection itself still open".]
 
 ## 2026-09-03 (sixteenth session) — BUG-038: the "invalid_request" banner was Microsoft\'s own error arriving correctly — fixed the real bug (we were discarding `error_description`, the only part that actually explains anything), root cause of the rejection itself still open
 
@@ -868,7 +868,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-03 (seventeenth session)', 'BUG-038 root cause confirmed (AADSTS9002325, Azure Portal config, not code) & BUG-037 resolved by the same evidence; started Technical Debt #6 (design token migration) — 1 of 9 files done; logged new FEAT-005 request unevaluated per explicit instruction', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-03 (seventeenth session) — BUG-038 root cause confirmed (AADSTS9002325, Azure Portal config, not code) & BUG-037 resolved by the same evidence; started Technical Debt #6 (design token migration) — 1 of 9 files done; logged new FEAT-005 request unevaluated per explicit instruction".]
+  ('2026-09-03 (seventeenth session)', 'BUG-038 root cause confirmed (AADSTS9002325, Azure Portal config, not code) & BUG-037 resolved by the same evidence; started Technical Debt #6 (design token migration) — 1 of 9 files done; logged new FEAT-005 request unevaluated per explicit instruction', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-03 (seventeenth session) — BUG-038 root cause confirmed (AADSTS9002325, Azure Portal config, not code) & BUG-037 resolved by the same evidence; started Technical Debt #6 (design token migration) — 1 of 9 files done; logged new FEAT-005 request unevaluated per explicit instruction".]
 
 ## 2026-09-03 (seventeenth session) — BUG-038 root cause confirmed (AADSTS9002325, Azure Portal config, not code) & BUG-037 resolved by the same evidence; started Technical Debt #6 (design token migration) — 1 of 9 files done; logged new FEAT-005 request unevaluated per explicit instruction
 
@@ -903,7 +903,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-03 (eighteenth session)', 'BUG-039: `callback_failed` after the BUG-038 Azure Portal fix; fixed the same "diagnostic detail discarded" shape one layer deeper. Technical debt #6: NumberField.tsx done (2/9)', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-03 (eighteenth session) — BUG-039: `callback_failed` after the BUG-038 Azure Portal fix; fixed the same "diagnostic detail discarded" shape one layer deeper. Technical debt #6: NumberField.tsx done (2/9)".]
+  ('2026-09-03 (eighteenth session)', 'BUG-039: `callback_failed` after the BUG-038 Azure Portal fix; fixed the same "diagnostic detail discarded" shape one layer deeper. Technical debt #6: NumberField.tsx done (2/9)', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-03 (eighteenth session) — BUG-039: `callback_failed` after the BUG-038 Azure Portal fix; fixed the same "diagnostic detail discarded" shape one layer deeper. Technical debt #6: NumberField.tsx done (2/9)".]
 
 ## 2026-09-03 (eighteenth session) — BUG-039: `callback_failed` after the BUG-038 Azure Portal fix; fixed the same "diagnostic detail discarded" shape one layer deeper. Technical debt #6: NumberField.tsx done (2/9)
 
@@ -938,7 +938,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-03 (nineteenth session)', 'BUG-039 root cause CONFIRMED and FIXED: Microsoft sign-in\'s OAuth scope never requested Graph\'s `User.Read` permission', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-03 (nineteenth session) — BUG-039 root cause CONFIRMED and FIXED: Microsoft sign-in\'s OAuth scope never requested Graph\'s `User.Read` permission".]
+  ('2026-09-03 (nineteenth session)', 'BUG-039 root cause CONFIRMED and FIXED: Microsoft sign-in\'s OAuth scope never requested Graph\'s `User.Read` permission', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-03 (nineteenth session) — BUG-039 root cause CONFIRMED and FIXED: Microsoft sign-in\'s OAuth scope never requested Graph\'s `User.Read` permission".]
 
 ## 2026-09-03 (nineteenth session) — BUG-039 root cause CONFIRMED and FIXED: Microsoft sign-in\'s OAuth scope never requested Graph\'s `User.Read` permission
 
@@ -969,7 +969,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-03 (twentieth session)', 'BUG-039 CLOSED (Mahdi confirmed working); Google SSO button removed; new priority order recorded; tech debt: 3/9 design-token files done', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-03 (twentieth session) — BUG-039 CLOSED (Mahdi confirmed working); Google SSO button removed; new priority order recorded; tech debt: 3/9 design-token files done".]
+  ('2026-09-03 (twentieth session)', 'BUG-039 CLOSED (Mahdi confirmed working); Google SSO button removed; new priority order recorded; tech debt: 3/9 design-token files done', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-03 (twentieth session) — BUG-039 CLOSED (Mahdi confirmed working); Google SSO button removed; new priority order recorded; tech debt: 3/9 design-token files done".]
 
 ## 2026-09-03 (twentieth session) — BUG-039 CLOSED (Mahdi confirmed working); Google SSO button removed; new priority order recorded; tech debt: 3/9 design-token files done
 
@@ -1006,7 +1006,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-03 (twenty-first session)', 'FEAT-005: Automated database schema migration framework IMPLEMENTED', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-03 (twenty-first session) — FEAT-005: Automated database schema migration framework IMPLEMENTED".]
+  ('2026-09-03 (twenty-first session)', 'FEAT-005: Automated database schema migration framework IMPLEMENTED', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-03 (twenty-first session) — FEAT-005: Automated database schema migration framework IMPLEMENTED".]
 
 ## 2026-09-03 (twenty-first session) — FEAT-005: Automated database schema migration framework IMPLEMENTED
 
@@ -1091,7 +1091,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-04 (twenty-second session)', 'Investigated and mostly fixed the CI failure on FEAT-005\'s migration runner (BUG-040→043); documentation-only push, code fix NOT yet fully verified end-to-end', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-second session) — Investigated and mostly fixed the CI failure on FEAT-005\'s migration runner (BUG-040→043); documentation-only push, code fix NOT yet fully verified end-to-end".]
+  ('2026-09-04 (twenty-second session)', 'Investigated and mostly fixed the CI failure on FEAT-005\'s migration runner (BUG-040→043); documentation-only push, code fix NOT yet fully verified end-to-end', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-second session) — Investigated and mostly fixed the CI failure on FEAT-005\'s migration runner (BUG-040→043); documentation-only push, code fix NOT yet fully verified end-to-end".]
 
 ## 2026-09-04 (twenty-second session) — Investigated and mostly fixed the CI failure on FEAT-005\'s migration runner (BUG-040→043); documentation-only push, code fix NOT yet fully verified end-to-end
 
@@ -1131,7 +1131,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-04 (twenty-third session)', 'FEAT-005 CLOSED: CI confirmed green, full local re-verification, deferred content-level fix applied', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-third session) — FEAT-005 CLOSED: CI confirmed green, full local re-verification, deferred content-level fix applied".]
+  ('2026-09-04 (twenty-third session)', 'FEAT-005 CLOSED: CI confirmed green, full local re-verification, deferred content-level fix applied', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-third session) — FEAT-005 CLOSED: CI confirmed green, full local re-verification, deferred content-level fix applied".]
 
 ## 2026-09-04 (twenty-third session) — FEAT-005 CLOSED: CI confirmed green, full local re-verification, deferred content-level fix applied
 
@@ -1158,7 +1158,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-04 (twenty-fourth session)', 'Local accounts + RBAC: schema and backend data layer designed and verified; API routes, mailer, and frontend not yet started', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-fourth session) — Local accounts + RBAC: schema and backend data layer designed and verified; API routes, mailer, and frontend not yet started".]
+  ('2026-09-04 (twenty-fourth session)', 'Local accounts + RBAC: schema and backend data layer designed and verified; API routes, mailer, and frontend not yet started', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-fourth session) — Local accounts + RBAC: schema and backend data layer designed and verified; API routes, mailer, and frontend not yet started".]
 
 ## 2026-09-04 (twenty-fourth session) — Local accounts + RBAC: schema and backend data layer designed and verified; API routes, mailer, and frontend not yet started
 
@@ -1198,7 +1198,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 ---
 **Post-push confirmation (same session)**: GitHub Actions run `33867358419` on commit `8a844dc` confirmed **green, all 22 steps**, including "Run database migrations" against `002_add_auth_and_rbac.sql` on the real CI database, and "Publish deployment artifact" succeeded. So the migration is now confirmed working in CI, not just locally — directly answering Mahdi\'s stated skepticism about whether a DB-structure-changing push would actually work.
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-04 (twenty-fifth session)', 'Local accounts + RBAC: wired end-to-end and verified over real HTTP (42/42); two real bugs found and fixed', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-fifth session) — Local accounts + RBAC: wired end-to-end and verified over real HTTP (42/42); two real bugs found and fixed".]
+  ('2026-09-04 (twenty-fifth session)', 'Local accounts + RBAC: wired end-to-end and verified over real HTTP (42/42); two real bugs found and fixed', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-fifth session) — Local accounts + RBAC: wired end-to-end and verified over real HTTP (42/42); two real bugs found and fixed".]
 
 ## 2026-09-04 (twenty-fifth session) — Local accounts + RBAC: wired end-to-end and verified over real HTTP (42/42); two real bugs found and fixed
 
@@ -1230,7 +1230,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-04 (twenty-sixth session)', 'BUG-044 CLOSED: Mailer.php MIME boundary renamed, full local re-verification, mail config documented', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-sixth session) — BUG-044 CLOSED: Mailer.php MIME boundary renamed, full local re-verification, mail config documented".]
+  ('2026-09-04 (twenty-sixth session)', 'BUG-044 CLOSED: Mailer.php MIME boundary renamed, full local re-verification, mail config documented', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-sixth session) — BUG-044 CLOSED: Mailer.php MIME boundary renamed, full local re-verification, mail config documented".]
 
 ## 2026-09-04 (twenty-sixth session) — BUG-044 CLOSED: Mailer.php MIME boundary renamed, full local re-verification, mail config documented
 
@@ -1261,7 +1261,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-04 (twenty-seventh session)', 'BUG-045: diagnosed and documented a full production SSO outage (missing `user_identities` table); no code fix possible from this sandbox — runbook handed to Mahdi, process gap closed in docs', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-seventh session) — BUG-045: diagnosed and documented a full production SSO outage (missing `user_identities` table); no code fix possible from this sandbox — runbook handed to Mahdi, process gap closed in docs".]
+  ('2026-09-04 (twenty-seventh session)', 'BUG-045: diagnosed and documented a full production SSO outage (missing `user_identities` table); no code fix possible from this sandbox — runbook handed to Mahdi, process gap closed in docs', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-04 (twenty-seventh session) — BUG-045: diagnosed and documented a full production SSO outage (missing `user_identities` table); no code fix possible from this sandbox — runbook handed to Mahdi, process gap closed in docs".]
 
 ## 2026-09-04 (twenty-seventh session) — BUG-045: diagnosed and documented a full production SSO outage (missing `user_identities` table); no code fix possible from this sandbox — runbook handed to Mahdi, process gap closed in docs
 
@@ -1298,7 +1298,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-05 (twenty-eighth session)', 'FEAT-005 automation gap CLOSED: built `POST /api/migrate`, wired it into the deploy pipeline, no bugs left open to work on, features not started this session', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-05 (twenty-eighth session) — FEAT-005 automation gap CLOSED: built `POST /api/migrate`, wired it into the deploy pipeline, no bugs left open to work on, features not started this session".]
+  ('2026-09-05 (twenty-eighth session)', 'FEAT-005 automation gap CLOSED: built `POST /api/migrate`, wired it into the deploy pipeline, no bugs left open to work on, features not started this session', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-05 (twenty-eighth session) — FEAT-005 automation gap CLOSED: built `POST /api/migrate`, wired it into the deploy pipeline, no bugs left open to work on, features not started this session".]
 
 ## 2026-09-05 (twenty-eighth session) — FEAT-005 automation gap CLOSED: built `POST /api/migrate`, wired it into the deploy pipeline, no bugs left open to work on, features not started this session
 
@@ -1337,7 +1337,7 @@ While Part 1/2 above were in progress, four commits landed on `origin/main` from
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-05 (twenty-ninth session)', 'Local accounts + RBAC frontend: STARTED, NOT FINISHED. `useAuth.ts`/`useAdminApi.ts`/`LoginScreen.tsx` done; six screens and `App.tsx` wiring NOT done. **Tree does not currently typecheck — see blocker below before touching anything else.**', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-05 (twenty-ninth session) — Local accounts + RBAC frontend: STARTED, NOT FINISHED. `useAuth.ts`/`useAdminApi.ts`/`LoginScreen.tsx` done; six screens and `App.tsx` wiring NOT done. **Tree does not currently typecheck — see blocker below before touching anything else.**".]
+  ('2026-09-05 (twenty-ninth session)', 'Local accounts + RBAC frontend: STARTED, NOT FINISHED. `useAuth.ts`/`useAdminApi.ts`/`LoginScreen.tsx` done; six screens and `App.tsx` wiring NOT done. **Tree does not currently typecheck — see blocker below before touching anything else.**', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-05 (twenty-ninth session) — Local accounts + RBAC frontend: STARTED, NOT FINISHED. `useAuth.ts`/`useAdminApi.ts`/`LoginScreen.tsx` done; six screens and `App.tsx` wiring NOT done. **Tree does not currently typecheck — see blocker below before touching anything else.**".]
 
 ## 2026-09-05 (twenty-ninth session) — Local accounts + RBAC frontend: STARTED, NOT FINISHED. `useAuth.ts`/`useAdminApi.ts`/`LoginScreen.tsx` done; six screens and `App.tsx` wiring NOT done. **Tree does not currently typecheck — see blocker below before touching anything else.**
 
@@ -1388,7 +1388,7 @@ Pick up in this exact order:
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-06 (thirtieth session)', 'no version bump — local-accounts/RBAC frontend now SOURCE-COMPLETE and building clean; the broken tree from the twenty-ninth session is fixed; still pending a live browser click-through', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-06 (thirtieth session) — no version bump — local-accounts/RBAC frontend now SOURCE-COMPLETE and building clean; the broken tree from the twenty-ninth session is fixed; still pending a live browser click-through".]
+  ('2026-09-06 (thirtieth session)', 'no version bump — local-accounts/RBAC frontend now SOURCE-COMPLETE and building clean; the broken tree from the twenty-ninth session is fixed; still pending a live browser click-through', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-06 (thirtieth session) — no version bump — local-accounts/RBAC frontend now SOURCE-COMPLETE and building clean; the broken tree from the twenty-ninth session is fixed; still pending a live browser click-through".]
 
 ## 2026-09-06 (thirtieth session) — no version bump — local-accounts/RBAC frontend now SOURCE-COMPLETE and building clean; the broken tree from the twenty-ninth session is fixed; still pending a live browser click-through
 
@@ -1438,7 +1438,7 @@ Once both matched the test\'s expectations, the second from-scratch run was **50
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-06 (thirty-first session)', 'Mahdi\'s live click-through (exactly what the thirtieth session\'s hand-off asked for) surfaced 4 real issues in registration; one backend bug fixed-then-refixed (not yet re-verified), the other three not yet started or not yet verified — see BUG-047 in docs/BUGLOG.md for full detail, summarized here', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-06 (thirty-first session) — Mahdi\'s live click-through (exactly what the thirtieth session\'s hand-off asked for) surfaced 4 real issues in registration; one backend bug fixed-then-refixed (not yet re-verified), the other three not yet started or not yet verified — see BUG-047 in docs/BUGLOG.md for full detail, summarized here".]
+  ('2026-09-06 (thirty-first session)', 'Mahdi\'s live click-through (exactly what the thirtieth session\'s hand-off asked for) surfaced 4 real issues in registration; one backend bug fixed-then-refixed (not yet re-verified), the other three not yet started or not yet verified — see BUG-047 in docs/BUGLOG.md for full detail, summarized here', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-06 (thirty-first session) — Mahdi\'s live click-through (exactly what the thirtieth session\'s hand-off asked for) surfaced 4 real issues in registration; one backend bug fixed-then-refixed (not yet re-verified), the other three not yet started or not yet verified — see BUG-047 in docs/BUGLOG.md for full detail, summarized here".]
 
 ## 2026-09-06 (thirty-first session) — Mahdi\'s live click-through (exactly what the thirtieth session\'s hand-off asked for) surfaced 4 real issues in registration; one backend bug fixed-then-refixed (not yet re-verified), the other three not yet started or not yet verified — see BUG-047 in docs/BUGLOG.md for full detail, summarized here
 
@@ -1471,7 +1471,7 @@ Once both matched the test\'s expectations, the second from-scratch run was **50
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-06 (thirty-second session)', 'BUG-047 #1/#3 closed, #4 partially closed; FEAT-006 requested — session cut off before a full spec, build re-verification, or push could happen; corrected in a same-session follow-up', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-06 (thirty-second session) — BUG-047 #1/#3 closed, #4 partially closed; FEAT-006 requested — session cut off before a full spec, build re-verification, or push could happen; corrected in a same-session follow-up".]
+  ('2026-09-06 (thirty-second session)', 'BUG-047 #1/#3 closed, #4 partially closed; FEAT-006 requested — session cut off before a full spec, build re-verification, or push could happen; corrected in a same-session follow-up', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-06 (thirty-second session) — BUG-047 #1/#3 closed, #4 partially closed; FEAT-006 requested — session cut off before a full spec, build re-verification, or push could happen; corrected in a same-session follow-up".]
 
 ## 2026-09-06 (thirty-second session) — BUG-047 #1/#3 closed, #4 partially closed; FEAT-006 requested — session cut off before a full spec, build re-verification, or push could happen; corrected in a same-session follow-up
 
@@ -1508,7 +1508,7 @@ Once both matched the test\'s expectations, the second from-scratch run was **50
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-06 (thirty-third session)', 'BUG-047 fully closed as far as any sandbox can (#1/#3/#4 all done, #3 independently re-confirmed, real build verified for the first time in several sessions); FEAT-006 spec NOT reached — Mahdi asked to log and push now rather than continue into it', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-06 (thirty-third session) — BUG-047 fully closed as far as any sandbox can (#1/#3/#4 all done, #3 independently re-confirmed, real build verified for the first time in several sessions); FEAT-006 spec NOT reached — Mahdi asked to log and push now rather than continue into it".]
+  ('2026-09-06 (thirty-third session)', 'BUG-047 fully closed as far as any sandbox can (#1/#3/#4 all done, #3 independently re-confirmed, real build verified for the first time in several sessions); FEAT-006 spec NOT reached — Mahdi asked to log and push now rather than continue into it', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-06 (thirty-third session) — BUG-047 fully closed as far as any sandbox can (#1/#3/#4 all done, #3 independently re-confirmed, real build verified for the first time in several sessions); FEAT-006 spec NOT reached — Mahdi asked to log and push now rather than continue into it".]
 
 ## 2026-09-06 (thirty-third session) — BUG-047 fully closed as far as any sandbox can (#1/#3/#4 all done, #3 independently re-confirmed, real build verified for the first time in several sessions); FEAT-006 spec NOT reached — Mahdi asked to log and push now rather than continue into it
 
@@ -1552,7 +1552,7 @@ Once both matched the test\'s expectations, the second from-scratch run was **50
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-06 (thirty-fourth session)', 'FEAT-006 SPECCED and its BACKEND built + fully tested (65/65); bugs re-confirmed all closed as far as any sandbox can; frontend deliberately deferred — see hand-off', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-06 (thirty-fourth session) — FEAT-006 SPECCED and its BACKEND built + fully tested (65/65); bugs re-confirmed all closed as far as any sandbox can; frontend deliberately deferred — see hand-off".]
+  ('2026-09-06 (thirty-fourth session)', 'FEAT-006 SPECCED and its BACKEND built + fully tested (65/65); bugs re-confirmed all closed as far as any sandbox can; frontend deliberately deferred — see hand-off', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-06 (thirty-fourth session) — FEAT-006 SPECCED and its BACKEND built + fully tested (65/65); bugs re-confirmed all closed as far as any sandbox can; frontend deliberately deferred — see hand-off".]
 
 ## 2026-09-06 (thirty-fourth session) — FEAT-006 SPECCED and its BACKEND built + fully tested (65/65); bugs re-confirmed all closed as far as any sandbox can; frontend deliberately deferred — see hand-off
 
@@ -1611,7 +1611,7 @@ Once both matched the test\'s expectations, the second from-scratch run was **50
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-07 (thirty-fifth session)', 'FEAT-006 frontend CODE WRITTEN but COMPLETELY UNVERIFIED; do not trust or build on it until it\'s checked', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-07 (thirty-fifth session) — FEAT-006 frontend CODE WRITTEN but COMPLETELY UNVERIFIED; do not trust or build on it until it\'s checked".]
+  ('2026-09-07 (thirty-fifth session)', 'FEAT-006 frontend CODE WRITTEN but COMPLETELY UNVERIFIED; do not trust or build on it until it\'s checked', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-07 (thirty-fifth session) — FEAT-006 frontend CODE WRITTEN but COMPLETELY UNVERIFIED; do not trust or build on it until it\'s checked".]
 
 ## 2026-09-07 (thirty-fifth session) — FEAT-006 frontend CODE WRITTEN but COMPLETELY UNVERIFIED; do not trust or build on it until it\'s checked
 
@@ -1659,7 +1659,7 @@ Once both matched the test\'s expectations, the second from-scratch run was **50
 
 ---
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-07 (thirty-sixth session)', 'BUG-048 (P0 production outage, confirmed live) diagnosed and fixed same session; build-verified; pushed. Live click-through and everything past it still outstanding.', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-07 (thirty-sixth session) — BUG-048 (P0 production outage, confirmed live) diagnosed and fixed same session; build-verified; pushed. Live click-through and everything past it still outstanding.".]
+  ('2026-09-07 (thirty-sixth session)', 'BUG-048 (P0 production outage, confirmed live) diagnosed and fixed same session; build-verified; pushed. Live click-through and everything past it still outstanding.', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-07 (thirty-sixth session) — BUG-048 (P0 production outage, confirmed live) diagnosed and fixed same session; build-verified; pushed. Live click-through and everything past it still outstanding.".]
 
 ## 2026-09-07 (thirty-sixth session) — BUG-048 (P0 production outage, confirmed live) diagnosed and fixed same session; build-verified; pushed. Live click-through and everything past it still outstanding.
 
@@ -1705,7 +1705,7 @@ Once both matched the test\'s expectations, the second from-scratch run was **50
 
 **Dependency / hand-off**: item 1 has no blocker but time. Item 2 needs Mahdi specifically and is the one thing that actually closes this out. Items 3–5 are independent of each other and of items 1–2, and can be picked up in any order once higher-priority verification is done.
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-07 (thirty-seventh session)', 'BUG-049 fixed: FEAT-006 export now has a real Copier/Partager/Télécharger path; backend regression deliberately NOT re-run this session, by explicit instruction — next dev must run it before trusting this push', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-07 (thirty-seventh session) — BUG-049 fixed: FEAT-006 export now has a real Copier/Partager/Télécharger path; backend regression deliberately NOT re-run this session, by explicit instruction — next dev must run it before trusting this push".]
+  ('2026-09-07 (thirty-seventh session)', 'BUG-049 fixed: FEAT-006 export now has a real Copier/Partager/Télécharger path; backend regression deliberately NOT re-run this session, by explicit instruction — next dev must run it before trusting this push', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-07 (thirty-seventh session) — BUG-049 fixed: FEAT-006 export now has a real Copier/Partager/Télécharger path; backend regression deliberately NOT re-run this session, by explicit instruction — next dev must run it before trusting this push".]
 
 ## 2026-09-07 (thirty-seventh session) — BUG-049 fixed: FEAT-006 export now has a real Copier/Partager/Télécharger path; backend regression deliberately NOT re-run this session, by explicit instruction — next dev must run it before trusting this push
 
@@ -1740,7 +1740,7 @@ Once both matched the test\'s expectations, the second from-scratch run was **50
 
 **Dependency / hand-off**: item 1 has no blocker but time — do it before anything else touches this codebase. Item 2 is a pure verification step. Item 3 needs Mahdi specifically. Items 4 is independent and can proceed once 1–3 are clear.
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-07 (thirty-eighth session)', 'BUG-050: first real live-annotation batch (8 items) triaged, 6 fixed, 2 logged; full verification and 2 pieces of unfinished work deliberately deferred to the next session, by explicit instruction', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-07 (thirty-eighth session) — BUG-050: first real live-annotation batch (8 items) triaged, 6 fixed, 2 logged; full verification and 2 pieces of unfinished work deliberately deferred to the next session, by explicit instruction".]
+  ('2026-09-07 (thirty-eighth session)', 'BUG-050: first real live-annotation batch (8 items) triaged, 6 fixed, 2 logged; full verification and 2 pieces of unfinished work deliberately deferred to the next session, by explicit instruction', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-07 (thirty-eighth session) — BUG-050: first real live-annotation batch (8 items) triaged, 6 fixed, 2 logged; full verification and 2 pieces of unfinished work deliberately deferred to the next session, by explicit instruction".]
 
 ## 2026-09-07 (thirty-eighth session) — BUG-050: first real live-annotation batch (8 items) triaged, 6 fixed, 2 logged; full verification and 2 pieces of unfinished work deliberately deferred to the next session, by explicit instruction
 
@@ -1794,7 +1794,7 @@ Ran the full suite against the actual pushed commit `4408bfa`, as instructed, an
 
 Converted the file\'s remaining ~24 raw style values to `src/theme/tokens.ts` using the same substitution rules as the other 8 files (exact hex → its token, near-matches → closest semantic role, off-scale numbers left raw). `npx tsc --noEmit` clean, `npx expo export --platform web --clear` succeeds at the same 558-module count. Confirmed with a repo-wide grep that no screen or component uses `StyleSheet.create` without importing `theme/tokens` anymore — item 6 is fully closed, not just "this session\'s files done." Full substitution detail: `docs/BUGLOG.md` BUG-050\'s own update. Only hand-off item 3 (AdminRoles, `docs/ROADMAP.md` item 11) remains from this entry\'s original 4-item list; annotation #5\'s clarification and a live click-through are still open separately.
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-07 (thirty-ninth session)', 'Bug/feature tracker schema designed and committed (migration 004); BUG-049\'s backend regression independently re-confirmed clean', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-07 (thirty-ninth session) — Bug/feature tracker schema designed and committed (migration 004); BUG-049\'s backend regression independently re-confirmed clean".]
+  ('2026-09-07 (thirty-ninth session)', 'Bug/feature tracker schema designed and committed (migration 004); BUG-049\'s backend regression independently re-confirmed clean', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-07 (thirty-ninth session) — Bug/feature tracker schema designed and committed (migration 004); BUG-049\'s backend regression independently re-confirmed clean".]
 
 ## 2026-09-07 (thirty-ninth session) — Bug/feature tracker schema designed and committed (migration 004); BUG-049\'s backend regression independently re-confirmed clean
 
@@ -1829,7 +1829,7 @@ Converted the file\'s remaining ~24 raw style values to `src/theme/tokens.ts` us
 
 **Dependency / hand-off**: item 1 has no blocker but time. Item 2 depends on item 1. Item 3 is a pure verification step, independent of 1–2. Item 4 is independent of all three and can be picked up any time.
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-07 (fortieth session)', 'Tracker CRUD data layer + backlog seed migration written; routes, admin UI, and the regression suite explicitly deferred by direct instruction, not started', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-07 (fortieth session) — Tracker CRUD data layer + backlog seed migration written; routes, admin UI, and the regression suite explicitly deferred by direct instruction, not started".]
+  ('2026-09-07 (fortieth session)', 'Tracker CRUD data layer + backlog seed migration written; routes, admin UI, and the regression suite explicitly deferred by direct instruction, not started', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-07 (fortieth session) — Tracker CRUD data layer + backlog seed migration written; routes, admin UI, and the regression suite explicitly deferred by direct instruction, not started".]
 
 ## 2026-09-07 (fortieth session) — Tracker CRUD data layer + backlog seed migration written; routes, admin UI, and the regression suite explicitly deferred by direct instruction, not started
 
@@ -1882,7 +1882,7 @@ Converted the file\'s remaining ~24 raw style values to `src/theme/tokens.ts` us
 
 **Dependency / hand-off**: item 1 has no blocker but time. Item 2 depends on item 1 existing. Item 3 can start in parallel with 1–2 (a UI can be built against a not-yet-live API) but needs item 1 to actually work end-to-end. Item 4 depends on item 3. Item 5 depends on item 1. Item 6 depends on 1–4. Item 7 depends on the whole tracker (1–6) being live and confirmed, per Mahdi\'s own stated ordering: tracker/UI first, then bugs, then features, then tech debt.
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-08 (forty-first session)', 'FEAT-010 tracker: CRUD routes wired into `api/index.php` + 17 new HTTP regression tests; admin UI, `App.tsx`/`ProfileScreen.tsx` wiring, and full frontend re-verification still not started', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-08 (forty-first session) — FEAT-010 tracker: CRUD routes wired into `api/index.php` + 17 new HTTP regression tests; admin UI, `App.tsx`/`ProfileScreen.tsx` wiring, and full frontend re-verification still not started".]
+  ('2026-09-08 (forty-first session)', 'FEAT-010 tracker: CRUD routes wired into `api/index.php` + 17 new HTTP regression tests; admin UI, `App.tsx`/`ProfileScreen.tsx` wiring, and full frontend re-verification still not started', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-08 (forty-first session) — FEAT-010 tracker: CRUD routes wired into `api/index.php` + 17 new HTTP regression tests; admin UI, `App.tsx`/`ProfileScreen.tsx` wiring, and full frontend re-verification still not started".]
 
 ## 2026-09-08 (forty-first session) — FEAT-010 tracker: CRUD routes wired into `api/index.php` + 17 new HTTP regression tests; admin UI, `App.tsx`/`ProfileScreen.tsx` wiring, and full frontend re-verification still not started
 
@@ -1923,7 +1923,7 @@ Converted the file\'s remaining ~24 raw style values to `src/theme/tokens.ts` us
 
 **Dependency / hand-off**: item 1 has no blocker — every endpoint it needs already exists and is tested. Item 2 depends on item 1. Item 3 is independent of 1–2 and should genuinely run first, not last, despite being listed third here — the routes are trustworthy (tested), the frontend build is not (unverified since before this session even started touching it). Item 4 depends on item 1. Item 5 is a pure verification step, independent of everything else. Item 6 depends on the whole tracker (1–5) being live and confirmed.
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-08 (forty-second session)', 'Fresh baseline re-confirmed (24/24 smoke, 82/82 HTTP) + the forty-first session\'s own hand-off item 3 (full frontend verification) CLOSED; `AdminTrackerScreen.tsx` reference material read but not yet written — no code changes this session', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-08 (forty-second session) — Fresh baseline re-confirmed (24/24 smoke, 82/82 HTTP) + the forty-first session\'s own hand-off item 3 (full frontend verification) CLOSED; `AdminTrackerScreen.tsx` reference material read but not yet written — no code changes this session".]
+  ('2026-09-08 (forty-second session)', 'Fresh baseline re-confirmed (24/24 smoke, 82/82 HTTP) + the forty-first session\'s own hand-off item 3 (full frontend verification) CLOSED; `AdminTrackerScreen.tsx` reference material read but not yet written — no code changes this session', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-08 (forty-second session) — Fresh baseline re-confirmed (24/24 smoke, 82/82 HTTP) + the forty-first session\'s own hand-off item 3 (full frontend verification) CLOSED; `AdminTrackerScreen.tsx` reference material read but not yet written — no code changes this session".]
 
 ## 2026-09-08 (forty-second session) — Fresh baseline re-confirmed (24/24 smoke, 82/82 HTTP) + the forty-first session\'s own hand-off item 3 (full frontend verification) CLOSED; `AdminTrackerScreen.tsx` reference material read but not yet written — no code changes this session
 
@@ -1958,7 +1958,7 @@ Converted the file\'s remaining ~24 raw style values to `src/theme/tokens.ts` us
 
 **Dependency / hand-off**: item 1 has no blocker — every endpoint and reference file it needs is read and current. Item 2 depends on item 1. Item 3 depends on 1–2 (there\'s nothing new to verify until they exist). Item 4 depends on item 1. Item 5 depends on the whole tracker (1–4) being live and confirmed.
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-08 (forty-third session)', '`useAdminApi.ts` tracker types/methods added (typecheck-clean); `AdminTrackerScreen.tsx` still NOT written — pushing mid-flight per Mahdi\'s explicit instruction so the next session doesn\'t redo this reading/typing pass', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-08 (forty-third session) — `useAdminApi.ts` tracker types/methods added (typecheck-clean); `AdminTrackerScreen.tsx` still NOT written — pushing mid-flight per Mahdi\'s explicit instruction so the next session doesn\'t redo this reading/typing pass".]
+  ('2026-09-08 (forty-third session)', '`useAdminApi.ts` tracker types/methods added (typecheck-clean); `AdminTrackerScreen.tsx` still NOT written — pushing mid-flight per Mahdi\'s explicit instruction so the next session doesn\'t redo this reading/typing pass', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-08 (forty-third session) — `useAdminApi.ts` tracker types/methods added (typecheck-clean); `AdminTrackerScreen.tsx` still NOT written — pushing mid-flight per Mahdi\'s explicit instruction so the next session doesn\'t redo this reading/typing pass".]
 
 ## 2026-09-08 (forty-third session) — `useAdminApi.ts` tracker types/methods added (typecheck-clean); `AdminTrackerScreen.tsx` still NOT written — pushing mid-flight per Mahdi\'s explicit instruction so the next session doesn\'t redo this reading/typing pass
 
@@ -1993,7 +1993,7 @@ Converted the file\'s remaining ~24 raw style values to `src/theme/tokens.ts` us
 
 **Dependency / hand-off**: item 1 has no blocker — every client method and reference file it needs is in place. Item 2 depends on item 1. Item 3 depends on 1–2. Item 4 depends on item 1. Item 5 depends on the whole tracker (1–4) being live and confirmed, same standing order as every prior session\'s hand-off in this file.
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-08 (forty-fourth session)', '`AdminTrackerScreen.tsx` written and wired in; full frontend verification passed (559 modules); the tracker is now genuinely usable by an admin — version bumped 5.2.0 → 5.3.0 following the normal (not exceptional) convention', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-08 (forty-fourth session) — `AdminTrackerScreen.tsx` written and wired in; full frontend verification passed (559 modules); the tracker is now genuinely usable by an admin — version bumped 5.2.0 → 5.3.0 following the normal (not exceptional) convention".]
+  ('2026-09-08 (forty-fourth session)', '`AdminTrackerScreen.tsx` written and wired in; full frontend verification passed (559 modules); the tracker is now genuinely usable by an admin — version bumped 5.2.0 → 5.3.0 following the normal (not exceptional) convention', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-08 (forty-fourth session) — `AdminTrackerScreen.tsx` written and wired in; full frontend verification passed (559 modules); the tracker is now genuinely usable by an admin — version bumped 5.2.0 → 5.3.0 following the normal (not exceptional) convention".]
 
 ## 2026-09-08 (forty-fourth session) — `AdminTrackerScreen.tsx` written and wired in; full frontend verification passed (559 modules); the tracker is now genuinely usable by an admin — version bumped 5.2.0 → 5.3.0 following the normal (not exceptional) convention
 
@@ -2033,7 +2033,7 @@ Converted the file\'s remaining ~24 raw style values to `src/theme/tokens.ts` us
 
 **Dependency / hand-off**: item 1 has no blocker — the mechanism is understood, just needs executing. Item 2 is a pure verification step, independent of everything else. Item 3 is independent of 1–2. Item 4 has no blocker but attention — it keeps losing to feature work every session, which is precisely Mahdi\'s standing complaint. Item 5 depends on nothing above except being next in the stated order.
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-08 (forty-fifth session)', 'hand-off item 1 CLOSED: FEAT-010 tracker row seeded via migration; caught (and fixed) a stale-baseline test regression and a test-process mistake, both within the same session, before either reached a push', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-08 (forty-fifth session) — hand-off item 1 CLOSED: FEAT-010 tracker row seeded via migration; caught (and fixed) a stale-baseline test regression and a test-process mistake, both within the same session, before either reached a push".]
+  ('2026-09-08 (forty-fifth session)', 'hand-off item 1 CLOSED: FEAT-010 tracker row seeded via migration; caught (and fixed) a stale-baseline test regression and a test-process mistake, both within the same session, before either reached a push', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-08 (forty-fifth session) — hand-off item 1 CLOSED: FEAT-010 tracker row seeded via migration; caught (and fixed) a stale-baseline test regression and a test-process mistake, both within the same session, before either reached a push".]
 
 ## 2026-09-08 (forty-fifth session) — hand-off item 1 CLOSED: FEAT-010 tracker row seeded via migration; caught (and fixed) a stale-baseline test regression and a test-process mistake, both within the same session, before either reached a push
 
@@ -2069,7 +2069,7 @@ Converted the file\'s remaining ~24 raw style values to `src/theme/tokens.ts` us
 
 **Dependency / hand-off**: item 1 has no blocker and no design decision pending — purely a matter of a session choosing to spend budget on it instead of a new feature. Item 2 is independent, needs Mahdi not a dev session. Item 3 is independent. Item 4 is a standing process note, not a task with a completion state. Item 5 depends on nothing above except being next in the stated order.
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-09 (forty-sixth session)', 'DEBT-002 part 1 CLOSED (the maxWidth bump, flagged as this session\'s easiest concrete progress for two sessions running — this time actually done); BUG-051 investigated and narrowed, still not closed; environment-setup findings recorded for the next cold-start session', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-09 (forty-sixth session) — DEBT-002 part 1 CLOSED (the maxWidth bump, flagged as this session\'s easiest concrete progress for two sessions running — this time actually done); BUG-051 investigated and narrowed, still not closed; environment-setup findings recorded for the next cold-start session".]
+  ('2026-09-09 (forty-sixth session)', 'DEBT-002 part 1 CLOSED (the maxWidth bump, flagged as this session\'s easiest concrete progress for two sessions running — this time actually done); BUG-051 investigated and narrowed, still not closed; environment-setup findings recorded for the next cold-start session', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-09 (forty-sixth session) — DEBT-002 part 1 CLOSED (the maxWidth bump, flagged as this session\'s easiest concrete progress for two sessions running — this time actually done); BUG-051 investigated and narrowed, still not closed; environment-setup findings recorded for the next cold-start session".]
 
 ## 2026-09-09 (forty-sixth session) — DEBT-002 part 1 CLOSED (the maxWidth bump, flagged as this session\'s easiest concrete progress for two sessions running — this time actually done); BUG-051 investigated and narrowed, still not closed; environment-setup findings recorded for the next cold-start session
 
@@ -2107,7 +2107,7 @@ One local-setup-only false alarm worth recording so it isn\'t rediscovered: `con
 
 **CI confirmation, real not assumed**: pushed as commit `2b6c589`, watched the triggered run rather than treating the local sandbox verification as sufficient — GitHub Actions run `34310657180` completed **success, all 24 steps green**, including "Assemble deployment artifact", "Deployment artifact content check", and "Publish deployment artifact" to `macerti/duration_calculator`. Confirmed via the GitHub Actions API, same method prior sessions have used.
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-09 (forty-seventh session)', 'tracker search filter (backend only, NOT wired to UI); large multi-part request scoped down mid-session and pushed early per Mahdi\'s explicit "push now" — most of the request is still open, see hand-off', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-09 (forty-seventh session) — tracker search filter (backend only, NOT wired to UI); large multi-part request scoped down mid-session and pushed early per Mahdi\'s explicit "push now" — most of the request is still open, see hand-off".]
+  ('2026-09-09 (forty-seventh session)', 'tracker search filter (backend only, NOT wired to UI); large multi-part request scoped down mid-session and pushed early per Mahdi\'s explicit "push now" — most of the request is still open, see hand-off', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-09 (forty-seventh session) — tracker search filter (backend only, NOT wired to UI); large multi-part request scoped down mid-session and pushed early per Mahdi\'s explicit "push now" — most of the request is still open, see hand-off".]
 
 ## 2026-09-09 (forty-seventh session) — tracker search filter (backend only, NOT wired to UI); large multi-part request scoped down mid-session and pushed early per Mahdi\'s explicit "push now" — most of the request is still open, see hand-off
 
@@ -2157,7 +2157,7 @@ Before writing anything, read `AdminTrackerScreen.tsx`, `AdminAnnotationsScreen.
 
 **Push, not yet CI-confirmed at entry-write time**: about to commit and push this small, fully-tested slice (search backend + tests) rather than hold it pending the much larger unfinished work above — per Mahdi\'s explicit "Push !".
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-09 (forty-eighth session)', '`.md`→DB consolidation, part 1: `session_log` table built (this project\'s "table 1"), all 50 `BUGLOG.md` bugs archived into `tracker_items` ("table 2" already existed); `ROADMAP.md` seeding + either file\'s actual archival still NOT done — see hand-off', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-09 (forty-eighth session) — `.md`→DB consolidation, part 1: `session_log` table built (this project\'s "table 1"), all 50 `BUGLOG.md` bugs archived into `tracker_items` ("table 2" already existed); `ROADMAP.md` seeding + either file\'s actual archival still NOT done — see hand-off".]
+  ('2026-09-09 (forty-eighth session)', '`.md`→DB consolidation, part 1: `session_log` table built (this project\'s "table 1"), all 50 `BUGLOG.md` bugs archived into `tracker_items` ("table 2" already existed); `ROADMAP.md` seeding + either file\'s actual archival still NOT done — see hand-off', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-09 (forty-eighth session) — `.md`→DB consolidation, part 1: `session_log` table built (this project\'s "table 1"), all 50 `BUGLOG.md` bugs archived into `tracker_items` ("table 2" already existed); `ROADMAP.md` seeding + either file\'s actual archival still NOT done — see hand-off".]
 
 ## 2026-09-09 (forty-eighth session) — `.md`→DB consolidation, part 1: `session_log` table built (this project\'s "table 1"), all 50 `BUGLOG.md` bugs archived into `tracker_items` ("table 2" already existed); `ROADMAP.md` seeding + either file\'s actual archival still NOT done — see hand-off
 
@@ -2208,7 +2208,7 @@ The first two are genuinely new and not written into `docs/DEPLOY.md` or any onb
 
 **Push, CI confirmed real, not assumed — first push was NOT clean**: commit `29dffd6` pushed the verified slice above (session_log table + BUGLOG.md archival + their tests, 96/96 clean locally) and its triggered CI run (`34412124241`) came back **failure** — at the very first gate, `scripts/check-repo-hygiene.sh`\'s "stale pre-restructure path references" check, which everything after it (migrations, tests, frontend build, artifact publish) never even ran to reach. Root cause: that check exempts `.md` files from flagging old path names like `audit-app/` because several docs (including `docs/BUGLOG.md` itself) legitimately narrate them as history — migration `008` moved that exact exempted text into a `.sql` file, which the check had no reason yet to also exempt. Reproduced the failure locally first (running the same script against the exact pushed tree, not guessing from the CI conclusion alone — the raw log itself was unreachable, its `blob.core.windows.net` redirect target isn\'t on this sandbox\'s allowed network list), fixed by adding the one file to the script\'s existing named-exception list with a comment explaining why, confirmed 4/4 hygiene checks locally, pushed as commit `64a8d42`. **That run (`34412124241`\'s successor) was polled to completion and every one of its 24 steps confirmed `success`** — hygiene, migrations, smoke tests, HTTP regression, frontend typecheck, Expo build, deployment-artifact assembly and content check, and publish to `macerti/duration_calculator`, all individually verified, not inferred from the overall run conclusion alone. **Lesson for next time, stated plainly**: this session ran its own full backend baseline repeatedly but never ran `scripts/check-repo-hygiene.sh` locally before the first push, despite it being step 1 of this exact CI pipeline and a two-second command to run — that gap is what caused the failed run, not anything wrong with the actual feature work. Run it locally before every push from here on, the same way `migrate`/`seed`/`smoke`/`http` already are.
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-10 (forty-ninth session)', 'investigation + full merge/UI design only, zero code shipped; pushed on Mahdi\'s bare "Push !" per standing convention', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-10 (forty-ninth session) — investigation + full merge/UI design only, zero code shipped; pushed on Mahdi\'s bare "Push !" per standing convention".]
+  ('2026-09-10 (forty-ninth session)', 'investigation + full merge/UI design only, zero code shipped; pushed on Mahdi\'s bare "Push !" per standing convention', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-10 (forty-ninth session) — investigation + full merge/UI design only, zero code shipped; pushed on Mahdi\'s bare "Push !" per standing convention".]
 
 ## 2026-09-10 (forty-ninth session) — investigation + full merge/UI design only, zero code shipped; pushed on Mahdi\'s bare "Push !" per standing convention
 
@@ -2264,7 +2264,7 @@ Read `docs/DEV_STATUS.md` in full (not just the top), `AdminTrackerScreen.tsx`, 
 
 **Push**: nothing to push except this log entry — `git status` was clean before this edit. Committing and pushing this file alone, per Mahdi\'s explicit "Push !", so the next session starts from a ready-to-execute plan instead of re-reading `annotationRepo.php`/`trackerRepo.php` cold a third time.
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-10 (fiftieth session)', 'annotations/tracker merge + multiselect filters, backend half only: migration 009, `trackerRepo.php`, `api/index.php`, 11 new tests, 24/24 + 107/107 clean; frontend not started', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-10 (fiftieth session) — annotations/tracker merge + multiselect filters, backend half only: migration 009, `trackerRepo.php`, `api/index.php`, 11 new tests, 24/24 + 107/107 clean; frontend not started".]
+  ('2026-09-10 (fiftieth session)', 'annotations/tracker merge + multiselect filters, backend half only: migration 009, `trackerRepo.php`, `api/index.php`, 11 new tests, 24/24 + 107/107 clean; frontend not started', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-10 (fiftieth session) — annotations/tracker merge + multiselect filters, backend half only: migration 009, `trackerRepo.php`, `api/index.php`, 11 new tests, 24/24 + 107/107 clean; frontend not started".]
 
 ## 2026-09-10 (fiftieth session) — annotations/tracker merge + multiselect filters, backend half only: migration 009, `trackerRepo.php`, `api/index.php`, 11 new tests, 24/24 + 107/107 clean; frontend not started
 
@@ -2304,7 +2304,7 @@ Read `docs/DEV_STATUS.md` in full (not just the top), `AdminTrackerScreen.tsx`, 
 
 **Push**: committing migration `009_annotations_tracker_merge.sql`, `trackerRepo.php`, `api/index.php`, and the 11 new tests in `http_api_test.php` — a complete, fully-tested backend slice, safe to ship even though the frontend that calls it doesn\'t exist yet (every new route is additive; nothing existing changed shape). Per Mahdi\'s "Push".
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-10 (fifty-first session)', '5.4.0 — finished what the fiftieth session started: frontend half of the filter rework + annotations/tracker merge, `tsc` clean, backend baseline reconfirmed', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-10 (fifty-first session) — 5.4.0 — finished what the fiftieth session started: frontend half of the filter rework + annotations/tracker merge, `tsc` clean, backend baseline reconfirmed".]
+  ('2026-09-10 (fifty-first session)', '5.4.0 — finished what the fiftieth session started: frontend half of the filter rework + annotations/tracker merge, `tsc` clean, backend baseline reconfirmed', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-10 (fifty-first session) — 5.4.0 — finished what the fiftieth session started: frontend half of the filter rework + annotations/tracker merge, `tsc` clean, backend baseline reconfirmed".]
 
 ## 2026-09-10 (fifty-first session) — 5.4.0 — finished what the fiftieth session started: frontend half of the filter rework + annotations/tracker merge, `tsc` clean, backend baseline reconfirmed
 
@@ -2336,7 +2336,7 @@ Read `docs/DEV_STATUS.md` in full (not just the top), `AdminTrackerScreen.tsx`, 
 
 **Push**: committing `useAdminApi.ts`, the two new components, `AdminTrackerScreen.tsx`, `AnnotationCapture.tsx`, `App.tsx`, `ProfileScreen.tsx`, the deleted `AdminAnnotationsScreen.tsx`, `package.json`/`package-lock.json`\'s version bump, `CHANGELOG.md`, and this entry — the complete frontend half, `tsc`-clean, backend baseline reconfirmed. Per Mahdi\'s "Push"/"Continue".
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-11 (fifty-second session)', '5.5.0 — FEAT-007 built and build-verified: in-app Guided Test Mode (all 73 `docs/TEST_CHECKLIST.md` scenarios) with Markdown/JSON report export', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-11 (fifty-second session) — 5.5.0 — FEAT-007 built and build-verified: in-app Guided Test Mode (all 73 `docs/TEST_CHECKLIST.md` scenarios) with Markdown/JSON report export".]
+  ('2026-09-11 (fifty-second session)', '5.5.0 — FEAT-007 built and build-verified: in-app Guided Test Mode (all 73 `docs/TEST_CHECKLIST.md` scenarios) with Markdown/JSON report export', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-11 (fifty-second session) — 5.5.0 — FEAT-007 built and build-verified: in-app Guided Test Mode (all 73 `docs/TEST_CHECKLIST.md` scenarios) with Markdown/JSON report export".]
 
 ## 2026-09-11 (fifty-second session) — 5.5.0 — FEAT-007 built and build-verified: in-app Guided Test Mode (all 73 `docs/TEST_CHECKLIST.md` scenarios) with Markdown/JSON report export
 
@@ -2385,7 +2385,7 @@ Read `docs/DEV_STATUS.md` in full (not just the top), `AdminTrackerScreen.tsx`, 
 
 **Push**: committing `src/frontend/src/data/acceptanceTests.ts` (new), `src/frontend/src/screens/GuidedTestRunnerScreen.tsx` (new), `App.tsx`, `ProfileScreen.tsx`, `package.json`/`package-lock.json`\'s version bump, `src/backend/db/migrations/010_feat007_status.sql` (new), `CHANGELOG.md`, and this entry — a complete, fully build-verified feature slice (`tsc` clean, `expo export` 562 modules, `make build-deploy` 4/4, `check-repo-hygiene.sh` 4/4, backend baseline unchanged 24/24 + 107/107). Per Mahdi\'s explicit "Push."
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-11 (fifty-third session)', 'no version bump — FEAT-008 split into two slices; slice 1 (dossier reference codification, backend only) built and fully HTTP-test-verified', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-11 (fifty-third session) — no version bump — FEAT-008 split into two slices; slice 1 (dossier reference codification, backend only) built and fully HTTP-test-verified".]
+  ('2026-09-11 (fifty-third session)', 'no version bump — FEAT-008 split into two slices; slice 1 (dossier reference codification, backend only) built and fully HTTP-test-verified', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-11 (fifty-third session) — no version bump — FEAT-008 split into two slices; slice 1 (dossier reference codification, backend only) built and fully HTTP-test-verified".]
 
 ## 2026-09-11 (fifty-third session) — no version bump — FEAT-008 split into two slices; slice 1 (dossier reference codification, backend only) built and fully HTTP-test-verified
 
@@ -2437,7 +2437,7 @@ Read `docs/DEV_STATUS.md` in full (not just the top), `AdminTrackerScreen.tsx`, 
 
 **Push**: committing `src/backend/db/migrations/011_dossier_ref_codification.sql` (new), `src/backend/db/migrations/012_feat008_slice1_status.sql` (new), `src/backend/db/dossierRefRepo.php` (new), `src/backend/api/index.php`, `src/backend/tests/http_api_test.php`, `docs/ROADMAP.md`, `CHANGELOG.md`, and this entry — a complete, fully HTTP-test-verified backend slice (117/117, 24/24, migrate 12/12, hygiene 4/4; no frontend changes, no version bump per the backend-only convention). Per Mahdi\'s explicit "push."
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-12 (fifty-fourth session)', '5.6.0 — `BUG-051`/`BUG-052` fixed per Mahdi\'s direct decisions; `AdminSessionLogScreen` built', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-12 (fifty-fourth session) — 5.6.0 — `BUG-051`/`BUG-052` fixed per Mahdi\'s direct decisions; `AdminSessionLogScreen` built".]
+  ('2026-09-12 (fifty-fourth session)', '5.6.0 — `BUG-051`/`BUG-052` fixed per Mahdi\'s direct decisions; `AdminSessionLogScreen` built', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-12 (fifty-fourth session) — 5.6.0 — `BUG-051`/`BUG-052` fixed per Mahdi\'s direct decisions; `AdminSessionLogScreen` built".]
 
 ## 2026-09-12 (fifty-fourth session) — 5.6.0 — `BUG-051`/`BUG-052` fixed per Mahdi\'s direct decisions; `AdminSessionLogScreen` built
 
@@ -2506,7 +2506,7 @@ First session where any of this session\'s three changes are reachable by a real
 
 **Push**: committing `App.tsx`, `src/frontend/src/screens/CalculationWizardScreen.tsx`, `src/frontend/src/screens/AdminSessionLogScreen.tsx` (new), `src/frontend/src/hooks/useAdminApi.ts`, `src/frontend/src/screens/ProfileScreen.tsx`, `package.json`/`package-lock.json`\'s version bump, `src/generated/versionInfo.ts`, `src/backend/db/migrations/013_bug051_bug052_fixed.sql` (new), `CHANGELOG.md`, and this entry — a complete, fully verified slice (`tsc` clean, `expo export` 563 modules, backend baseline 24/24 + 117/117, hygiene 4/4). Per Mahdi\'s explicit request to push before the token budget runs out.
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-12 (fifty-fourth session, continued)', 'no version bump — `dev-export` live tracker snapshot system', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-12 (fifty-fourth session, continued) — no version bump — `dev-export` live tracker snapshot system".]
+  ('2026-09-12 (fifty-fourth session, continued)', 'no version bump — `dev-export` live tracker snapshot system', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-12 (fifty-fourth session, continued) — no version bump — `dev-export` live tracker snapshot system".]
 
 ## 2026-09-12 (fifty-fourth session, continued) — no version bump — `dev-export` live tracker snapshot system
 
@@ -2563,7 +2563,7 @@ Adding these two rows via `INSERT` pushed the seeded `tracker_items` count from 
 
 **Push**: `api/index.php`, `config.example.php`, `scripts/generate-tracker-snapshot.php` (new), `.github/workflows/dev-export-snapshot.yml` (new), `docs/ORIENTATIONS.md`, `src/backend/db/migrations/014_dev_export_and_docs_debt.sql` (new), `tests/http_api_test.php` (count-assertion fix), `CHANGELOG.md`, and this entry.
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-12 (fifty-fifth session)', 'no version bump — fresh local verification (PHP+MariaDB set up from scratch), one new bug found and flagged, not fixed', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-12 (fifty-fifth session) — no version bump — fresh local verification (PHP+MariaDB set up from scratch), one new bug found and flagged, not fixed".]
+  ('2026-09-12 (fifty-fifth session)', 'no version bump — fresh local verification (PHP+MariaDB set up from scratch), one new bug found and flagged, not fixed', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-12 (fifty-fifth session) — no version bump — fresh local verification (PHP+MariaDB set up from scratch), one new bug found and flagged, not fixed".]
 
 ## 2026-09-12 (fifty-fifth session) — no version bump — fresh local verification (PHP+MariaDB set up from scratch), one new bug found and flagged, not fixed
 
@@ -2595,7 +2595,7 @@ Running `scripts/check-repo-hygiene.sh` locally (part of the standard pre-push v
 
 **Push**: `docs/DEV_STATUS.md` only (this entry). No code changed this session.
 ', NULL, NULL, NULL, NULL),
-  ('2026-09-12 (fifty-sixth session)', 'BUG-053 fixed; FEAT-012 moved to verified; full detail in `session_log` (migration 016), not here — per this project\'s own forty-eighth-session convention', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "2026-09-12 (fifty-sixth session) — BUG-053 fixed; FEAT-012 moved to verified; full detail in `session_log` (migration 016), not here — per this project\'s own forty-eighth-session convention".]
+  ('2026-09-12 (fifty-sixth session)', 'BUG-053 fixed; FEAT-012 moved to verified; full detail in `session_log` (migration 016), not here — per this project\'s own forty-eighth-session convention', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "2026-09-12 (fifty-sixth session) — BUG-053 fixed; FEAT-012 moved to verified; full detail in `session_log` (migration 016), not here — per this project\'s own forty-eighth-session convention".]
 
 ## 2026-09-12 (fifty-sixth session) — BUG-053 fixed; FEAT-012 moved to verified; full detail in `session_log` (migration 016), not here — per this project\'s own forty-eighth-session convention
 
@@ -2603,7 +2603,7 @@ Short pointer only, per the standing instruction (migration `007`\'s own header,
 
 **Query `session_log` (or read migrations `016_fifty_sixth_session_log.sql`, `015_bug053_and_feat012_verified.sql` directly) for the full done/not-done/hand-off detail.** One-line summary: fixed `BUG-053` — took two attempts, not one. Commit `2784fd7` looked complete locally (4/4 hygiene, 24/24, 117/117) but CI failed anyway; root-caused via a temporary commit-comment debug step (GitHub\'s own log download is unreachable from this sandbox) to a self-inflicted second issue — migration 015\'s own text described the stale-path check by naming the very paths it looks for. Fixed for real in `4bed362`, confirmed via the GitHub Actions API: **all 20 CI steps green, artifact published.** Also moved `FEAT-012` to `verified`, seeded `session_log`\'s first-ever entry (`016`), fixed 6 total stale count assertions across two tables that new rows shifted (tracker_items 66→67/52→53, session_log 0→1/1→2 — same category as prior sessions\' count fixes). Bugs are now at 0 open. Next: the P1 feature queue (`FEAT-008` slice 2, `FEAT-001`, `FEAT-009`), then `DEBT-002` part 2/`003`/`004`/`005`.
 ', NULL, NULL, NULL, NULL),
-  ('DEV_STATUS.md — SESSION_LOG_2026_09_03_21.md (stray root-level file, superseded by DEV_STATUS.m', 'SESSION_LOG_2026_09_03_21.md (stray root-level file, superseded by DEV_STATUS.md)', NULL, '[Archived verbatim 2026-09-13 (fifty-seventh session) from docs/DEV_STATUS.md by migration 017 — see that migration\'s header for why. Original section header: "SESSION_LOG_2026_09_03_21.md (stray root-level file, superseded by DEV_STATUS.md)".]
+  ('DEV_STATUS.md — SESSION_LOG_2026_09_03_21.md (stray root-level file, superseded by DEV_STATUS.m', 'SESSION_LOG_2026_09_03_21.md (stray root-level file, superseded by DEV_STATUS.md)', NULL, '[Archived verbatim 2026-09-13 (fifty-eighth session) from docs/DEV_STATUS.md by migration 018 — see that migration\'s header for why. Original section header: "SESSION_LOG_2026_09_03_21.md (stray root-level file, superseded by DEV_STATUS.md)".]
 
 # Development Session Log — 2026-09-03 (twenty-first session)
 

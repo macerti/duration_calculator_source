@@ -1,6 +1,6 @@
 # Tracker snapshot (auto-generated)
 
-> Generated 2026-09-13T01:37:01+00:00 by `.github/workflows/dev-export-snapshot.yml` calling `GET /dev-export`. Do not edit by hand — changes are overwritten on the next scheduled run. Source of truth is the live `tracker_items`/`tracker_updates`/`session_log` tables; this file exists so pulling this repo also gets you a recent read of them, without needing live database access.
+> Generated 2026-09-14T01:55:37+00:00 by `.github/workflows/dev-export-snapshot.yml` calling `GET /dev-export`. Do not edit by hand — changes are overwritten on the next scheduled run. Source of truth is the live `tracker_items`/`tracker_updates`/`session_log` tables; this file exists so pulling this repo also gets you a recent read of them, without needing live database access.
 
 ## Open (10)
 
@@ -87,6 +87,15 @@
 
 ## Fixed, unverified (needs a live click-through) (2)
 
+### [BUG-053] (bug, P1) check-repo-hygiene.sh stale-path check fails on docs/TRACKER_SNAPSHOT.json, blocking every push to main
+
+- **Technical**: check-repo-hygiene.sh's check 4 (stale pre-restructure path references) greps every tracked non-.md file for old path names (audit-app, audit-mobile, duration-calculator-php, audit-engine). docs/TRACKER_SNAPSHOT.json (introduced by FEAT-012, fifty-fourth session) mirrors tracker_items' archived BUGLOG.md history (migration 008), which legitimately contains those old names inside historical text -- the exact "explaining history, not treating it as current" case the script's header already carves out an exception for. The .md sibling is auto-exempt (the script skips all *.md files); the .json file was missed. FIXED fifty-sixth session: added docs/TRACKER_SNAPSHOT.json to KNOWN_EXCEPTIONS in scripts/check-repo-hygiene.sh, same one-line pattern as the existing 008_extract_buglog_history.sql entry.
+- **Tests to do**: Confirmed fresh, fifty-sixth session: scripts/check-repo-hygiene.sh now reports 4/4 PASS locally (was failing on check 4 before the fix). Needs the next real CI run on this push to confirm the same result on GitHub Actions, not just locally.
+- **Touches**: scripts/check-repo-hygiene.sh
+- **Comments**: Fixed fifty-sixth session (2026-09-12), one-line KNOWN_EXCEPTIONS addition, same shape as commit 64a8d42's prior fix for migration 008. check-repo-hygiene.sh 4/4, smoke_test.php 24/24, http_api_test.php 117/117, tsc clean, expo export, make build-deploy 4/4 all reconfirmed clean afterward. Needs CI to actually run green on this push before calling it verified -- not yet confirmed on GitHub Actions as of this migration.
+- **History**:
+  - _2026-09-13 04:54:52_ — Found by the fifty-fifth session (flagged, not logged or fixed, per that session's explicit instruction). This session (fifty-sixth): confirmed the diagnosis, added docs/TRACKER_SNAPSHOT.json to check-repo-hygiene.sh's KNOWN_EXCEPTIONS (same pattern as the existing 008_extract_buglog_history.sql exception), reconfirmed the whole pipeline clean (hygiene 4/4, 24/24 smoke, 117/117 HTTP, tsc, expo export, build-deploy 4/4), and logged this row directly as fixed_unverified since the fix ships in this same push. (next: Watch this push's Actions run and confirm check-repo-hygiene.sh (and the rest of the pipeline) actually goes green on GitHub Actions, not just locally, before moving this to verified.)
+
 ### [FEAT-010] (feature, P1) Bug/feature/tech-debt tracker (DB-backed, replacing BUGLOG.md/ROADMAP.md/DEV_STATUS.md for progress tracking)
 
 - **Reported as**: Replace day-to-day bug/feature status tracking with database rows an admin can query/filter/update from a UI, keeping the markdown files only for dev-to-dev narrative hand-off, not progress tracking.
@@ -97,15 +106,23 @@
 - **History**:
   - _2026-09-09 03:43:13_ — Full history: proposed by Mahdi 2026-09-07 (thirty-eighth session, schema-only migration 004). Schema finalized and migrated same session. Data layer (trackerRepo.php) written thirty-ninth/fortieth session. Routes wired + 17 HTTP tests added forty-first session (82/82). Frontend baseline re-confirmed + reference files read forty-second session. Client-side plumbing (useAdminApi.ts types/methods) added forty-third session. AdminTrackerScreen.tsx written, wired into App.tsx/ProfileScreen.tsx, and fully build-verified forty-fourth session (559 modules, make build-deploy 4/4, check-repo-hygiene.sh 4/4) -- this migration seeds the feature's own tracker row, closing that session's hand-off item 1. (next: Get a real live click-through from Mahdi confirming create/log-update/edit/filter/delete all work end-to-end before calling this verified, same as FEAT-006's own remaining gap.)
 
+## Verified (1)
+
 ### [FEAT-012] (feature, P1) Dev-export live tracker snapshot -- repo pull now carries live problems too
 
 - **Reported as**: Mahdi, live in chat: "how can we always allow AI developers when pulling the repo to obtain the problems in the db" -- after establishing that no AI sandbox can safely hold standing production DB credentials, and that this sandbox specifically cannot reach any external host on port 3306 or plain HTTPS to arbitrary domains at all.
 - **Technical**: New GET /dev-export endpoint (api/index.php) -- read-only, shared-secret-gated (dev_export_secret in config.php, hash_equals-compared, same convention as the existing /migrate endpoint), rate-limited per IP. Returns JSON of tracker_items + tracker_updates + session_log only -- deliberately never clients/cases/sites/users, which is what makes exposing this safe. New .github/workflows/dev-export-snapshot.yml runs every 6 hours (plus workflow_dispatch), calls the endpoint with a DEV_EXPORT_SECRET repo secret, renders it through the new scripts/generate-tracker-snapshot.php into docs/TRACKER_SNAPSHOT.md (and the raw .json alongside it), and commits both to main if changed. ORIENTATIONS.md updated to tell future sessions to read this file at the start of a session.
 - **Tests to do**: Endpoint fully tested locally this session (unauthorized/wrong-secret/correct-secret paths, real JSON output, piped through the formatter script -- verified readable Markdown output). NOT YET verified: an actual scheduled run against the real production server, which needs two one-time manual steps first -- (1) set dev_export_secret in the live server config.php, (2) add the same value as this repo's DEV_EXPORT_SECRET GitHub Actions secret. Until both are set, the workflow runs, logs a warning, and skips (does not fail CI).
 - **Touches**: api/index.php, config.example.php, scripts/generate-tracker-snapshot.php, .github/workflows/dev-export-snapshot.yml, docs/ORIENTATIONS.md
-- **Comments**: Built fifty-fourth session (2026-09-12), fully working in this sandbox against a local DB. Needs Mahdi to complete the two one-time secret-setup steps above before the first real scheduled run will produce anything -- flagged to him directly in chat.
+- **Comments**: Built fifty-fourth session (2026-09-12), fully working in this sandbox against a local DB. Needs Mahdi to complete the two one-time secret-setup steps above before the first real scheduled run will produce anything -- flagged to him directly in chat. -- VERIFIED 2026-09-12 (fifty-sixth session): independently re-confirmed the fifty-fifth session's evidence on a fresh git pull -- docs/TRACKER_SNAPSHOT.md/.json in this checkout carry a real, recent generated timestamp produced by .github/workflows/dev-export-snapshot.yml actually calling the live tools.macerti.com endpoint, not a local/sandbox run. Both one-time production setup steps (dev_export_secret in live config.php, DEV_EXPORT_SECRET repo secret) are confirmed done.
+- **History**:
+  - _2026-09-13 04:54:52_ — Independently re-confirmed (fifty-sixth session) the fifty-fifth session's production evidence: a fresh git pull's docs/TRACKER_SNAPSHOT.md/.json carry a real, recent timestamp from an actual dev-export-snapshot.yml run against the live server, not a sandbox test. Moved from fixed_unverified to verified on that basis.
 
 ## Closed (62)
 
 DEBT-001, FEAT-006, FEAT-007, BUG-051, BUG-052, ANN-001, ANN-002, ANN-003, ANN-004, ANN-005, ANN-007, BUG-001, BUG-002, BUG-003, BUG-004, BUG-005, BUG-006, BUG-007, BUG-008, BUG-009, BUG-010, BUG-011, BUG-012, BUG-013, BUG-014, BUG-015, BUG-016, BUG-017, BUG-018, BUG-019, BUG-020, BUG-021, BUG-022, BUG-023, BUG-024, BUG-025, BUG-026, BUG-027, BUG-028, BUG-029, BUG-030, BUG-031, BUG-032, BUG-033, BUG-034, BUG-035, BUG-036, BUG-037, BUG-038, BUG-039, BUG-040, BUG-041, BUG-042, BUG-043, BUG-044, BUG-045, BUG-046, BUG-047, BUG-048, BUG-049, BUG-050, FEAT-002
+
+## Recent session log (1 total, most recent 15 shown)
+
+- **2026-09-12 -- fifty-sixth session** _2026-09-13 05:00:21_ — Fixed BUG-053 (took two attempts -- see done_text), verified FEAT-012, seeded this table for the first time
 

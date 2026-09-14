@@ -21,7 +21,7 @@ dev-frontend:
 # subset — see test-http for the full HTTP regression.
 test:
 	@echo "== PHP engine smoke tests (no DB required) =="
-	cd src/backend && php tests/smoke_test.php
+	php tests/backend/smoke_test.php
 	@echo "== Frontend typecheck =="
 	cd src/frontend && npx tsc --noEmit
 
@@ -37,7 +37,7 @@ test-http:
 	fi
 	cd src/backend/api && (php -S 127.0.0.1:8080 index.php & echo $$! > /tmp/audit-api-test.pid)
 	sleep 1
-	cd src/backend && php tests/http_api_test.php http://127.0.0.1:8080 ; \
+	php tests/backend/http_api_test.php http://127.0.0.1:8080 ; \
 		kill $$(cat /tmp/audit-api-test.pid) 2>/dev/null ; rm -f /tmp/audit-api-test.pid
 
 # Work Package G (REPOSITORY_ARCHITECTURE.md "G. Repository hygiene") — see
@@ -59,7 +59,7 @@ build-deploy:
 	cp -R src/backend/data/. _deploy/data/
 	cp -R src/backend/db/. _deploy/db/
 	cp -R src/backend/engine/. _deploy/engine/
-	cp -R src/backend/tests/. _deploy/tests/
+	cp -R tests/backend/. _deploy/tests/
 	cp -R src/backend/auth/. _deploy/auth/
 	cp src/backend/.htaccess _deploy/.htaccess
 	cp src/backend/config.example.php _deploy/config.example.php

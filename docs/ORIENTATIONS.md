@@ -6,7 +6,7 @@ about *how we build and ship*, and it should stay true regardless of which
 tool or feature we're working on. Read this before starting new work; update
 it when we settle a new convention or reverse an old one.
 
-## Logging — rewritten 2026-09-13 (fifty-seventh session), resolving DEBT-005
+## Logging — rewritten 2026-09-13 (fifty-eighth session), resolving DEBT-005
 
 **Bug/feature/tech-debt status and dev-session history are database tables,
 not hand-maintained markdown files.** This section used to describe a
