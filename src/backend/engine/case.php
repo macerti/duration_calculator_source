@@ -16,7 +16,7 @@ function calculateCase(array $input, array $params): array
 
     $siteResults = [];
     foreach ($sites as $site) {
-        $nae = calculateNae($site['personnel']);
+        $nae = calculateNae($site['personnel'], $params);
         if (!$nae['crossCheckOk']) {
             $warnings[] = "Site \"{$site['name']}\": {$nae['crossCheckMessage']}";
         }

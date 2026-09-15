@@ -547,6 +547,104 @@ foreach ($refCasesToClean as $refCaseId) {
 ], $csrf);
 check($status === 200, 'dossier-ref-config restored to migration 011 defaults after the test', "status=$status");
 
+// --- Parameter admin UI (FEAT-008 slice 2) ---
+[$status] = request('GET', "$base/admin/parameters", null, null, false);
+check($status === 401, 'GET /admin/parameters with no session is rejected', "status=$status");
+
+[$status, $activeParams] = request('GET', "$base/admin/parameters");
+check(
+    $status === 200 && $activeParams['id'] === 'default-v1' && $activeParams['version'] === 1
+        && ($activeParams['naeCoefficients']['repetitiveTaskDiscount'] ?? null) == 0.75
+        && ($activeParams['naeCoefficients']['indirectStaffDivisor'] ?? null) == 4,
+    'GET /admin/parameters returns the seeded default-v1 set with its naeCoefficients',
+    "status=$status " . json_encode($activeParams['naeCoefficients'] ?? null)
+);
+
+[$status, $versionList] = request('GET', "$base/admin/parameters/versions");
+check(
+    $status === 200 && count($versionList) === 1 && $versionList[0]['id'] === 'default-v1' && $versionList[0]['isActive'] === true,
+    'GET /admin/parameters/versions lists the single seeded version, active',
+    "status=$status " . json_encode($versionList)
+);
+
+[$status, $byId] = request('GET', "$base/admin/parameters/default-v1");
+check($status === 200 && $byId['id'] === 'default-v1', 'GET /admin/parameters/:id fetches a specific version', "status=$status");
+
+[$status] = request('GET', "$base/admin/parameters/no-such-version");
+check($status === 404, 'GET /admin/parameters/:id 404s for an unknown id', "status=$status");
+
+[$status] = request('PUT', "$base/admin/parameters", ['data' => $activeParams, 'changeNote' => 'CI test edit']);
+check($status === 403, 'PUT /admin/parameters without CSRF token is rejected', "status=$status");
+
+[$status] = request('PUT', "$base/admin/parameters", ['data' => $activeParams, 'changeNote' => ''], $csrf);
+check($status === 400, 'PUT /admin/parameters with a blank changeNote is rejected', "status=$status");
+
+// Edit one NAE coefficient — the exact scenario this slice exists for: an
+// admin tunes a previously-hardcoded engine constant from the browser.
+$editedParams = $activeParams;
+$editedParams['naeCoefficients']['indirectStaffDivisor'] = 5;
+[$status, $newVersion] = request('PUT', "$base/admin/parameters", [
+    'data' => $editedParams,
+    'changeNote' => 'CI test: indirect staff divisor 4 -> 5',
+    'activate' => true,
+], $csrf);
+check(
+    $status === 201 && $newVersion['version'] === 2 && $newVersion['id'] === 'custom-v2'
+        && $newVersion['naeCoefficients']['indirectStaffDivisor'] == 5,
+    'PUT /admin/parameters saves an edit as a new version and activates it, server assigns id/version',
+    "status=$status " . json_encode($newVersion['id'] ?? null) . ' v' . ($newVersion['version'] ?? '?')
+);
+
+[$status, $nowActive] = request('GET', "$base/admin/parameters");
+check(
+    $status === 200 && $nowActive['id'] === 'custom-v2' && $nowActive['naeCoefficients']['indirectStaffDivisor'] == 5,
+    'GET /admin/parameters reflects the newly activated version',
+    "status=$status " . json_encode($nowActive['id'] ?? null)
+);
+
+// The end-to-end proof: an actual /nae calculation now uses the edited
+// coefficient, not the old hardcoded 4 — divisor 5 on headcount 20 gives
+// ceil(20/5)=4, whereas the original divisor 4 would give ceil(20/4)=5.
+[$status, $naeAfterEdit] = request('POST', "$base/nae", [
+    'siteId' => 'site-param-test',
+    'shiftTeams' => [],
+    'nonShift' => ['headcount' => 0, 'pctRepetitiveOrSimilar' => 0],
+    'indirect' => ['headcount' => 20],
+    'declaredTotalHeadcount' => 20,
+]);
+check(
+    $status === 200 && $naeAfterEdit['indirectLine']['nae'] === 4,
+    'POST /nae actually uses the edited indirectStaffDivisor (20/5=4, not the original 20/4=5)',
+    "status=$status nae=" . ($naeAfterEdit['indirectLine']['nae'] ?? 'null')
+);
+
+[$status] = request('POST', "$base/admin/parameters/activate", ['id' => 'no-such-version'], $csrf);
+check($status === 404, 'POST /admin/parameters/activate 404s for an unknown id', "status=$status");
+
+[$status, $reactivated] = request('POST', "$base/admin/parameters/activate", ['id' => 'default-v1'], $csrf);
+check($status === 200 && $reactivated['id'] === 'default-v1', 'POST /admin/parameters/activate re-activates an older version with no data change', "status=$status");
+
+[$status, $versionsAfter] = request('GET', "$base/admin/parameters/versions");
+$activeNow = array_values(array_filter($versionsAfter, fn($v) => $v['isActive']))[0] ?? null;
+check(
+    $status === 200 && count($versionsAfter) === 2 && ($activeNow['id'] ?? null) === 'default-v1',
+    'GET /admin/parameters/versions shows both versions, default-v1 active again after rollback',
+    "status=$status " . json_encode($activeNow)
+);
+
+[$status, $naeAfterRollback] = request('POST', "$base/nae", [
+    'siteId' => 'site-param-test',
+    'shiftTeams' => [],
+    'nonShift' => ['headcount' => 0, 'pctRepetitiveOrSimilar' => 0],
+    'indirect' => ['headcount' => 20],
+    'declaredTotalHeadcount' => 20,
+]);
+check(
+    $status === 200 && $naeAfterRollback['indirectLine']['nae'] === 5,
+    'POST /nae is back to the original divisor (20/4=5) after rolling back to default-v1',
+    "status=$status nae=" . ($naeAfterRollback['indirectLine']['nae'] ?? 'null')
+);
+
 // --- Forgot / reset password ---
 [$status] = request('POST', "$base/auth/forgot-password", ['email' => $testEmail], null, false);
 check($status === 200, 'POST /auth/forgot-password returns 200', "status=$status");

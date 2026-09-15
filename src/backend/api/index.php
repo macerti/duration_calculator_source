@@ -35,6 +35,10 @@ use function AuditEngine\loadConfig;
 use function AuditEngine\getPdo;
 use function AuditEngine\pingDb;
 use function AuditEngine\getActiveParameterSet;
+use function AuditEngine\listParameterSetVersions;
+use function AuditEngine\getParameterSetById;
+use function AuditEngine\activateParameterSetVersion;
+use function AuditEngine\saveNewParameterSetVersion;
 use function AuditEngine\calculateNae;
 use function AuditEngine\calculateCase;
 use function AuditEngine\findNaceEntry;
@@ -379,7 +383,7 @@ try {
     }
 
     if ($method === 'POST' && $segments === ['nae']) {
-        respond(calculateNae(jsonBody()));
+        respond(calculateNae(jsonBody(), $params));
     }
 
     if ($method === 'POST' && $segments === ['calculate']) {
@@ -1216,6 +1220,85 @@ try {
             respond(['error' => $e->getMessage()], 400);
         }
         respond($updated);
+    }
+
+    // =========================================================
+    // Parameter admin UI (FEAT-008 slice 2, no schema migration needed —
+    // parameter_sets/parameter_change_log have existed since the initial
+    // schema; this just exposes them over HTTP for the first time). Same
+    // manage_parameters permission as the dossier-ref-config routes above.
+    // =========================================================
+
+    // GET /admin/parameters — the currently active version's full data,
+    // plus version metadata alongside it (so the UI doesn't need a second
+    // round trip just to show "you're viewing v3, active").
+    if ($method === 'GET' && $segments === ['admin', 'parameters']) {
+        requireDb($dbAvailable);
+        requirePermission('manage_parameters');
+        $active = getActiveParameterSet();
+        if ($active === null) respond(['error' => 'Aucun jeu de paramètres actif.'], 404);
+        respond($active);
+    }
+
+    // GET /admin/parameters/versions — lightweight list (no data blobs) for
+    // a history view.
+    if ($method === 'GET' && $segments === ['admin', 'parameters', 'versions']) {
+        requireDb($dbAvailable);
+        requirePermission('manage_parameters');
+        respond(listParameterSetVersions());
+    }
+
+    // GET /admin/parameters/versions/:id — one specific version's full data
+    // (active or not) — e.g. to inspect an older version before deciding
+    // whether to re-activate it.
+    if ($method === 'GET' && count($segments) === 3 && $segments[0] === 'admin' && $segments[1] === 'parameters') {
+        requireDb($dbAvailable);
+        requirePermission('manage_parameters');
+        $found = getParameterSetById($segments[2]);
+        if ($found === null) respond(['error' => "Aucune version de paramètres avec l'identifiant \"{$segments[2]}\"."], 404);
+        respond($found);
+    }
+
+    // PUT /admin/parameters — save an edited copy as a brand-new version.
+    // Body: { data: <full parameter-set object, edited>, changeNote: string
+    // (required), activate: bool (default true) }. Never trusts the
+    // client's own id/version/createdAt/changeNote inside `data` —
+    // saveNewParameterSetVersion() always assigns those itself, so an admin
+    // editing one number in their browser can't accidentally (or
+    // deliberately) claim to be a different version than they really are.
+    if ($method === 'PUT' && $segments === ['admin', 'parameters']) {
+        requireDb($dbAvailable);
+        $user = requirePermission('manage_parameters');
+        requireCsrf();
+        $body = jsonBody();
+        $data = $body['data'] ?? null;
+        if (!is_array($data)) respond(['error' => "Le champ 'data' est requis et doit être un objet."], 400);
+        $changeNote = (string)($body['changeNote'] ?? '');
+        $activate = $body['activate'] ?? true;
+        try {
+            $saved = saveNewParameterSetVersion($data, $changeNote, (bool)$activate, $user['email'] ?? null);
+        } catch (\RuntimeException $e) {
+            respond(['error' => $e->getMessage()], 400);
+        }
+        respond($saved, 201);
+    }
+
+    // POST /admin/parameters/activate — re-activate an existing version
+    // (rollback, or re-enable a version that was superseded) with no data
+    // change. Body: { id: string }.
+    if ($method === 'POST' && $segments === ['admin', 'parameters', 'activate']) {
+        requireDb($dbAvailable);
+        $user = requirePermission('manage_parameters');
+        requireCsrf();
+        $body = jsonBody();
+        $id = (string)($body['id'] ?? '');
+        if ($id === '') respond(['error' => "Le champ 'id' est requis."], 400);
+        try {
+            $activated = activateParameterSetVersion($id, $user['email'] ?? null);
+        } catch (\RuntimeException $e) {
+            respond(['error' => $e->getMessage()], 404);
+        }
+        respond($activated);
     }
 
     // POST /auth/logout — destroy session

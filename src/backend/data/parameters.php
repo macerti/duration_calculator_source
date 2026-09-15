@@ -247,6 +247,19 @@ function loadDefaultParameterSet(): array
             'Suivi 1' => 0.6,
             'Suivi 2' => 0.6,
         ],
+        // FEAT-008 slice 2: previously hardcoded literals inside engine/nae.php
+        // (0.75 in rowNae's "Effectif * (1 - 0.75*%rep)", and the /4 divisor
+        // for indirect staff) — promoted here so an admin can tune them from
+        // the browser instead of editing engine code, per Mahdi's explicit
+        // "all hardcoded formulas — numbers, operations, steps" request.
+        // engine/nae.php falls back to these exact values via ?? if either
+        // key is ever missing (e.g. a parameter_set saved before this slice
+        // existed), so this is purely additive — no behavior change until an
+        // admin actually edits one of these two numbers.
+        'naeCoefficients' => [
+            'repetitiveTaskDiscount' => 0.75,
+            'indirectStaffDivisor' => 4,
+        ],
     ];
 
     return $cached;
