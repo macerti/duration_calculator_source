@@ -1,8 +1,8 @@
 # Tracker snapshot (auto-generated)
 
-> Generated 2026-09-14T21:05:53+00:00 by `.github/workflows/dev-export-snapshot.yml` calling `GET /dev-export`. Do not edit by hand — changes are overwritten on the next scheduled run. Source of truth is the live `tracker_items`/`tracker_updates`/`session_log` tables; this file exists so pulling this repo also gets you a recent read of them, without needing live database access.
+> Generated 2026-09-15T02:03:53+00:00 by `.github/workflows/dev-export-snapshot.yml` calling `GET /dev-export`. Do not edit by hand — changes are overwritten on the next scheduled run. Source of truth is the live `tracker_items`/`tracker_updates`/`session_log` tables; this file exists so pulling this repo also gets you a recent read of them, without needing live database access.
 
-## Open (8)
+## Open (7)
 
 ### [DEBT-002] (techdebt, P1) AdminRoles - flat permissions list + narrow desktop width, needs redesign
 
@@ -71,13 +71,6 @@
 - **History**:
   - _2026-09-14 07:58:54_ — Logged and scoped from ANN-008 -- a lower-effort fallback that does not require DEBT-003's full testID rollout first. (next: Build the fallback in AnnotationCapture.tsx's resolveWebElementRef(), behind the existing P1 queue.)
 
-### [DEBT-005] (techdebt, P3) ORIENTATIONS.md's "five standing files" logging section is stale
-
-- **Technical**: Noticed while adding the TRACKER_SNAPSHOT.md note (fifty-fourth session): the "Logging -- five standing files" section describes BUGLOG.md as where "every bug gets its own entry", but bugs have lived in the tracker_items DB table (not BUGLOG.md) since migration 008/FEAT-011 -- BUGLOG.md's own 50 legacy bugs were archived there, not kept current since. The same section also never mentions DEV_STATUS.md at all, despite it being the single most-used file across every session in this log (every session entry in this very file lives there). The list of "five standing files" itself needs a rewrite to reflect current practice: DEV_STATUS.md added, BUGLOG.md's description corrected (or the file itself formally marked historical/archived if tracker_items has fully superseded it).
-- **Tests to do**: Read ORIENTATIONS.md's logging section fresh, decide whether BUGLOG.md should be (a) formally marked archived/historical with a pointer to tracker_items, or (b) kept as a slower-moving narrative complement -- then rewrite the section to match whichever is decided, adding DEV_STATUS.md to the list either way.
-- **Touches**: docs/ORIENTATIONS.md, docs/BUGLOG.md
-- **Comments**: Low priority (P3) -- purely a documentation-accuracy issue, no functional impact. Flagged rather than silently left, per the standing instruction that technical debt found along the way should be logged even when there is no time to fix it in the same session.
-
 ## In progress (1)
 
 ### [DEBT-004] (techdebt, P1) Top-level tests/ relocation + missing frontend unit tests
@@ -90,7 +83,7 @@
   - _2026-09-08 05:04:27_ — Repeatedly identified and explicitly carried over, untouched, across the thirty-sixth through thirty-ninth sessions - each one correctly prioritized live P0/P1 work ahead of it, but Mahdi has flagged more than once that this must not become permanent. (next: Give this its own session: relocate tests/ first (mechanical, low-risk), then scope frontend unit tests as a separate follow-up.)
   - _2026-09-14 07:58:54_ — Relocated src/backend/tests/ to top-level tests/backend/ (git mv, history preserved). Updated Makefile (test/test-http/build-deploy targets), .github/workflows/build-test-publish.yml (3 steps), check-repo-hygiene.sh (added the old path to the stale-reference pattern). Fixed smoke_test.php's 9 relative requires with a runtime-resolved $backendRoot instead of a single hardcoded depth, since the repo and deploy-artifact contexts genuinely need different relative depths -- verified both via a true-isolation run (artifact copied to a location with nothing else around it), not just the automated checker (which gave a false pass on the first attempt -- see DEBT-006). Full fresh verification: migrate.php 14/14, smoke_test.php 24/24, http_api_test.php 117/117, check-repo-hygiene.sh 4/4, make build-deploy + check-deploy-artifact.sh 4/4, plus the isolated artifact run (24/24). (next: Frontend unit-test half: choose Jest vs Vitest, scope an initial test target (wizard calculation state/hooks), build out from there.)
 
-## Fixed, unverified (needs a live click-through) (2)
+## Fixed, unverified (needs a live click-through) (3)
 
 ### [BUG-053] (bug, P1) check-repo-hygiene.sh stale-path check fails on docs/TRACKER_SNAPSHOT.json, blocking every push to main
 
@@ -111,6 +104,15 @@
 - **History**:
   - _2026-09-09 03:43:13_ — Full history: proposed by Mahdi 2026-09-07 (thirty-eighth session, schema-only migration 004). Schema finalized and migrated same session. Data layer (trackerRepo.php) written thirty-ninth/fortieth session. Routes wired + 17 HTTP tests added forty-first session (82/82). Frontend baseline re-confirmed + reference files read forty-second session. Client-side plumbing (useAdminApi.ts types/methods) added forty-third session. AdminTrackerScreen.tsx written, wired into App.tsx/ProfileScreen.tsx, and fully build-verified forty-fourth session (559 modules, make build-deploy 4/4, check-repo-hygiene.sh 4/4) -- this migration seeds the feature's own tracker row, closing that session's hand-off item 1. (next: Get a real live click-through from Mahdi confirming create/log-update/edit/filter/delete all work end-to-end before calling this verified, same as FEAT-006's own remaining gap.)
 
+### [DEBT-005] (techdebt, P3) ORIENTATIONS.md's "five standing files" logging section is stale
+
+- **Technical**: Noticed while adding the TRACKER_SNAPSHOT.md note (fifty-fourth session): the "Logging -- five standing files" section describes BUGLOG.md as where "every bug gets its own entry", but bugs have lived in the tracker_items DB table (not BUGLOG.md) since migration 008/FEAT-011 -- BUGLOG.md's own 50 legacy bugs were archived there, not kept current since. The same section also never mentions DEV_STATUS.md at all, despite it being the single most-used file across every session in this log (every session entry in this very file lives there). The list of "five standing files" itself needs a rewrite to reflect current practice: DEV_STATUS.md added, BUGLOG.md's description corrected (or the file itself formally marked historical/archived if tracker_items has fully superseded it).
+- **Tests to do**: Read ORIENTATIONS.md's logging section fresh, decide whether BUGLOG.md should be (a) formally marked archived/historical with a pointer to tracker_items, or (b) kept as a slower-moving narrative complement -- then rewrite the section to match whichever is decided, adding DEV_STATUS.md to the list either way.
+- **Touches**: docs/ORIENTATIONS.md, docs/BUGLOG.md
+- **Comments**: Resolved 2026-09-13 (fifty-eighth session), going further than this item's own original scope: docs/DEV_STATUS.md and docs/BUGLOG.md were not just corrected in description but fully archived verbatim into session_log/tracker_items (migrations 018-020) and deleted, per Mahdi's direct instruction to unify definitively. docs/ORIENTATIONS.md's logging section rewritten to describe current practice: the database is the single source of truth for bugs/features/tech-debt/session-history, docs/TRACKER_SNAPSHOT.md is the auto-generated mirror, and CHANGELOG.md/ROADMAP.md/SECURITY.md/TEST_CHECKLIST.md remain (deliberately, with reasoning given) as the only markdown status files. CONTRIBUTING.md, README.md, src/backend/README.md, src/frontend/README.md/BUGLOG.md updated to match -- no remaining functional pointer in this repo tells a reader to open the two deleted files. status is fixed_unverified, not verified/closed, since (as with every other frontend/process change in this project) no live click-through or second-session confirmation has happened yet that the new pointers read clearly to someone starting genuinely fresh.
+- **History**:
+  - _2026-09-14 21:32:20_ — Archived docs/DEV_STATUS.md (56 dated sessions + front-matter, split mechanically on every top-level "## " header to avoid a lossy per-field re-parse -- same "mechanical body-capture" philosophy as migration 008) and docs/BUGLOG.md (verified byte-for-byte against tracker_items first -- 45/49 entries matched migration 008's original transcription exactly, 4 had genuine post-008 additions synced via migration 019 before archiving) plus the stray SESSION_LOG_2026_09_03_21.md into session_log, then deleted all three source files. Rewrote docs/ORIENTATIONS.md's "Logging" section to describe the database + docs/TRACKER_SNAPSHOT.md as the current mechanism, explicitly explaining why CHANGELOG.md/ROADMAP.md/SECURITY.md/TEST_CHECKLIST.md are kept rather than also archived (each has a distinct role with no DB equivalent yet). Updated every functional (non-historical) pointer to the two deleted files across CONTRIBUTING.md, README.md, src/backend/README.md, src/frontend/README.md, src/frontend/BUGLOG.md. scripts/check-repo-hygiene.sh confirmed still 4/4 (migrations 018/020's historical path-name text inside archived prose did not trip the stale-path-reference check). (next: None from this item specifically -- fully resolved pending only the standing "no live click-through" caveat every doc/process change in this project carries. If a future session wants CHANGELOG.md/ROADMAP.md/SECURITY.md/TEST_CHECKLIST.md unified into the database too, that is a new, separate, larger design decision (at minimum: new tables for security findings and test scenarios) -- flag it to Mahdi rather than assuming this session's rewrite already covers it.)
+
 ## Verified (1)
 
 ### [FEAT-012] (feature, P1) Dev-export live tracker snapshot -- repo pull now carries live problems too
@@ -128,7 +130,21 @@
 
 DEBT-001, FEAT-006, FEAT-007, BUG-051, BUG-052, DEBT-006, ANN-001, ANN-002, ANN-003, ANN-004, ANN-005, ANN-006, ANN-007, ANN-008, BUG-001, BUG-002, BUG-003, BUG-004, BUG-005, BUG-006, BUG-007, BUG-008, BUG-009, BUG-010, BUG-011, BUG-012, BUG-013, BUG-014, BUG-015, BUG-016, BUG-017, BUG-018, BUG-019, BUG-020, BUG-021, BUG-022, BUG-023, BUG-024, BUG-025, BUG-026, BUG-027, BUG-028, BUG-029, BUG-030, BUG-031, BUG-032, BUG-033, BUG-034, BUG-035, BUG-036, BUG-037, BUG-038, BUG-039, BUG-040, BUG-041, BUG-042, BUG-043, BUG-044, BUG-045, BUG-046, BUG-047, BUG-048, BUG-049, BUG-050, FEAT-002
 
-## Recent session log (1 total, most recent 15 shown)
+## Recent session log (66 total, most recent 15 shown)
 
-- **2026-09-12 -- fifty-sixth session** _2026-09-13 05:00:21_ — Fixed BUG-053 (took two attempts -- see done_text), verified FEAT-012, seeded this table for the first time
+- **2026-09-13 (fifty-seventh session) [parallel session, merge-archived]** _2026-09-14 21:32:20_ — no version bump — `DEBT-004` relocation done properly; a bug caught and fixed along the way; tracker triage
+- **BUGLOG.md preamble (2026-09-02, eleventh session)** _2026-09-14 21:32:20_ — Numbering-collision note: src/frontend/BUGLOG.md's BUG-001-004 folded into this file's canonical sequence as BUG-032-035
+- **DEV_STATUS.md — SESSION_LOG_2026_09_03_21.md (stray root-level file, superseded by DEV_STATUS.m** _2026-09-14 21:32:20_ — SESSION_LOG_2026_09_03_21.md (stray root-level file, superseded by DEV_STATUS.md)
+- **2026-09-12 (fifty-sixth session)** _2026-09-14 21:32:20_ — BUG-053 fixed; FEAT-012 moved to verified; full detail in `session_log` (migration 016), not here — per this project's own forty-eighth-session convention
+- **2026-09-12 (fifty-fifth session)** _2026-09-14 21:32:20_ — no version bump — fresh local verification (PHP+MariaDB set up from scratch), one new bug found and flagged, not fixed
+- **2026-09-12 (fifty-fourth session, continued)** _2026-09-14 21:32:20_ — no version bump — `dev-export` live tracker snapshot system
+- **2026-09-12 (fifty-fourth session)** _2026-09-14 21:32:20_ — 5.6.0 — `BUG-051`/`BUG-052` fixed per Mahdi's direct decisions; `AdminSessionLogScreen` built
+- **2026-09-11 (fifty-third session)** _2026-09-14 21:32:20_ — no version bump — FEAT-008 split into two slices; slice 1 (dossier reference codification, backend only) built and fully HTTP-test-verified
+- **2026-09-11 (fifty-second session)** _2026-09-14 21:32:20_ — 5.5.0 — FEAT-007 built and build-verified: in-app Guided Test Mode (all 73 `docs/TEST_CHECKLIST.md` scenarios) with Markdown/JSON report export
+- **2026-09-10 (fifty-first session)** _2026-09-14 21:32:20_ — 5.4.0 — finished what the fiftieth session started: frontend half of the filter rework + annotations/tracker merge, `tsc` clean, backend baseline reconfirmed
+- **2026-09-10 (fiftieth session)** _2026-09-14 21:32:20_ — annotations/tracker merge + multiselect filters, backend half only: migration 009, `trackerRepo.php`, `api/index.php`, 11 new tests, 24/24 + 107/107 clean; frontend not started
+- **2026-09-10 (forty-ninth session)** _2026-09-14 21:32:20_ — investigation + full merge/UI design only, zero code shipped; pushed on Mahdi's bare "Push !" per standing convention
+- **2026-09-09 (forty-eighth session)** _2026-09-14 21:32:20_ — `.md`→DB consolidation, part 1: `session_log` table built (this project's "table 1"), all 50 `BUGLOG.md` bugs archived into `tracker_items` ("table 2" already existed); `ROADMAP.md` seeding + either file's actual archival still NOT done — see hand-off
+- **2026-09-09 (forty-seventh session)** _2026-09-14 21:32:20_ — tracker search filter (backend only, NOT wired to UI); large multi-part request scoped down mid-session and pushed early per Mahdi's explicit "push now" — most of the request is still open, see hand-off
+- **2026-09-09 (forty-sixth session)** _2026-09-14 21:32:20_ — DEBT-002 part 1 CLOSED (the maxWidth bump, flagged as this session's easiest concrete progress for two sessions running — this time actually done); BUG-051 investigated and narrowed, still not closed; environment-setup findings recorded for the next cold-start session
 
