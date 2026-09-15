@@ -105,6 +105,39 @@ export interface SessionLogEntry {
   createdAt: string;
 }
 
+/** Matches db/parameterSetRepo.php's listParameterSetVersions() — the
+ * lightweight, no-`data`-blob shape for a history list. */
+export interface ParameterSetVersion {
+  id: string;
+  version: number;
+  isActive: boolean;
+  changeNote: string | null;
+  createdAt: string;
+}
+
+/** Matches data/parameters.php's loadDefaultParameterSet() / the live
+ * parameter_sets.data JSON blob — FEAT-008 slice 2. Deliberately loose
+ * (`[key: string]: any` beyond the few fields this first UI pass actually
+ * edits): this blob has around 15 top-level sections of genuinely
+ * different shapes (scalar settings, small coefficient maps, and large
+ * per-standard tables like iafDurationTables/factorCatalogue/synergyGrid/
+ * naceTable). A full structural type per section is a natural addition
+ * once each one gets its own editor — see AdminParametersScreen.tsx's own
+ * header comment for exactly which sections this pass covers.
+ */
+export interface ParameterSet {
+  id: string;
+  version: number;
+  createdAt: string;
+  changeNote: string | null;
+  naeCoefficients: { repetitiveTaskDiscount: number; indirectStaffDivisor: number };
+  reportWritingPercent: number;
+  rounding: { nearest: number };
+  aggregateFactorCaps: { enforceAggregateCaps: boolean; maxAugmentationPercent: number; maxReductionPercent: number };
+  extrapolation: { enabled: boolean; method: string };
+  [key: string]: any;
+}
+
 export class AdminApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -301,5 +334,25 @@ export function useAdminApi(csrfToken: string | null) {
       commitHash?: string | null;
       ciStatus?: string | null;
     }) => request<SessionLogEntry>("/admin/session-log", { method: "POST", body: JSON.stringify(fields) }),
+
+    // Parameter admin (FEAT-008 slice 2) — edit/version the calculation
+    // engine's own IAF tables, factor catalogue, coefficients, etc.
+    // instead of editing PHP source and reseeding. Mirrors the
+    // roles/tracker blocks above: same request() helper, same error
+    // shape. saveParameterSet() always sends the *whole* edited object
+    // back (not just the changed leaf) — the backend re-assigns
+    // id/version/createdAt itself regardless of what's sent for those,
+    // per db/parameterSetRepo.php's saveNewParameterSetVersion() — and
+    // requires a non-empty changeNote.
+    getActiveParameterSet: () => request<ParameterSet>("/admin/parameters"),
+    listParameterSetVersions: () => request<ParameterSetVersion[]>("/admin/parameters/versions"),
+    getParameterSetVersion: (id: string) => request<ParameterSet>(`/admin/parameters/${id}`),
+    saveParameterSet: (data: ParameterSet, changeNote: string, activate: boolean = true) =>
+      request<ParameterSet>("/admin/parameters", {
+        method: "PUT",
+        body: JSON.stringify({ data, changeNote, activate }),
+      }),
+    activateParameterSetVersion: (id: string) =>
+      request<ParameterSet>("/admin/parameters/activate", { method: "POST", body: JSON.stringify({ id }) }),
   };
 }

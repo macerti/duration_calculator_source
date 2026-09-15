@@ -17,6 +17,7 @@ import AdminUsersScreen from "./src/screens/AdminUsersScreen";
 import AdminRolesScreen from "./src/screens/AdminRolesScreen";
 import AdminTrackerScreen from "./src/screens/AdminTrackerScreen";
 import AdminSessionLogScreen from "./src/screens/AdminSessionLogScreen";
+import AdminParametersScreen from "./src/screens/AdminParametersScreen";
 import GuidedTestRunnerScreen from "./src/screens/GuidedTestRunnerScreen";
 import AnnotationCapture from "./src/components/AnnotationCapture";
 import { colors, typography } from "./src/theme/tokens";
@@ -45,6 +46,7 @@ export type RootStackParamList = {
   AdminRoles: undefined;
   AdminTracker: undefined;
   AdminSessionLog: undefined;
+  AdminParameters: undefined;
   GuidedTestRunner: undefined;
 };
 
@@ -224,6 +226,7 @@ function AuthGate() {
               <Stack.Screen name="AdminRoles" component={AdminRolesScreen} options={{ title: "Rôles et permissions", headerShown: false }} />
               <Stack.Screen name="AdminTracker" component={AdminTrackerScreen} options={{ title: "Suivi bugs/fonctionnalités", headerShown: false }} />
               <Stack.Screen name="AdminSessionLog" component={AdminSessionLogScreen} options={{ title: "Journal des sessions", headerShown: false }} />
+              <Stack.Screen name="AdminParameters" component={AdminParametersScreen} options={{ title: "Paramètres de calcul", headerShown: false }} />
               <Stack.Screen name="GuidedTestRunner" component={GuidedTestRunnerScreen} options={{ title: "Mode Test Guidé", headerShown: false }} />
             </Stack.Navigator>
           </AnnotationCapture>

@@ -2,6 +2,15 @@
 
 Same versioning convention as the other projects: **x** = overhaul, **y** = feature, **z** = bugfix.
 
+## 2026-09-15 (sixtieth session) — 5.7.0 — `FEAT-008` frontend: parameter admin screen (first pass)
+
+- **v5.7.0** (y-bump — a real, user-reachable feature landed, unlike last session's backend-only slice).
+- Built `AdminParametersScreen.tsx` on top of last session's backend: real editable fields for `naeCoefficients` (the two coefficients promoted out of `engine/nae.php`), `reportWritingPercent`, `rounding.nearest`, and `aggregateFactorCaps`. One shared change-note + save flow (matches the backend's whole-object `PUT`), a discard button, and a version-history list with one-tap rollback (`POST /admin/parameters/activate`) per non-active version.
+- **Deliberately scoped to the scalar sections** — the larger tabular sections (`iafDurationTables`, `factorCatalogue`, `synergyGrid`, `naceTable`) are shown as read-only counts in a collapsible section, not editable yet. A dedicated table editor for those is a separate, larger follow-up with its own UI design needs (each table has a genuinely different shape).
+- Wired into `App.tsx`/`ProfileScreen.tsx` behind the existing `manage_parameters` permission, same pattern as every other admin screen.
+- Verified: `npx tsc --noEmit` clean, `npx expo export --platform web` (564 modules), `make build-deploy` + `check-deploy-artifact.sh` 4/4, and the **full backend suite re-run unchanged** (`131/131` HTTP, `24/24` smoke, `migrate.php` `24/24`, hygiene `4/4`) to confirm a frontend-only session introduced no backend regression.
+- **Not done**: the live click-through (standing gap for every frontend feature in this project until someone actually clicks through it), and the table-editor half of `FEAT-008`. Also still an open, flagged-not-assumed question: whether "numbers, operations, steps" extends to the formula operations themselves becoming editable — that's Mahdi's call, not something to start unilaterally.
+
 ## 2026-09-15 (fifty-ninth session) — no version bump — `FEAT-008` slice 2 backend: parameter admin API + NAE coefficients promoted out of hardcoded PHP
 
 - **No version bump**: same convention as slice 1 — a new admin-only API with no frontend caller yet. Nothing a user or admin of the deployed app can see or do differently until `AdminParametersScreen.tsx` exists.

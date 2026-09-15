@@ -282,6 +282,16 @@ export default function ProfileScreen({ navigation }: Props) {
                 <Text style={styles.secondaryButtonText}>Journal des sessions</Text>
               </Pressable>
             )}
+            {hasPermission("manage_parameters") && (
+              <Pressable
+                style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
+                onPress={() => navigation.navigate("AdminParameters")}
+                accessibilityRole="button"
+                testID="profile-admin-parameters-button"
+              >
+                <Text style={styles.secondaryButtonText}>Paramètres de calcul (FEAT-008)</Text>
+              </Pressable>
+            )}
           </View>
         )}
 
